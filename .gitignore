@@ -26,6 +26,9 @@ gradlew.bat
 /dist/
 /nbdist/
 /.nb-gradle/
-package-lock.json
 
 
+
+src/main/kotlin/fsight/youtrack/Const.kt
+src/main/resources/static/
+src/main/resources/templates/
