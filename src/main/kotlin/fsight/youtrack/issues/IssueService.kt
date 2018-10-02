@@ -1,6 +1,8 @@
 package fsight.youtrack.issues
 
 import fsight.youtrack.*
+import fsight.youtrack.logs.ImportLogService
+import fsight.youtrack.models.ImportLogModel
 import fsight.youtrack.models.Issue
 import fsight.youtrack.models.sql.IssueHistoryItem
 import org.jooq.DSLContext
@@ -20,20 +22,15 @@ import java.time.LocalDateTime
 
 @Service
 @Transactional
-class IssueService(private val dslContext: DSLContext) {
+class IssueService(private val dslContext: DSLContext, private val importLogService: ImportLogService) {
 
     fun getIssues() {
-        /*val fields = arrayListOf("Subsystem", "Summary", "reporterName", "Приоритет", "Тип", "Состояние", "Исполнитель",
-                "created", "updated", "resolved", "commentsCount", "votes", "permittedGroup", "SLA",
-                "SLA по первому ответу", "Дата первого ответа", "SLA по решению", "Дата решения", "Затронутые версии",
-                "Исправлено в сборке", "Версия Prognoz Platform")*/
-        /*val filter = "Компонент платформы: {1.3 Экпресс-отчеты}"*/
-
         val max = 10
         var i = 1
         var skip = 0
-        println(getFilter())
+
         val filter = getFilter()
+        println(filter)
         if (filter == null) {
             while (i > 0) {
                 i = 0
@@ -64,6 +61,11 @@ class IssueService(private val dslContext: DSLContext) {
             }
         }
         println("Loaded $skip issues")
+        importLogService.saveLog(ImportLogModel(
+                timestamp = Timestamp(System.currentTimeMillis()),
+                source = "issues (filtered by '$filter')",
+                table = "issues",
+                items = skip))
     }
 
     private fun getFilter(): String? {
