@@ -26,5 +26,6 @@ gradlew.bat
 /dist/
 /nbdist/
 /.nb-gradle/
+package-lock.json
 
 
