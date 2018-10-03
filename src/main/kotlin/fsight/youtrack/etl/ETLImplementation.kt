@@ -15,17 +15,14 @@ class ETLImplementation(private val projects: ProjectsService,
                         private val issue: IssueService,
                         private val users: UsersService,
                         private val timeline: IssuesTimelineService) : ETLService {
-    override fun loadDataFromYT(): ETLResult {
-        val h = GregorianCalendar.getInstance().also { it.time = Date() }.get(Calendar.HOUR_OF_DAY)
-        if (h in listOf(8, 20)) projects.getProjects()
-        if (h in listOf(8, 20)) bundles.getBundles()
+    override fun loadDataFromYT(manual: Boolean): ETLResult {
+        val m = GregorianCalendar.getInstance().also { it.time = Date() }.get(Calendar.MINUTE)
+        if (m == 30) projects.getProjects()
+        if (m == 30) bundles.getBundles()
         issue.getIssues()
-        if (h in listOf(8, 20)) users.getUsers()
-        if (h in listOf(8, 20)) {
-            println("starting timeline calculation")
-            timeline.start()
-        }
-        if (h in listOf(8, 20)) issue.checkIssues()
+        if (m == 30) users.getUsers()
+        if (m == 30) timeline.start()
+        if (m == 30) issue.checkIssues()
         println("completed ETL")
         return ETLResult(1, 1)
     }

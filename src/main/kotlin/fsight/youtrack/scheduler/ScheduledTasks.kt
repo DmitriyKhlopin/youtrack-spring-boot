@@ -31,7 +31,7 @@ class ScheduledTasks(
     override fun run(vararg args: String?) {
         val h = GregorianCalendar.getInstance().also { it.time = Date() }.get(Calendar.HOUR_OF_DAY)
         isRunning = true
-        service.loadDataFromYT()
+        service.loadDataFromYT(false)
         /*projects.getProjects()
         if (h in listOf(8, 20)) bundles.getBundles()
         issue.getIssues()

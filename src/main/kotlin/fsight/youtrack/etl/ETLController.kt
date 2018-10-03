@@ -10,6 +10,6 @@ import org.springframework.web.bind.annotation.RestController
 class ETLController(private val service: ETLService, private val component: ScheduledTasks) {
     @GetMapping("/etl")
     fun loadData() = if (component.isRunning) null
-    else service.loadDataFromYT()
+    else service.loadDataFromYT(true)
 
 }
