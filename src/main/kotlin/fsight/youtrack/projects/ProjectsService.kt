@@ -3,11 +3,12 @@ package fsight.youtrack.projects
 import fsight.youtrack.AUTH
 import fsight.youtrack.models.ProjectModel
 import org.jooq.DSLContext
+import org.jooq.exception.DataAccessException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import youtrack.jooq.tables.Projects
 import youtrack.jooq.tables.Projects.PROJECTS
-import java.sql.SQLException
+import java.net.SocketTimeoutException
 
 @Service
 @Transactional
@@ -24,8 +25,8 @@ class ProjectsService(private val dslContext: DSLContext) : ProjectsInterface {
 
     override fun updateProjects(): Int {
         var result = 0
-        ProjectRetrofitService.create().getProjectsList(AUTH).execute().body()?.forEach {
-            try {
+        try {
+            ProjectRetrofitService.create().getProjectsList(AUTH).execute().body()?.forEach {
                 result = dslContext
                         .insertInto(Projects.PROJECTS)
                         .set(PROJECTS.NAME, it.name)
@@ -36,9 +37,11 @@ class ProjectsService(private val dslContext: DSLContext) : ProjectsInterface {
                         .set(PROJECTS.SHORT_NAME, it.shortName)
                         .set(PROJECTS.DESCRIPTION, it.description)
                         .execute()
-            } catch (e: SQLException) {
-                println(e)
             }
+        } catch (e: SocketTimeoutException) {
+            println(e)
+        } catch (e: DataAccessException) {
+            println(e)
         }
         return result
     }

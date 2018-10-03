@@ -1,4 +1,4 @@
-package fsight.youtrack.dashboard
+package fsight.youtrack.api
 
 import fsight.youtrack.models.TimeAccountingItem
 import org.jooq.DSLContext
@@ -11,7 +11,7 @@ import java.time.LocalDateTime
 
 @Service
 @Transactional
-class DashboardImpl(private val dsl: DSLContext) : DashboardService {
+class TimeAccountingImpl(private val dsl: DSLContext) : TimeAccountingService {
     override fun getWorkItemsToday(token: String?): List<TimeAccountingItem> {
         val ts = Timestamp.valueOf(LocalDateTime.now().toLocalDate().atStartOfDay())
         val q = dsl.select(

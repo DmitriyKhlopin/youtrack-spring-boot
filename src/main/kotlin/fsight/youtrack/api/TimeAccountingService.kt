@@ -1,8 +1,8 @@
-package fsight.youtrack.dashboard
+package fsight.youtrack.api
 
 import fsight.youtrack.models.TimeAccountingItem
 
-interface DashboardService {
+interface TimeAccountingService {
     fun getWorkItemsToday(token: String?): List<TimeAccountingItem>
     fun getWorkItemsYesterday(token: String?): List<TimeAccountingItem>
     fun getWorkItemsBad(token: String?): List<TimeAccountingItem>

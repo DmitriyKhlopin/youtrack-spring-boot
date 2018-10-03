@@ -6,6 +6,7 @@ import org.jooq.exception.DataAccessException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import youtrack.jooq.tables.Bundles.BUNDLES
+import java.net.SocketTimeoutException
 
 @Service
 @Transactional
@@ -18,23 +19,24 @@ class BundleService(private val dslContext: DSLContext) {
     }
 
     private fun getBundleValues(bundle: String) {
-        val res = BundleRetrofitService.create().getBundleValues(AUTH, bundle).execute().body()
-        val bundleName = res?.name ?: ""
-        res?.value?.forEach {
-            try {
+        try {
+            val res = BundleRetrofitService.create().getBundleValues(AUTH, bundle).execute().body()
+            val bundleName = res?.name ?: ""
+            res?.value?.forEach {
                 dslContext.insertInto(BUNDLES)
                         .set(BUNDLES.BUNDLE, bundleName)
                         .set(BUNDLES.VAL, it.value)
                         .set(BUNDLES.DESCRIPTION, it.description)
                         .set(BUNDLES.COLOR_INDEX, it.colorIndex)
                         .set(BUNDLES.LOCALIZED_NAME, it.localizedName)
-                        .execute()
-            } catch (e: DataAccessException) {
-                println(e.message)
+                        .executeAsync()
             }
+        } catch (e: SocketTimeoutException) {
+            println(e)
+        } catch (e: DataAccessException) {
+            println(e)
         }
     }
-
 }
 
 
