@@ -5,6 +5,8 @@ import java.sql.Date
 import java.sql.Timestamp
 import java.util.*
 
+fun Boolean.invert() = !this
+
 object IssueRequestMode {
     const val ALL = 0
     const val TODAY = 1

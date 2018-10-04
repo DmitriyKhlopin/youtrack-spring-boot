@@ -22,9 +22,9 @@ import java.time.LocalDateTime
 
 @Service
 @Transactional
-class IssueService(private val dslContext: DSLContext, private val importLogService: ImportLogService) {
-
-    fun getIssues() {
+class IssueService(private val dslContext: DSLContext, private val importLogService: ImportLogService) : IssueInterface {
+    //TODO test KTOR
+    override fun getIssues(): Int {
         val max = 10
         var i = 1
         var skip = 0
@@ -38,7 +38,7 @@ class IssueService(private val dslContext: DSLContext, private val importLogServ
                     skip += 1
                     i += 1
                     it.saveBasicInfo()
-                    it.getCustomFields()
+                    it.saveCustomFields()
                     it.getComments()
                     getTimeAccounting(it.id)
                     getIssueHistory(it.id)
@@ -52,7 +52,7 @@ class IssueService(private val dslContext: DSLContext, private val importLogServ
                     skip += 1
                     i += 1
                     it.saveBasicInfo()
-                    it.getCustomFields()
+                    it.saveCustomFields()
                     it.getComments()
                     getTimeAccounting(it.id)
                     getIssueHistory(it.id)
@@ -65,6 +65,7 @@ class IssueService(private val dslContext: DSLContext, private val importLogServ
                 source = "issues (filtered by '$filter')",
                 table = "issues",
                 items = skip))
+        return skip
     }
 
     private fun getFilter(): String? {
@@ -78,7 +79,6 @@ class IssueService(private val dslContext: DSLContext, private val importLogServ
             "updated: $dateFrom .. $dateTo"
         } else null
     }
-
 
     private fun Issue.saveBasicInfo() {
         try {
@@ -118,6 +118,7 @@ class IssueService(private val dslContext: DSLContext, private val importLogServ
                     .set(ISSUES.QUALITY_EVALUATION, field.getString("Оценка"))
                     .set(ISSUES.ETS, field.getString("Проект (ETS)"))
                     .set(ISSUES.LOADED_DATE, Timestamp.valueOf(LocalDateTime.now().toLocalDate().atStartOfDay()))
+                    .set(ISSUES.PROJECT_SHORT_NAME, field.getString("projectShortName"))
                     .onDuplicateKeyUpdate()
                     .set(ISSUES.ENTITY_ID, entityId)
                     .set(ISSUES.SUMMARY, field.getString("summary"))
@@ -151,6 +152,7 @@ class IssueService(private val dslContext: DSLContext, private val importLogServ
                     .set(ISSUES.QUALITY_EVALUATION, field.getString("Оценка"))
                     .set(ISSUES.ETS, field.getString("Проект (ETS)"))
                     .set(ISSUES.LOADED_DATE, Timestamp.valueOf(LocalDateTime.now().toLocalDate().atStartOfDay()))
+                    .set(ISSUES.PROJECT_SHORT_NAME, field.getString("projectShortName"))
                     .execute()
 
         } catch (e: DataAccessException) {
@@ -159,7 +161,7 @@ class IssueService(private val dslContext: DSLContext, private val importLogServ
         }
     }
 
-    private fun Issue.getCustomFields() {
+    private fun Issue.saveCustomFields() {
         dslContext.deleteFrom(CUSTOM_FIELD_VALUES).where(CUSTOM_FIELD_VALUES.ISSUE_ID.eq(id)).execute()
         field.forEach { field ->
             //TODO извлечь данные из assignee
@@ -305,17 +307,16 @@ class IssueService(private val dslContext: DSLContext, private val importLogServ
             }
             if (index % interval == 0) println("Checked ${index * 100 / result.size}% of issues")
         }
-        deletedItems.forEach { println(it) }
-        println("$count issues to be deleted")
-        deleteIssueFromDatabase(deletedItems)
+        deleteIssues(deletedItems)
     }
 
-    fun deleteIssueFromDatabase(issues: ArrayList<String>) {
+    override fun deleteIssues(issues: ArrayList<String>): Int {
         dslContext.deleteFrom(ISSUES).where(ISSUES.ID.`in`(issues)).execute()
         dslContext.deleteFrom(CUSTOM_FIELD_VALUES).where((CUSTOM_FIELD_VALUES.ISSUE_ID.`in`(issues))).execute()
         dslContext.deleteFrom(ISSUE_COMMENTS).where(ISSUE_COMMENTS.ISSUE_ID.`in`(issues)).execute()
         dslContext.deleteFrom(WORK_ITEMS).where(WORK_ITEMS.ISSUE_ID.`in`(issues)).execute()
         dslContext.deleteFrom(ISSUE_HISTORY).where(ISSUE_HISTORY.ISSUE_ID.`in`(issues)).execute()
+        return 0
     }
 
     private fun writeError(item: String, message: String) {

@@ -1,3 +1,5 @@
 package fsight.youtrack.models
 
-data class ETLResult(val issues: Int, val timeUnit: Int)
+import fsight.youtrack.ETLState
+
+data class ETLResult(val state: ETLState, val issues: Int, val timeUnit: Int)
