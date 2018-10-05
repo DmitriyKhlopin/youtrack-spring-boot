@@ -1,4 +1,4 @@
-package fsight.youtrack.api
+package fsight.youtrack.api.time
 
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping

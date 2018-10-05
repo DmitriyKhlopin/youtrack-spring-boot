@@ -1,4 +1,4 @@
-package fsight.youtrack.api
+package fsight.youtrack.api.time
 
 import fsight.youtrack.models.TimeAccountingItem
 

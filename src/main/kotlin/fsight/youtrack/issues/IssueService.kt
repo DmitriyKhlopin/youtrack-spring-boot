@@ -23,13 +23,11 @@ import java.time.LocalDateTime
 @Service
 @Transactional
 class IssueService(private val dslContext: DSLContext, private val importLogService: ImportLogService) : IssueInterface {
-    //TODO test KTOR
     override fun getIssues(): Int {
         val max = 10
         var i = 1
         var skip = 0
         val filter = getFilter()
-        println(filter)
         if (filter == null) {
             while (i > 0) {
                 i = 0
