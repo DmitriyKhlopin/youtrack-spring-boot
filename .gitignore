@@ -27,6 +27,5 @@ gradlew.bat
 /nbdist/
 /.nb-gradle/
 
-src/main/resources/static/
-src/main/resources/templates/
 src/main/kotlin/fsight/youtrack/Configuration.kt
+src/main/kotlin/fsight/youtrack/generated/
