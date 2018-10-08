@@ -1,6 +1,8 @@
 package fsight.youtrack.etl.projects
 
 import fsight.youtrack.AUTH
+import fsight.youtrack.ROOT_REF
+import fsight.youtrack.generated.jooq.tables.ProjectCustomFields.PROJECT_CUSTOM_FIELDS
 import fsight.youtrack.generated.jooq.tables.Projects.PROJECTS
 import fsight.youtrack.models.ProjectModel
 import org.jooq.DSLContext
@@ -35,6 +37,7 @@ class ProjectsImplementation(private val dslContext: DSLContext) : ProjectsInter
                         .set(PROJECTS.SHORT_NAME, it.shortName)
                         .set(PROJECTS.DESCRIPTION, it.description)
                         .execute()
+                saveProjectCustomFields(it.shortName!!)
             }
         } catch (e: SocketTimeoutException) {
             println(e)
@@ -45,6 +48,33 @@ class ProjectsImplementation(private val dslContext: DSLContext) : ProjectsInter
     }
 
     override fun saveProjectCustomFields(id: String) {
-
+        ProjectCustomFieldsRetrofitService.create().get(AUTH, id).execute().body()?.forEach { field ->
+            val path = field.url.removePrefix(ROOT_REF)
+            val req = ProjectCustomFieldParametersRetrofitService.create().get(AUTH, path)
+            val res = req.execute().body()
+            field.projectShortName = id
+            field.fieldType = res?.type ?: ""
+            field.emptyText = res?.emptyText ?: ""
+            field.canBeEmpty = res?.canBeEmpty ?: false
+            field.param = res?.param.toString()
+            field.defaultValue = res?.defaultValue.toString()
+            dslContext.insertInto(PROJECT_CUSTOM_FIELDS)
+                    .set(PROJECT_CUSTOM_FIELDS.PROJECT_SHORT_NAME, field.projectShortName)
+                    .set(PROJECT_CUSTOM_FIELDS.FIELD_NAME, field.name)
+                    .set(PROJECT_CUSTOM_FIELDS.FIELD_URL, field.url)
+                    .set(PROJECT_CUSTOM_FIELDS.FIELD_TYPE, field.fieldType)
+                    .set(PROJECT_CUSTOM_FIELDS.EMPTY_TEXT, field.emptyText)
+                    .set(PROJECT_CUSTOM_FIELDS.CAN_BE_EMPTY, field.canBeEmpty)
+                    .set(PROJECT_CUSTOM_FIELDS.PARAM, field.param)
+                    .set(PROJECT_CUSTOM_FIELDS.DEFAULT_VALUE, field.defaultValue)
+                    .onDuplicateKeyUpdate()
+                    .set(PROJECT_CUSTOM_FIELDS.FIELD_URL, field.url)
+                    .set(PROJECT_CUSTOM_FIELDS.FIELD_TYPE, field.fieldType)
+                    .set(PROJECT_CUSTOM_FIELDS.EMPTY_TEXT, field.emptyText)
+                    .set(PROJECT_CUSTOM_FIELDS.CAN_BE_EMPTY, field.canBeEmpty)
+                    .set(PROJECT_CUSTOM_FIELDS.PARAM, field.param)
+                    .set(PROJECT_CUSTOM_FIELDS.DEFAULT_VALUE, field.defaultValue)
+                    .executeAsync()
+        }
     }
 }
