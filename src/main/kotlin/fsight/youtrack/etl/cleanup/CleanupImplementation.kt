@@ -12,8 +12,7 @@ import org.jooq.exception.DataAccessException
 import org.springframework.stereotype.Service
 
 @Service
-class CleanupImpl(private val dslContext: DSLContext) {
-    /*private val dslContext = dbService.getConnection()*/
+class CleanupImplementation(private val dslContext: DSLContext) {
     fun deleteAllFromDatabase() {
         try {
             /*dslContext.deleteFrom(ISSUES).execute()*/

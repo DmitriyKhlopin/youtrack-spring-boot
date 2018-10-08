@@ -12,7 +12,7 @@ import retrofit2.http.Headers
 import retrofit2.http.Query
 
 
-interface UsersInterface {
+interface UsersRetrofitService {
     @Headers("Accept: application/json")
     @GET("admin/user")
     fun get(
@@ -20,10 +20,10 @@ interface UsersInterface {
             @Query("start") start: Int): Call<List<User>>
 
     companion object Factory {
-        fun create(): UsersInterface {
+        fun create(): UsersRetrofitService {
             val gson = GsonBuilder().setLenient().create()
             val retrofit = Retrofit.Builder().baseUrl(ROOT_REF).addConverterFactory(GsonConverterFactory.create(gson)).build()
-            return retrofit.create(UsersInterface::class.java)
+            return retrofit.create(UsersRetrofitService::class.java)
         }
     }
 }

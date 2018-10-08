@@ -12,7 +12,7 @@ import retrofit2.http.Headers
 import retrofit2.http.Path
 
 
-interface UserDetailsInterface {
+interface UserDetailsRetrofitInterface {
     @Headers("Accept: application/json")
     @GET("admin/user/{userId}")
     fun get(
@@ -20,10 +20,10 @@ interface UserDetailsInterface {
             @Path("userId") userId: String): Call<UserDetails>
 
     companion object Factory {
-        fun create(): UserDetailsInterface {
+        fun create(): UserDetailsRetrofitInterface {
             val gson = GsonBuilder().setLenient().create()
             val retrofit = Retrofit.Builder().baseUrl(ROOT_REF).addConverterFactory(GsonConverterFactory.create(gson)).build()
-            return retrofit.create(UserDetailsInterface::class.java)
+            return retrofit.create(UserDetailsRetrofitInterface::class.java)
         }
     }
 }

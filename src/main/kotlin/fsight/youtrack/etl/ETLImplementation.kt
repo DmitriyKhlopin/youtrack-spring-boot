@@ -2,20 +2,20 @@ package fsight.youtrack.etl
 
 import fsight.youtrack.ETLState
 import fsight.youtrack.etl.bundles.BundleService
-import fsight.youtrack.etl.issues.IssueImplementation
-import fsight.youtrack.etl.projects.ProjectsImplementation
-import fsight.youtrack.etl.timeline.IssuesTimelineService
-import fsight.youtrack.etl.users.UsersService
+import fsight.youtrack.etl.issues.IssueService
+import fsight.youtrack.etl.projects.ProjectsService
+import fsight.youtrack.etl.timeline.TimelineService
+import fsight.youtrack.etl.users.UsersImplementation
 import fsight.youtrack.models.ETLResult
 import org.springframework.stereotype.Service
 import java.util.*
 
 @Service
-class ETLImplementation(private val projects: ProjectsImplementation,
+class ETLImplementation(private val projects: ProjectsService,
                         private val bundles: BundleService,
-                        private val issue: IssueImplementation,
-                        private val users: UsersService,
-                        private val timeline: IssuesTimelineService) : ETLService {
+                        private val issue: IssueService,
+                        private val users: UsersImplementation,
+                        private val timeline: TimelineService) : ETLService {
     var state = ETLState.IDLE
     var lastResult: ETLResult? = null
 
@@ -31,7 +31,7 @@ class ETLImplementation(private val projects: ProjectsImplementation,
                 if (m == 30) {
                     bundles.getBundles()
                     users.getUsers()
-                    timeline.start()
+                    timeline.launchCalculation()
                     issue.checkIssues()
                     projects.saveProjects()
                 }

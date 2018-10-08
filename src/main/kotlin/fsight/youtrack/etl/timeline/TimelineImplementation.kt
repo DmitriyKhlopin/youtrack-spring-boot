@@ -16,23 +16,20 @@ import java.time.LocalDateTime
 import java.util.*
 
 @Service
-class IssuesTimelineService(private val dsl: DSLContext) {
+class TimelineImplementation(private val dsl: DSLContext) : TimelineService {
     private val userStates = listOf("На проверке", "Исправлена", "Решена", "Дубликат", "Не удается воспроизвести",
             "Проверена", "Подлежит проверке", "Требуется уточнение", "Готово", "Неполная", "Не существует",
             "Ожидает подтверждения", "Ожидает ответа", "Без подтверждения", "Подтверждена")
     private val agentStates = listOf("Открыта", "backlog", "В обработке", "Зарегистрирована", "Создана")
     private val developerStates = listOf("Направлена разработчику", "Исследуется в JetBrains")
 
-    fun start() {
+    override fun launchCalculation() {
         val i: List<String> = dsl
                 .select(ISSUES.ID)
                 .from(ISSUES)
                 .where(ISSUES.LOADED_DATE.eq(Timestamp.valueOf(LocalDateTime.now().toLocalDate().atStartOfDay())).or(ISSUES.RESOLVED_DATE_TIME.isNull))
                 .fetchInto(String::class.java)
-        i.forEach {
-            calculateForId(it)
-            /*println("Timeline for $it")*/
-        }
+        i.forEach { calculateForId(it) }
         dsl.update(ISSUES)
                 .set(ISSUES.TIME_USER, DSL.select(DSL.sum(ISSUE_TIMELINE.TIME_SPENT)).from(ISSUE_TIMELINE).where(ISSUE_TIMELINE.TRANSITION_OWNER.eq("User").and(ISSUE_TIMELINE.ISSUE_ID.eq(ISSUES.ID))).asField<Long>())
                 .set(ISSUES.TIME_AGENT, DSL.select(DSL.sum(ISSUE_TIMELINE.TIME_SPENT)).from(ISSUE_TIMELINE).where(ISSUE_TIMELINE.TRANSITION_OWNER.eq("Agent").and(ISSUE_TIMELINE.ISSUE_ID.eq(ISSUES.ID))).asField<Long>())
@@ -40,8 +37,8 @@ class IssuesTimelineService(private val dsl: DSLContext) {
                 .execute()
     }
 
-    private fun calculateForId(id: String) {
-        dsl.deleteFrom(ISSUE_TIMELINE).where(ISSUE_TIMELINE.ISSUE_ID.eq(id)).execute()
+    override fun calculateForId(issueId: String) {
+        dsl.deleteFrom(ISSUE_TIMELINE).where(ISSUE_TIMELINE.ISSUE_ID.eq(issueId)).execute()
         val i: List<IssueTimelineItem> = dsl
                 .select(
                         ISSUES_TIMELINE_VIEW.ISSUE_ID.`as`("id"),
@@ -52,7 +49,7 @@ class IssuesTimelineService(private val dsl: DSLContext) {
                         DSL.nullif(true, true).`as`("stateOwner")
                 )
                 .from(ISSUES_TIMELINE_VIEW)
-                .where(ISSUES_TIMELINE_VIEW.ISSUE_ID.eq(id))
+                .where(ISSUES_TIMELINE_VIEW.ISSUE_ID.eq(issueId))
                 .fetchInto(IssueTimelineItem::class.java)
         val schedule = Schedule("Стандартный", 1, 5, 11, 19)
         val a = arrayListOf<IssueTimelineItem>()
@@ -67,12 +64,12 @@ class IssuesTimelineService(private val dsl: DSLContext) {
                 calStart.set(Calendar.MILLISECOND, 0)
                 calStart.add(Calendar.DATE, 1)
                 calStart.add(Calendar.MILLISECOND, -1)
-                a.add(IssueTimelineItem(id, calStart.timeInMillis.toTimestamp(), /*"[Injected]", "[Injected]",*/issueTimelineItem.stateNew, issueTimelineItem.stateNew, 0L))
+                a.add(IssueTimelineItem(issueId, calStart.timeInMillis.toTimestamp(), /*"[Injected]", "[Injected]",*/issueTimelineItem.stateNew, issueTimelineItem.stateNew, 0L))
 
                 val calEnd = Calendar.getInstance()
                 calEnd.set(end.year, end.monthValue - 1, end.dayOfMonth, 0, 0, 0)
                 calEnd.set(Calendar.MILLISECOND, 0)
-                a.add(IssueTimelineItem(id, calEnd.timeInMillis.toTimestamp(), /*"[Injected]", "[Injected]",*/issueTimelineItem.stateNew, issueTimelineItem.stateNew, 0L))
+                a.add(IssueTimelineItem(issueId, calEnd.timeInMillis.toTimestamp(), /*"[Injected]", "[Injected]",*/issueTimelineItem.stateNew, issueTimelineItem.stateNew, 0L))
             }
         }
 

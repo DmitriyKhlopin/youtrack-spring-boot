@@ -13,7 +13,7 @@ import java.net.SocketTimeoutException
 
 @Service
 @Transactional
-class ProjectsImplementation(private val dslContext: DSLContext) : ProjectsInterface {
+class ProjectsImplementation(private val dslContext: DSLContext) : ProjectsService {
     override fun getProjects(): List<ProjectModel> {
         return dslContext.select(
                 PROJECTS.NAME.`as`("name"),

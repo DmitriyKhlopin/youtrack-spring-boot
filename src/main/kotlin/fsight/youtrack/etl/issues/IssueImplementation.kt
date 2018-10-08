@@ -292,7 +292,7 @@ class IssueImplementation(private val dslContext: DSLContext, private val import
             val nt: Timestamp?
     )
 
-    fun checkIssues() {
+   override fun checkIssues() {
         var count = 0
         val deletedItems = arrayListOf<String>()
         val result = dslContext.select(ISSUES.ID).from(ISSUES).fetchInto(String::class.java)
