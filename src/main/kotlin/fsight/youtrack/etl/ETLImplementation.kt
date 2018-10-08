@@ -2,7 +2,7 @@ package fsight.youtrack.etl
 
 import fsight.youtrack.ETLState
 import fsight.youtrack.etl.bundles.BundleService
-import fsight.youtrack.etl.issues.IssueService
+import fsight.youtrack.etl.issues.IssueImplementation
 import fsight.youtrack.etl.projects.ProjectsImplementation
 import fsight.youtrack.etl.timeline.IssuesTimelineService
 import fsight.youtrack.etl.users.UsersService
@@ -13,7 +13,7 @@ import java.util.*
 @Service
 class ETLImplementation(private val projects: ProjectsImplementation,
                         private val bundles: BundleService,
-                        private val issue: IssueService,
+                        private val issue: IssueImplementation,
                         private val users: UsersService,
                         private val timeline: IssuesTimelineService) : ETLService {
     var state = ETLState.IDLE
