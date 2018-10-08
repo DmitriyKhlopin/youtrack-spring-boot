@@ -11,8 +11,7 @@ import java.net.SocketTimeoutException
 
 @Service
 @Transactional
-class ProjectsService(private val dslContext: DSLContext) : ProjectsInterface {
-
+class ProjectsImplementation(private val dslContext: DSLContext) : ProjectsInterface {
     override fun getProjects(): List<ProjectModel> {
         return dslContext.select(
                 PROJECTS.NAME.`as`("name"),
@@ -22,10 +21,10 @@ class ProjectsService(private val dslContext: DSLContext) : ProjectsInterface {
                 .fetchInto(ProjectModel::class.java)
     }
 
-    override fun updateProjects(): Int {
+    override fun saveProjects(): Int {
         var result = 0
         try {
-            ProjectRetrofitService.create().getProjectsList(AUTH).execute().body()?.forEach {
+            ProjectsRetrofitService.create().getProjectsList(AUTH).execute().body()?.forEach {
                 result = dslContext
                         .insertInto(PROJECTS)
                         .set(PROJECTS.NAME, it.name)
@@ -43,5 +42,9 @@ class ProjectsService(private val dslContext: DSLContext) : ProjectsInterface {
             println(e)
         }
         return result
+    }
+
+    override fun saveProjectCustomFields(id: String) {
+
     }
 }

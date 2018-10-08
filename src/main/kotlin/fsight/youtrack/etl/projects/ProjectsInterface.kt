@@ -4,5 +4,6 @@ import fsight.youtrack.models.ProjectModel
 
 interface ProjectsInterface {
     fun getProjects(): List<ProjectModel>
-    fun updateProjects(): Int
+    fun saveProjects(): Int
+    fun saveProjectCustomFields(id:String)
 }

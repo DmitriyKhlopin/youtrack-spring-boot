@@ -4,14 +4,14 @@ import fsight.youtrack.ETLState
 import fsight.youtrack.etl.bundles.BundleService
 import fsight.youtrack.etl.issues.IssueService
 import fsight.youtrack.models.ETLResult
-import fsight.youtrack.etl.projects.ProjectsService
+import fsight.youtrack.etl.projects.ProjectsImplementation
 import fsight.youtrack.etl.timeline.IssuesTimelineService
 import fsight.youtrack.etl.users.UsersService
 import org.springframework.stereotype.Service
 import java.util.*
 
 @Service
-class ETLImplementation(private val projects: ProjectsService,
+class ETLImplementation(private val projects: ProjectsImplementation,
                         private val bundles: BundleService,
                         private val issue: IssueService,
                         private val users: UsersService,
@@ -28,7 +28,7 @@ class ETLImplementation(private val projects: ProjectsService,
                 val m = GregorianCalendar.getInstance().also { it.time = Date() }.get(Calendar.MINUTE)
                 val issuesCount = issue.getIssues()
                 if (m == 30) {
-                    projects.getProjects()
+                    projects.saveProjects()
                     bundles.getBundles()
                     users.getUsers()
                     timeline.start()

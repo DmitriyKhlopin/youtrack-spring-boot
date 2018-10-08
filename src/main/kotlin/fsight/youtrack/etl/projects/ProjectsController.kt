@@ -1,17 +1,14 @@
 package fsight.youtrack.etl.projects
 
-import org.springframework.stereotype.Controller
+import fsight.youtrack.models.ProjectModel
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.servlet.ModelAndView
+import org.springframework.web.bind.annotation.RestController
 
-@Controller
+@RestController
 class ProjectsController(private val provider: ProjectsInterface) {
-
     @GetMapping("/projects")
-    fun getProjects(): ModelAndView {
-        val items = provider.getProjects()
-        /*model.addAttribute(" items", items)*/
-        return ModelAndView("projects", "items", items)
+    fun getProjects(): List<ProjectModel> {
+        return provider.getProjects()
     }
 
 }

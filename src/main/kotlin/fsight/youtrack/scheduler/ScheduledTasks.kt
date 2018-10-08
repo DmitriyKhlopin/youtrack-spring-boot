@@ -10,7 +10,7 @@ import java.text.SimpleDateFormat
 
 @Component
 class ScheduledTasks(
-        /*private val projects: ProjectsService,
+        /*private val projects: ProjectsImplementation,
         private val bundles: BundleService,
         private val issue: IssueService,
         private val users: UsersService,
