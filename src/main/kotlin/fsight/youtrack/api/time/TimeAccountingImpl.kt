@@ -1,11 +1,11 @@
 package fsight.youtrack.api.time
 
+import fsight.youtrack.generated.jooq.tables.TimeAccounting.TIME_ACCOUNTING
 import fsight.youtrack.models.TimeAccountingItem
 import org.jooq.DSLContext
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.ModelAttribute
-import youtrack.jooq.tables.TimeAccounting.TIME_ACCOUNTING
 import java.sql.Timestamp
 import java.time.LocalDateTime
 

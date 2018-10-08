@@ -1,4 +1,4 @@
-package fsight.youtrack.issues
+package fsight.youtrack.etl.issues
 
 import com.google.gson.GsonBuilder
 import fsight.youtrack.ROOT_REF

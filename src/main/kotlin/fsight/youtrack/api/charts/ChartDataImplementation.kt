@@ -1,11 +1,12 @@
 package fsight.youtrack.api.charts
 
+import fsight.youtrack.generated.jooq.tables.Dynamics.DYNAMICS
 import fsight.youtrack.models.TimeLine
 import org.jooq.DSLContext
 import org.jooq.impl.DSL.sum
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import youtrack.jooq.tables.Dynamics.DYNAMICS
+
 import java.sql.Timestamp
 
 @Service

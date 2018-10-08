@@ -1,10 +1,10 @@
-package fsight.youtrack.logs
+package fsight.youtrack.etl.logs
 
+import fsight.youtrack.generated.jooq.tables.ImportLog.IMPORT_LOG
 import fsight.youtrack.models.ImportLogModel
 import org.jooq.DSLContext
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import youtrack.jooq.tables.ImportLog.IMPORT_LOG
 
 @Service
 @Transactional

@@ -1,4 +1,4 @@
-package fsight.youtrack.projects
+package fsight.youtrack.etl.projects
 
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.GetMapping

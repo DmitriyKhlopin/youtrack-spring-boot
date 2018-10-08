@@ -1,7 +1,13 @@
-package fsight.youtrack.issues
+package fsight.youtrack.etl.issues
 
 import fsight.youtrack.*
-import fsight.youtrack.logs.ImportLogService
+import fsight.youtrack.generated.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALUES
+import fsight.youtrack.generated.jooq.tables.ErrorLog.ERROR_LOG
+import fsight.youtrack.generated.jooq.tables.IssueComments.ISSUE_COMMENTS
+import fsight.youtrack.generated.jooq.tables.IssueHistory.ISSUE_HISTORY
+import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
+import fsight.youtrack.generated.jooq.tables.WorkItems.WORK_ITEMS
+import fsight.youtrack.etl.logs.ImportLogService
 import fsight.youtrack.models.ImportLogModel
 import fsight.youtrack.models.Issue
 import fsight.youtrack.models.sql.IssueHistoryItem
@@ -10,12 +16,6 @@ import org.jooq.exception.DataAccessException
 import org.jooq.impl.DSL
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import youtrack.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALUES
-import youtrack.jooq.tables.ErrorLog.ERROR_LOG
-import youtrack.jooq.tables.IssueComments.ISSUE_COMMENTS
-import youtrack.jooq.tables.IssueHistory.ISSUE_HISTORY
-import youtrack.jooq.tables.Issues.ISSUES
-import youtrack.jooq.tables.WorkItems.WORK_ITEMS
 import java.sql.Timestamp
 import java.time.LocalDate
 import java.time.LocalDateTime

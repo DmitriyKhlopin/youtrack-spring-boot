@@ -1,4 +1,4 @@
-package fsight.youtrack.issues
+package fsight.youtrack.etl.issues
 
 interface IssueInterface {
     fun getIssues(): Int

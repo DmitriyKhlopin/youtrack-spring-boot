@@ -1,11 +1,11 @@
-package fsight.youtrack.bundles
+package fsight.youtrack.etl.bundles
 
 import fsight.youtrack.AUTH
+import fsight.youtrack.generated.jooq.tables.Bundles.BUNDLES
 import org.jooq.DSLContext
 import org.jooq.exception.DataAccessException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import youtrack.jooq.tables.Bundles.BUNDLES
 import java.net.SocketTimeoutException
 
 @Service

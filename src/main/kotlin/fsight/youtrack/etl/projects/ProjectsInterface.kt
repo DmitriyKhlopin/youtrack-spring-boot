@@ -1,4 +1,4 @@
-package fsight.youtrack.projects
+package fsight.youtrack.etl.projects
 
 import fsight.youtrack.models.ProjectModel
 

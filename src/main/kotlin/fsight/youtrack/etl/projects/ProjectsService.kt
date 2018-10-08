@@ -1,13 +1,12 @@
-package fsight.youtrack.projects
+package fsight.youtrack.etl.projects
 
 import fsight.youtrack.AUTH
+import fsight.youtrack.generated.jooq.tables.Projects.PROJECTS
 import fsight.youtrack.models.ProjectModel
 import org.jooq.DSLContext
 import org.jooq.exception.DataAccessException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import youtrack.jooq.tables.Projects
-import youtrack.jooq.tables.Projects.PROJECTS
 import java.net.SocketTimeoutException
 
 @Service
@@ -28,7 +27,7 @@ class ProjectsService(private val dslContext: DSLContext) : ProjectsInterface {
         try {
             ProjectRetrofitService.create().getProjectsList(AUTH).execute().body()?.forEach {
                 result = dslContext
-                        .insertInto(Projects.PROJECTS)
+                        .insertInto(PROJECTS)
                         .set(PROJECTS.NAME, it.name)
                         .set(PROJECTS.SHORT_NAME, it.shortName)
                         .set(PROJECTS.DESCRIPTION, it.description)

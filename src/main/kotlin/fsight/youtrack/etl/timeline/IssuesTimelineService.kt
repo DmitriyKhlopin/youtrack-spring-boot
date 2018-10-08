@@ -1,5 +1,8 @@
-package fsight.youtrack.timeline
+package fsight.youtrack.etl.timeline
 
+import fsight.youtrack.generated.jooq.tables.IssueTimeline.ISSUE_TIMELINE
+import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
+import fsight.youtrack.generated.jooq.tables.IssuesTimelineView.ISSUES_TIMELINE_VIEW
 import fsight.youtrack.models.IssueTimelineItem
 import fsight.youtrack.models.Schedule
 import fsight.youtrack.toTimestamp
@@ -7,9 +10,6 @@ import org.jooq.DSLContext
 import org.jooq.exception.DataAccessException
 import org.jooq.impl.DSL
 import org.springframework.stereotype.Service
-import youtrack.jooq.tables.IssueTimeline.ISSUE_TIMELINE
-import youtrack.jooq.tables.Issues.ISSUES
-import youtrack.jooq.tables.IssuesTimelineView.ISSUES_TIMELINE_VIEW
 import java.sql.Timestamp
 import java.time.Duration
 import java.time.LocalDateTime

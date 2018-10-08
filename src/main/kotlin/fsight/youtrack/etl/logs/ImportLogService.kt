@@ -1,4 +1,4 @@
-package fsight.youtrack.logs
+package fsight.youtrack.etl.logs
 
 import fsight.youtrack.models.ImportLogModel
 

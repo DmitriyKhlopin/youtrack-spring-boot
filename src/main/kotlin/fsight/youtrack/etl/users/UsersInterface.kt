@@ -1,29 +1,29 @@
-package fsight.youtrack.bundles
+package fsight.youtrack.etl.users
 
 import com.google.gson.GsonBuilder
 import fsight.youtrack.ROOT_REF
-import fsight.youtrack.models.EnumBundle
+import fsight.youtrack.models.User
 import retrofit2.Call
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Headers
-import retrofit2.http.Path
+import retrofit2.http.Query
 
 
-interface BundleRetrofitService {
+interface UsersInterface {
     @Headers("Accept: application/json")
-    @GET("admin/customfield/bundle/{bundleName}")
-    fun getBundleValues(
+    @GET("admin/user")
+    fun get(
             @Header("Authorization") auth: String,
-            @Path("bundleName") bundleName: String): Call<EnumBundle>
+            @Query("start") start: Int): Call<List<User>>
 
     companion object Factory {
-        fun create(): BundleRetrofitService {
+        fun create(): UsersInterface {
             val gson = GsonBuilder().setLenient().create()
             val retrofit = Retrofit.Builder().baseUrl(ROOT_REF).addConverterFactory(GsonConverterFactory.create(gson)).build()
-            return retrofit.create(BundleRetrofitService::class.java)
+            return retrofit.create(UsersInterface::class.java)
         }
     }
 }

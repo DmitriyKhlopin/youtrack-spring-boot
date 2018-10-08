@@ -120,7 +120,8 @@ jooq {
                 fluentSetters = true
             }
             target {
-                packageName = 'youtrack.jooq'
+                packageName = 'fsight.youtrack.generated.jooq'
+                directory = 'src/main/kotlin'
             }
         }
     }

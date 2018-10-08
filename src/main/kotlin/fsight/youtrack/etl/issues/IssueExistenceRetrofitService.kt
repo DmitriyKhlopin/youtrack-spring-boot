@@ -1,29 +1,28 @@
-package fsight.youtrack.users
+package fsight.youtrack.etl.issues
 
 import com.google.gson.GsonBuilder
 import fsight.youtrack.ROOT_REF
-import fsight.youtrack.models.User
+import fsight.youtrack.models.Issue
 import retrofit2.Call
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Headers
-import retrofit2.http.Query
+import retrofit2.http.Path
 
-
-interface UsersInterface {
+interface IssueExistenceRetrofitService {
     @Headers("Accept: application/json")
-    @GET("admin/user")
-    fun get(
+    @GET("issue/{id}?with=projectShortName")
+    fun check(
             @Header("Authorization") auth: String,
-            @Query("start") start: Int): Call<List<User>>
+            @Path("id") issueId: String): Call<Issue>
 
     companion object Factory {
-        fun create(): UsersInterface {
+        fun create(): IssueExistenceRetrofitService {
             val gson = GsonBuilder().setLenient().create()
             val retrofit = Retrofit.Builder().baseUrl(ROOT_REF).addConverterFactory(GsonConverterFactory.create(gson)).build()
-            return retrofit.create(UsersInterface::class.java)
+            return retrofit.create(IssueExistenceRetrofitService::class.java)
         }
     }
 }
