@@ -8,12 +8,13 @@ import org.springframework.stereotype.Component
 
 @Component
 class ScheduledTasks(private val service: ETLService) : CommandLineRunner {
+    private val runOnStartup = false
     @Scheduled(cron = "0 0/10 * * * *")
-    fun reportCurrentTime() {
-        run()
+    fun loadData() {
+        service.loadDataFromYT(false)
     }
 
     override fun run(vararg args: String?) {
-        service.loadDataFromYT(false)
+        if (runOnStartup) service.loadDataFromYT(false)
     }
 }

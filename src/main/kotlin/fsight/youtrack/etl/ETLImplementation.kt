@@ -7,6 +7,7 @@ import fsight.youtrack.etl.projects.ProjectsService
 import fsight.youtrack.etl.timeline.TimelineService
 import fsight.youtrack.etl.users.UsersImplementation
 import fsight.youtrack.models.ETLResult
+import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Service
 import java.util.*
 
@@ -43,4 +44,3 @@ class ETLImplementation(private val projects: ProjectsService,
         return lastResult
     }
 }
-
