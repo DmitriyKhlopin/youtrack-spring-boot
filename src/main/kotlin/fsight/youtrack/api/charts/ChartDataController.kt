@@ -14,4 +14,11 @@ class ChartDataController(private val service: ChartDataService) {
             @RequestParam("dateFrom", required = false) dateFrom: String = "",
             @RequestParam("dateTo", required = false) dateTo: String = ""
     ) = service.getTimeLineData(projects, dateFrom, dateTo)
+
+    @GetMapping("/api/chart/sigma")
+    fun getSigmaData(
+            @RequestParam("projects", required = false) projects: String = "",
+            @RequestParam("dateFrom", required = false) dateFrom: String = "",
+            @RequestParam("dateTo", required = false) dateTo: String = ""
+    ) = service.getSigmaData(projects, dateFrom, dateTo)
 }
