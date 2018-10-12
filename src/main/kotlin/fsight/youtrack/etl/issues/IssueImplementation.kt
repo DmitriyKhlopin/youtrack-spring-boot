@@ -23,7 +23,7 @@ import java.time.LocalDateTime
 @Service
 @Transactional
 class IssueImplementation(private val dslContext: DSLContext, private val importLogService: ImportLogService) : IssueService {
-    override fun getIssues(): Int {
+    override fun getIssues(customFilter: String?): Int {
         val max = 10
         var i = 1
         var skip = 0
@@ -45,7 +45,7 @@ class IssueImplementation(private val dslContext: DSLContext, private val import
         } else {
             while (i > 0) {
                 i = 0
-                IssueRetrofitService.create().getIssueList(AUTH, getFilter(), null, skip, max).execute().body()?.issue?.forEach {
+                IssueRetrofitService.create().getIssueList(AUTH, customFilter ?:filter, null, skip, max).execute().body()?.issue?.forEach {
                     println(it.id)
                     skip += 1
                     i += 1
@@ -60,7 +60,7 @@ class IssueImplementation(private val dslContext: DSLContext, private val import
         println("Loaded $skip issues")
         importLogService.saveLog(ImportLogModel(
                 timestamp = Timestamp(System.currentTimeMillis()),
-                source = "issues (filtered by '$filter')",
+                source = "issues (filtered by '$customFilter')",
                 table = "issues",
                 items = skip))
         return skip

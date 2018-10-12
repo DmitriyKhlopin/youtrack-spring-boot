@@ -5,5 +5,5 @@ import fsight.youtrack.models.ETLResult
 
 interface ETLService {
     fun getCurrentState(): ETLState
-    fun loadDataFromYT(manual: Boolean): ETLResult?
+    fun loadDataFromYT(manual: Boolean, customFilter: String?): ETLResult?
 }

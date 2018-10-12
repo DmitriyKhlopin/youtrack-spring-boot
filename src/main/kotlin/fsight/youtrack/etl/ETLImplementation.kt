@@ -7,7 +7,6 @@ import fsight.youtrack.etl.projects.ProjectsService
 import fsight.youtrack.etl.timeline.TimelineService
 import fsight.youtrack.etl.users.UsersImplementation
 import fsight.youtrack.models.ETLResult
-import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Service
 import java.util.*
 
@@ -22,12 +21,13 @@ class ETLImplementation(private val projects: ProjectsService,
 
     override fun getCurrentState(): ETLState = state
 
-    override fun loadDataFromYT(manual: Boolean): ETLResult? {
+    override fun loadDataFromYT(manual: Boolean, customFilter: String?): ETLResult? {
+        println(customFilter)
         when (state) {
             ETLState.IDLE, ETLState.DONE -> {
                 state = ETLState.RUNNING
                 val m = GregorianCalendar.getInstance().also { it.time = Date() }.get(Calendar.MINUTE)
-                val issuesCount = issue.getIssues()
+                val issuesCount = issue.getIssues(customFilter)
 
                 if (m == 30) {
                     bundles.getBundles()

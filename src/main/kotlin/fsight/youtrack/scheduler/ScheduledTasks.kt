@@ -11,10 +11,10 @@ class ScheduledTasks(private val service: ETLService) : CommandLineRunner {
     private val runOnStartup = false
     @Scheduled(cron = "0 0/10 * * * *")
     fun loadData() {
-        service.loadDataFromYT(false)
+        service.loadDataFromYT(false, null)
     }
 
     override fun run(vararg args: String?) {
-        if (runOnStartup) service.loadDataFromYT(false)
+        if (runOnStartup) service.loadDataFromYT(false, null)
     }
 }
