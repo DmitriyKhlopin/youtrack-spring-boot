@@ -1,12 +1,22 @@
 package fsight.youtrack.api.tfs
 
-import org.springframework.web.bind.annotation.CrossOrigin
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 @CrossOrigin(origins = ["http://localhost:3000", "http://10.0.172.42:3000"])
 @RestController
 class TFSDataController(private val service: TFSDataService) {
+    @GetMapping("/api/tfs/count")
+    fun getItemsCount() = service.getItemsCount()
+
     @GetMapping("/api/tfs")
-    fun getRequirements() = service.getRequirements()
+    fun getItems() = service.getItems()
+
+    @GetMapping("/api/tfs/item/{id}")
+    fun postItemToYouTrack(
+            @PathVariable("id") id: Int,
+            @RequestParam("action", required = false) action: String? = null
+    ) = when (action) {
+        "postToYT" -> service.postItemToYouTrack(id)
+        else -> service.getItemById(id)
+    }
 }

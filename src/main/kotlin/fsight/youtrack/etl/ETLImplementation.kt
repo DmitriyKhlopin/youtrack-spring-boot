@@ -28,7 +28,6 @@ class ETLImplementation(private val projects: ProjectsService,
                 state = ETLState.RUNNING
                 val m = GregorianCalendar.getInstance().also { it.time = Date() }.get(Calendar.MINUTE)
                 val issuesCount = issue.getIssues(customFilter)
-
                 if (m == 30) {
                     bundles.getBundles()
                     users.getUsers()
