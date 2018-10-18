@@ -27,7 +27,7 @@ class IssueImplementation(private val dslContext: DSLContext, private val import
         val max = 10
         var i = 1
         var skip = 0
-        val filter = getFilter()
+        val filter =  customFilter ?:getFilter()
         if (filter == null) {
             while (i > 0) {
                 i = 0
@@ -45,7 +45,7 @@ class IssueImplementation(private val dslContext: DSLContext, private val import
         } else {
             while (i > 0) {
                 i = 0
-                IssueRetrofitService.create().getIssueList(AUTH, customFilter ?:filter, null, skip, max).execute().body()?.issue?.forEach {
+                IssueRetrofitService.create().getIssueList(AUTH, filter, null, skip, max).execute().body()?.issue?.forEach {
                     println(it.id)
                     skip += 1
                     i += 1

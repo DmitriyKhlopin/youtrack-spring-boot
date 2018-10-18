@@ -67,4 +67,23 @@ class ChartDataImplementation(private val dslContext: DSLContext) : ChartDataSer
         println(active)
         return SigmaResult(sigma, active)
     }
+
+    override fun getCreatedCountOnWeek(projects: String, dateFrom: String, dateTo: String): List<SimpleAggregatedValue>? {
+        val filter = projects.removeSurrounding("[", "]").split(",")
+        val dt = LocalDate.parse(dateTo, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+        val df = dt.minusDays(7)
+        return dslContext
+                .select(
+                        ISSUES.PROJECT.`as`("name"),
+                        DSL.count(ISSUES.PROJECT).`as`("value")
+                )
+                .from(ISSUES)
+                .where(ISSUES.CREATED_DATE.between(Timestamp.valueOf(df.atStartOfDay())).and(Timestamp.valueOf(dt.atStartOfDay())))
+                .and(ISSUES.RESOLVED_DATE.isNull)
+                .and(ISSUES.PROJECT.`in`(filter))
+                .groupBy(ISSUES.PROJECT)
+                .fetchInto(SimpleAggregatedValue::class.java).sortedByDescending { it.value }
+    }
 }
+
+data class SimpleAggregatedValue(val name: String, val value: Int)
