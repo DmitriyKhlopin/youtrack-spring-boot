@@ -9,7 +9,10 @@ class TFSDataController(private val service: TFSDataService) {
     fun getItemsCount() = service.getItemsCount()
 
     @GetMapping("/api/tfs")
-    fun getItems() = service.getItems()
+    fun getItems(
+            @RequestParam("offset", required = false) offset: Int? = null,
+            @RequestParam("limit", required = false) limit: Int? = null
+    ) = service.getItems(offset, limit)
 
     @GetMapping("/api/tfs/item/{id}")
     fun postItemToYouTrack(

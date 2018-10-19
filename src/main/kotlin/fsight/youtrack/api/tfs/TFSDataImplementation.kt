@@ -22,7 +22,7 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
         return dslContext.selectCount().from(TFS_WI).fetchOneInto(Int::class.java)
     }
 
-    override fun getItems(): List<TFSItem> {
+    override fun getItems(offset: Int?, limit: Int?): List<TFSItem> {
         return dslContext.select(
                 TFS_WI.ID.`as`("id"),
                 TFS_WI.REV.`as`("rev"),
@@ -43,7 +43,12 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
                 TFS_WI.AREA_PATH.`as`("area_path"),
                 TFS_WI.ITERATION_PATH.`as`("iteration_path"),
                 TFS_WI.ITERATION_NAME.`as`("iteration_name")
-        ).from(TFS_WI).fetchInto(TFSItem::class.java)
+        )
+                .from(TFS_WI)
+                .orderBy(TFS_WI.ID)
+                .limit(limit ?: getItemsCount())
+                .offset(offset ?: 0)
+                .fetchInto(TFSItem::class.java)
     }
 
     override fun getItemById(id: Int): TFSItem {
@@ -101,7 +106,6 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
 
 data class Project(val id: String)
 data class YTIssue(val project: Project, val summary: String, val description: String)
-/*data class ReadableId(val idReadable: String)*/
 
 interface PostIssueRetrofitService {
     @Headers("Accept: application/json", "Content-Type: application/json;charset=UTF-8", "Access-Control-Expose-Headers: Location")
@@ -112,8 +116,6 @@ interface PostIssueRetrofitService {
 
     companion object Factory {
         fun create(): PostIssueRetrofitService {
-            /*val gson = GsonBuilder().setLenient().create()*/
-            /*val retrofit = Retrofit.Builder().baseUrl(NEW_ROOT_REF).addConverterFactory(GsonConverterFactory.create(gson)).build()*/
             val retrofit = Retrofit.Builder().baseUrl(NEW_ROOT_REF).addConverterFactory(ScalarsConverterFactory.create()).build()
             return retrofit.create(PostIssueRetrofitService::class.java)
         }
