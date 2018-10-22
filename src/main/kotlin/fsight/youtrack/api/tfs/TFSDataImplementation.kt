@@ -81,34 +81,54 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
                 TFS_WI.REV.`as`("rev"),
                 TFS_WI.STATE.`as`("state"),
                 TFS_WI.TYPE.`as`("type"),
-                TFS_WI.CREATE_DATE.`as`("create_date"),
+                TFS_WI.CREATE_DATE.`as`("createDate"),
                 TFS_WI.SEVERITY.`as`("severity"),
                 TFS_WI.PROJECT.`as`("project"),
                 TFS_WI.CUSTOMER.`as`("customer"),
-                TFS_WI.PRODUCT_MANAGER.`as`("product_manager"),
-                TFS_WI.PRODUCT_MANAGER_DIRECTOR.`as`("product_manager_director"),
-                TFS_WI.PROPOSAL_QUALITY.`as`("proposal_quality"),
-                TFS_WI.PM_ACCEPTED.`as`("pm_accepted"),
-                TFS_WI.DM_ACCEPTED.`as`("dm_accepted"),
-                TFS_WI.PROJECT_NODE_NAME.`as`("project_node_name"),
-                TFS_WI.PROJECT_PATH.`as`("project_path"),
-                TFS_WI.AREA_NAME.`as`("area_name"),
-                TFS_WI.AREA_PATH.`as`("area_path"),
-                TFS_WI.ITERATION_PATH.`as`("iteration_path"),
-                TFS_WI.ITERATION_NAME.`as`("iteration_name")
+                TFS_WI.PRODUCT_MANAGER.`as`("productManager"),
+                TFS_WI.PRODUCT_MANAGER_DIRECTOR.`as`("productManagerDirector"),
+                TFS_WI.PROPOSAL_QUALITY.`as`("proposalQuality"),
+                TFS_WI.PM_ACCEPTED.`as`("pmAccepted"),
+                TFS_WI.DM_ACCEPTED.`as`("dmAccepted"),
+                TFS_WI.PROJECT_NODE_NAME.`as`("projectNodeName"),
+                TFS_WI.PROJECT_PATH.`as`("projectPath"),
+                TFS_WI.AREA_NAME.`as`("areaName"),
+                TFS_WI.AREA_PATH.`as`("areaPath"),
+                TFS_WI.ITERATION_PATH.`as`("iterationPath"),
+                TFS_WI.ITERATION_NAME.`as`("iterationName")
         ).from(TFS_WI).where(TFS_WI.ID.eq(id)).fetchOneInto(TFSItem::class.java)
-        val id2 = PostIssueRetrofitService.create().createIssue(AUTH, Gson().toJson(YTIssue(Project("0-15"), "test", "test"))).execute()
+
+        val postableItem = Gson().toJson(
+                YTIssue(
+                        project = Project("0-15"),
+                        summary = "test",
+                        description = "test"/*,
+                        pmAccepted = "Yes"*/)
+        )
+        println(postableItem)
+        val id2 = PostIssueRetrofitService.create().createIssue(AUTH, postableItem).execute()
         println("readable id = ${id2.body()} - ${id2.errorBody()}")
         return item
     }
 }
 
+/*@SerializedName("PM accepted")*/
 
 data class Project(val id: String)
-data class YTIssue(val project: Project, val summary: String, val description: String)
+/*data class IssueCustomField(
+
+)*/
+data class YTIssue(
+        val project: Project,
+        val summary: String,
+        val description: String
+        /*val fields: ArrayList<>*/
+        /*val pmAccepted: String,
+        val priority:*/
+)
 
 interface PostIssueRetrofitService {
-    @Headers("Accept: application/json", "Content-Type: application/json;charset=UTF-8", "Access-Control-Expose-Headers: Location")
+    @Headers("Accept: application/json", "Content-Type: application/json;charset=UTF-8")
     @POST("issues?fields=idReadable")
     fun createIssue(
             @Header("Authorization") auth: String,
