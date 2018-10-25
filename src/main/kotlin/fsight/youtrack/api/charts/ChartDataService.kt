@@ -5,6 +5,7 @@ import fsight.youtrack.models.TimeLine
 
 interface ChartDataService {
     fun getTimeLineData(projects: String, dateFrom: String, dateTo: String): List<TimeLine>
+    fun getTimeLineData(): List<TimeLine>
     fun getSigmaData(projects: String, dateFrom: String, dateTo: String): SigmaResult
     fun getCreatedCountOnWeek(projects: String, dateFrom: String, dateTo: String): List<SimpleAggregatedValue>?
 }

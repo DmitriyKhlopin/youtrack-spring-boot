@@ -11,13 +11,13 @@ class BundleImplementationsV2(private val dslContext: DSLContext) : BundleServic
     override fun getAllBundles() {
         val arr = arrayListOf<BundleValue>()
         val res = BundleRetrofitServiceV2.create().getBundleValues(AUTH).execute()
-        res.body()?.forEach { item ->
-            item.instances?.forEach { instance ->
+        res.body()?.forEach { item: CustomField ->
+            item.instances?.forEach { instance: FieldInstance ->
                 instance.bundle?.values?.forEach { value ->
                     arr.add(value.apply {
                         projectId = instance.project?.id
                         projectName = instance.project?.shortName
-                        fieldId = item.id
+                        fieldId = instance.id
                         fieldName = item.name
                     })
                 }

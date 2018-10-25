@@ -75,7 +75,7 @@ data class CustomFieldValue(
 )
 
 data class Project(
-        var shortName: String,
-        var id: String,
-        var name: String
+        var shortName: String? = null,
+        var id: String? = null,
+        var name: String? = null
 )

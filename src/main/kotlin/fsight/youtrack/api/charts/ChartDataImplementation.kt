@@ -36,6 +36,17 @@ class ChartDataImplementation(private val dslContext: DSLContext) : ChartDataSer
                 .fetchInto(TimeLine::class.java)
     }
 
+    override fun getTimeLineData(): List<TimeLine> {
+        return dslContext.select(
+                DYNAMICS.W.`as`("week"),
+                sum(DYNAMICS.ACTIVE).`as`("active"),
+                sum(DYNAMICS.CREATED).`as`("created"),
+                sum(DYNAMICS.RESOLVED).`as`("resolved"))
+                .from(DYNAMICS)
+                .groupBy(DYNAMICS.W)
+                .fetchInto(TimeLine::class.java)
+    }
+
     override fun getSigmaData(projects: String, dateFrom: String, dateTo: String): SigmaResult {
         val filter = projects.removeSurrounding("[", "]").split(",")
         val dt = LocalDate.parse(dateTo, DateTimeFormatter.ofPattern("yyyy-MM-dd"))

@@ -5,6 +5,8 @@ import fsight.youtrack.AUTH
 import fsight.youtrack.NEW_ROOT_REF
 import fsight.youtrack.generated.jooq.tables.TfsWi.TFS_WI
 import fsight.youtrack.models.TFSItem
+import fsight.youtrack.models.v2.Issue
+import fsight.youtrack.models.v2.Project
 import org.jooq.DSLContext
 import org.springframework.stereotype.Service
 import retrofit2.Call
@@ -99,11 +101,11 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
         ).from(TFS_WI).where(TFS_WI.ID.eq(id)).fetchOneInto(TFSItem::class.java)
 
         val postableItem = Gson().toJson(
-                YTIssue(
-                        project = Project("0-15"),
-                        summary = "test",
-                        description = "test"/*,
-                        pmAccepted = "Yes"*/)
+                Issue(
+                        project = Project(id = "0-15"),
+                        summary = item.project,
+                        description = item.areaPath,
+                        fields = arrayListOf())
         )
         println(postableItem)
         val id2 = PostIssueRetrofitService.create().createIssue(AUTH, postableItem).execute()
@@ -114,18 +116,11 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
 
 /*@SerializedName("PM accepted")*/
 
-data class Project(val id: String)
+
 /*data class IssueCustomField(
 
 )*/
-data class YTIssue(
-        val project: Project,
-        val summary: String,
-        val description: String
-        /*val fields: ArrayList<>*/
-        /*val pmAccepted: String,
-        val priority:*/
-)
+
 
 interface PostIssueRetrofitService {
     @Headers("Accept: application/json", "Content-Type: application/json;charset=UTF-8")
