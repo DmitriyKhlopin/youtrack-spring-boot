@@ -1,8 +1,10 @@
 package fsight.youtrack.api.tfs
 
+import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
-@CrossOrigin(origins = ["http://localhost:3000", "http://10.0.172.42:3000"])
+@CrossOrigin(origins = ["http://localhost:3000", "http://10.9.172.12:3000"])
 @RestController
 class TFSDataController(private val service: TFSDataService) {
     @GetMapping("/api/tfs/count")
@@ -14,12 +16,13 @@ class TFSDataController(private val service: TFSDataService) {
             @RequestParam("limit", required = false) limit: Int? = null
     ) = service.getItems(offset, limit)
 
-    @GetMapping("/api/tfs/item/{id}")
+    @GetMapping("/api/tfs/{id}")
     fun postItemToYouTrack(
             @PathVariable("id") id: Int,
             @RequestParam("action", required = false) action: String? = null
-    ) = when (action) {
+    ): ResponseEntity<Any> = when (action) {
         "postToYT" -> service.postItemToYouTrack(id)
-        else -> service.getItemById(id)
+        "toJSON" -> service.toJson(id)
+        else -> ResponseEntity.status(HttpStatus.OK).body(service.getItemById(id))
     }
 }

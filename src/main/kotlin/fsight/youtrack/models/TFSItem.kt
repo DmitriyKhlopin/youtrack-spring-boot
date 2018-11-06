@@ -21,5 +21,9 @@ data class TFSItem(
         val areaName: String? = null,
         val areaPath: String? = null,
         val iterationPath: String? = null,
-        val iterationName: String? = null
+        val iterationName: String? = null,
+        val title: String? = null,
+        val problemDescription: String? = null,
+        val proposedChange: String? = null,
+        val expectedResult: String? = null
 )

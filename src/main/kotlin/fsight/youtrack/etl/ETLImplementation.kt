@@ -52,6 +52,10 @@ class ETLImplementation(private val projects: ProjectsService,
         bundleServiceV2.getAllBundles()
     }
 
+    override fun getUsers() {
+        users.getUsers()
+    }
+
     override fun getIssueById(id: String): Issue {
         return issuesV2.getById(id)
     }

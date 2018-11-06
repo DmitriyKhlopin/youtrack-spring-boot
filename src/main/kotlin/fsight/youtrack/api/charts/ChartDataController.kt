@@ -5,15 +5,15 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
-@CrossOrigin(origins = ["http://localhost:3000", "http://10.0.172.42:3000"])
+@CrossOrigin(origins = ["http://localhost:3000", "http://10.9.172.12:3000"])
 @RestController
 class ChartDataController(private val service: ChartDataService) {
     @GetMapping("/api/chart/dynamics")
-    fun getTimeLineData(
-            @RequestParam("projects", required = false) projects: String? = null,
-            @RequestParam("dateFrom", required = false) dateFrom: String? = null,
-            @RequestParam("dateTo", required = false) dateTo: String? = null
-    ) = if (projects != null && dateFrom != null && dateTo != null) service.getTimeLineData(projects, dateFrom, dateTo) else service.getTimeLineData()
+    fun getTimeLineData(@RequestParam("projects", required = false) projects: String? = null,
+                        @RequestParam("dateFrom", required = false) dateFrom: String? = null,
+                        @RequestParam("dateTo", required = false) dateTo: String? = null) =
+            if (projects != null && dateFrom != null && dateTo != null) service.getTimeLineData(projects, dateFrom, dateTo)
+            else service.getTimeLineData()
 
     @GetMapping("/api/chart/sigma")
     fun getSigmaData(
