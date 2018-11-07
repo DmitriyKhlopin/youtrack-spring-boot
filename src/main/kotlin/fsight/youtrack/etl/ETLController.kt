@@ -2,7 +2,7 @@ package fsight.youtrack.etl
 
 import org.springframework.web.bind.annotation.*
 
-@CrossOrigin(origins = ["http://localhost:3000", "http://10.9.172.12:3000"])
+@CrossOrigin
 @RestController
 class ETLController(private val service: ETLService) {
     @GetMapping("/etl")
@@ -22,3 +22,4 @@ class ETLController(private val service: ETLService) {
     @GetMapping("/etl/issues/{id}")
     fun getIssueById(@PathVariable("id") id: String) = service.getIssueById(id)
 }
+

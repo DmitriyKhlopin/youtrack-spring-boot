@@ -7,7 +7,7 @@ import fsight.youtrack.etl.bundles.v2.BundleValue
 import fsight.youtrack.generated.jooq.tables.BundleValues.BUNDLE_VALUES
 import fsight.youtrack.generated.jooq.tables.TfsWi.TFS_WI
 import fsight.youtrack.generated.jooq.tables.Users.USERS
-import fsight.youtrack.models.TFSItem
+import fsight.youtrack.models.TFSRequirement
 import fsight.youtrack.models.UserDetails
 import fsight.youtrack.models.v2.Project
 import org.jooq.DSLContext
@@ -97,11 +97,11 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
                 .orderBy(TFS_WI.ID)
                 .limit(limit ?: getItemsCount())
                 .offset(offset ?: 0)
-                .fetchInto(TFSItem::class.java)
+                .fetchInto(TFSRequirement::class.java)
         return ResponseEntity.status(HttpStatus.OK).body(items)
     }
 
-    override fun getItemById(id: Int): TFSItem {
+    override fun getItemById(id: Int): TFSRequirement {
         return dslContext.select(
                 TFS_WI.ID.`as`("id"),
                 TFS_WI.REV.`as`("rev"),
@@ -126,12 +126,14 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
                 TFS_WI.PROBLEM_DESCRIPTION.`as`("problemDescription"),
                 TFS_WI.PROPOSED_CHANGE.`as`("proposedChange"),
                 TFS_WI.EXPECTED_RESULT.`as`("expectedResult")
-        ).from(TFS_WI).where(TFS_WI.ID.eq(id)).fetchOneInto(TFSItem::class.java)
+        ).from(TFS_WI).where(TFS_WI.ID.eq(id)).fetchOneInto(TFSRequirement::class.java)
     }
 
     override fun postItemToYouTrack(id: Int): ResponseEntity<Any> {
         val item = getItemById(id)
+        println(item)
         val postableItem = getPostableItem(item)
+        println(postableItem)
         val id2 = PostIssueRetrofitService.create().createIssue(AUTH, postableItem).execute()
         println("readable id = ${id2.body()} - ${id2.errorBody()}")
         return ResponseEntity.status(HttpStatus.OK).body(id2)
@@ -143,9 +145,12 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
         return ResponseEntity.status(HttpStatus.OK).body(postableItem)
     }
 
-    fun getPostableItem(item: TFSItem): String {
+    fun getPostableItem(item: TFSRequirement): String {
         val proposalQuality = customFieldValues.asSequence().filter {
             it.fieldName == "Proposal quality" && it.name == (item.proposalQuality ?: "Average")
+        }.first().let { it -> FieldValue(id = it.fieldId, `$type` = types[it.`$type`], value = ActualValue(id = it.id, name = it.name)) }
+        val type = customFieldValues.asSequence().filter {
+            it.fieldName == "Type" && it.name == (item.type ?: "Requirement")
         }.first().let { it -> FieldValue(id = it.fieldId, `$type` = types[it.`$type`], value = ActualValue(id = it.id, name = it.name)) }
         val pmAccepted = customFieldValues.asSequence().filter {
             it.fieldName == "PM accepted" && it.name == (if (item.pmAccepted == "-1") "Yes" else "No")
@@ -156,23 +161,24 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
         val areaName = customFieldValues.asSequence().filter {
             it.fieldName == "Area name" && it.name == item.areaName
         }.first().let { it -> FieldValue(id = it.fieldId, `$type` = types[it.`$type`], value = ActualValue(id = it.id, name = it.name)) }
-        /*val assignee = customFieldValues.asSequence().filter {
-            it.fieldName == "Assignee" && it.name == item.areaName
-        }.first().let { it -> FieldValue(id = it.fieldId, `$type` = types[it.`$type`], value = ActualValue(id = it.id, name = it.name)) }*/
-        val assignee = FieldValue(id = "86-16", `$type` = "jetbrains.charisma.customfields.complex.user.SingleUserIssueCustomField", value = ActualValue(id = users.first { it.email == item.productManager }.id, name = users.first { it.email == item.productManager }.fullName))
-
+        val u = users.firstOrNull { it.email == item.productManager }
+        val assignee = FieldValue(id = "86-16", `$type` = "jetbrains.charisma.customfields.complex.user.SingleUserIssueCustomField", value = ActualValue(id = u?.id
+                ?: "1-1", name = u?.fullName ?: "admin"))
+        val estimation = PeriodValue(id = "100-17", `$type` = "jetbrains.youtrack.timetracking.periodField.PeriodIssueCustomField", value = ActualPeriodValue(`$type` = "jetbrains.youtrack.timetracking.periodField.PeriodValue", minutes = 360))
         return Gson().toJson(
                 IssueIn(
                         project = Project(id = "0-15"),
                         summary = item.title,
                         description = "PD:\n${Jsoup.parse(item.problemDescription).text()} \n\nPC:\n${Jsoup.parse(item.proposedChange).text()} \n\nER:\n${Jsoup.parse(item.expectedResult).text()}",
-                        fields = arrayListOf(proposalQuality, pmAccepted, dmAccepted, areaName, assignee))
+                        fields = arrayListOf(type,proposalQuality, pmAccepted, dmAccepted, areaName, assignee, estimation))
         )
     }
 
+    data class ActualPeriodValue(val `$type`: String?, val minutes: Int?)
+    data class PeriodValue(val id: String?, val `$type`: String?, val value: ActualPeriodValue?)
     data class ActualValue(val id: String?, val name: String?)
     data class FieldValue(val id: String?, val `$type`: String?, val value: ActualValue?)
-    data class IssueIn(var description: String? = null, var fields: ArrayList<FieldValue>? = null, var project: Project? = null, var summary: String? = null)
+    data class IssueIn(var description: String? = null, var fields: ArrayList<Any>? = null, var project: Project? = null, var summary: String? = null)
 }
 
 interface PostIssueRetrofitService {

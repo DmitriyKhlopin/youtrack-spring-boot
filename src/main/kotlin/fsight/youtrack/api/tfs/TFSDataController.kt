@@ -4,7 +4,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
-@CrossOrigin(origins = ["http://localhost:3000", "http://10.9.172.12:3000"])
+@CrossOrigin
 @RestController
 class TFSDataController(private val service: TFSDataService) {
     @GetMapping("/api/tfs/count")

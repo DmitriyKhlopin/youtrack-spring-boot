@@ -1,8 +1,8 @@
 package fsight.youtrack.etl.tfs
 
-import fsight.youtrack.models.TFSItem
+import fsight.youtrack.models.TFSRequirement
 
 interface TFSExportService {
-    fun getTFSItems(): List<TFSItem>
-    fun getTFSItemsById(id: Int): List<TFSItem>
+    fun getTFSItems(): List<TFSRequirement>
+    fun getTFSItemsById(id: Int): List<TFSRequirement>
 }

@@ -2,7 +2,7 @@ package fsight.youtrack.models
 
 import java.sql.Timestamp
 
-data class TFSItem(
+data class TFSRequirement(
         val id: Int,
         val rev: Int,
         val state: String? = null,
