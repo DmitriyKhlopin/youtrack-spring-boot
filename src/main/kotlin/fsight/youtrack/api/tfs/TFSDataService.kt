@@ -8,5 +8,6 @@ interface TFSDataService {
     fun getItems(offset: Int?, limit: Int?): ResponseEntity<Any>
     fun getItemById(id: Int): TFSRequirement
     fun postItemToYouTrack(id: Int): ResponseEntity<Any>
+    fun postItemsToYouTrack(offset: Int?, limit: Int?): ResponseEntity<Any>
     fun toJson(id: Int): ResponseEntity<Any>
 }

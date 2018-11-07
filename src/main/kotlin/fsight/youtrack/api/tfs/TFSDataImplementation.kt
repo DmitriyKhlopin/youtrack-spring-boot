@@ -61,6 +61,7 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
                                 USERS.FULL_NAME.`as`("fullName"),
                                 USERS.EMAIL.`as`("email"))
                         .from(USERS)
+                        .where(USERS.EMAIL.isNotNull)
                         .fetchInto(UserDetails::class.java)
         )
     }
@@ -129,7 +130,32 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
                 TFS_WI.PROBLEM_DESCRIPTION.`as`("problemDescription"),
                 TFS_WI.PROPOSED_CHANGE.`as`("proposedChange"),
                 TFS_WI.EXPECTED_RESULT.`as`("expectedResult")
-        ).from(TFS_WI).where(TFS_WI.ID.eq(id)).fetchOneInto(TFSRequirement::class.java)
+        ).from(TFS_WI).where(TFS_WI.ID.eq(id)).limit(1).fetchOneInto(TFSRequirement::class.java)
+    }
+
+    override fun postItemsToYouTrack(offset: Int?, limit: Int?): ResponseEntity<Any> {
+        val items = dslContext.select(
+                TFS_WI.ID.`as`("id"),
+                TFS_WI.REV.`as`("rev"),
+                TFS_WI.CREATE_DATE.`as`("createDate")
+        )
+                .from(TFS_WI)
+                .orderBy(TFS_WI.ID)
+                .limit(limit ?: getItemsCount())
+                .offset(offset ?: 0)
+                .fetchInto(TFSRequirement::class.java).map { item -> item.id }
+
+        items.forEach {
+            val item = getItemById(it)
+            val postableItem = getPostableRequirement(item)
+            println(postableItem)
+            val id2 = PostIssueRetrofitService.create().createIssue(AUTH, postableItem).execute()
+            /*println("readable id = ${id2.body()} - ${id2.errorBody()}")*/
+            val idReadable = Gson().fromJson(id2.body(), ReadableId::class.java)
+
+            if (id2.errorBody() == null) getTasks(it, idReadable.idReadable ?: "")
+        }
+        return ResponseEntity.status(HttpStatus.OK).body(items)
     }
 
     override fun postItemToYouTrack(id: Int): ResponseEntity<Any> {
@@ -137,7 +163,7 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
         val postableItem = getPostableRequirement(item)
         println(postableItem)
         val id2 = PostIssueRetrofitService.create().createIssue(AUTH, postableItem).execute()
-        /*println("readable id = ${id2.body()} - ${id2.errorBody()}")*/
+        println("readable id = ${id2.body()} - ${id2.errorBody()}")
         val idReadable = Gson().fromJson(id2.body(), ReadableId::class.java)
 
         if (id2.errorBody() == null) getTasks(id, idReadable.idReadable ?: "")
@@ -162,7 +188,9 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
             val iterationPath: String? = null,
             val iterationName: String? = null,
             val title: String? = null,
-            val description: String? = null
+            val description: String? = null,
+            val developer: String? = null,
+            val tester: String? = null
     )
 
 
@@ -184,7 +212,9 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
                 TFS_TASKS.ITERATION_PATH.`as`("iterationPath"),
                 TFS_TASKS.ITERATION_NAME.`as`("iterationName"),
                 TFS_TASKS.TITLE,
-                TFS_TASKS.DESCRIPTION
+                TFS_TASKS.DESCRIPTION,
+                TFS_TASKS.DEVELOPER,
+                TFS_TASKS.TESTER
         )
                 .from(TFS_TASKS)
                 .leftJoin(TFS_LINKS).on(TFS_TASKS.ID.eq(TFS_LINKS.TARGET_ID))
@@ -194,6 +224,7 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
             /*println(it)*/
             val id2 = PostIssueRetrofitService.create().createIssue(AUTH, it).execute()
             println("readable id = ${id2.body()} - ${id2.errorBody()}")
+            if (id2.errorBody() != null) println(it)
             val idReadable = Gson().fromJson(id2.body(), ReadableId::class.java)
             val command = Gson().toJson(YouTrackCommand(issues = arrayListOf(IssueIn(id = idReadable.id)), silent = true, query = "подзадача $parentId"))
             println(command)
@@ -210,6 +241,7 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
     }
 
     fun getPostableRequirement(item: TFSRequirement): String {
+        println(item.id)
         val proposalQuality = customFieldValues.asSequence().filter {
             it.fieldName == "Proposal quality" && it.name == (item.proposalQuality ?: "Average")
         }.first().let { it -> FieldValue(id = it.fieldId, `$type` = types[it.`$type`], value = ActualValue(id = it.id, name = it.name)) }
@@ -224,7 +256,7 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
         }.first().let { it -> FieldValue(id = it.fieldId, `$type` = types[it.`$type`], value = ActualValue(id = it.id, name = it.name)) }
         val areaName = customFieldValues.asSequence().filter {
             it.fieldName == "Area name" && it.name == item.areaName
-        }.first().let { it -> FieldValue(id = it.fieldId, `$type` = types[it.`$type`], value = ActualValue(id = it.id, name = it.name)) }
+        }.firstOrNull().let { it -> if (it != null) FieldValue(id = it.fieldId, `$type` = types[it.`$type`], value = ActualValue(id = it.id, name = it.name)) else null }
         val u = users.firstOrNull { it.email == item.productManager }
         val assignee = FieldValue(id = "86-16", `$type` = "jetbrains.charisma.customfields.complex.user.SingleUserIssueCustomField", value = ActualValue(id = u?.id
                 ?: "1-1", name = u?.fullName ?: "admin"))
@@ -233,9 +265,9 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
                 IssueIn(
                         project = Project(id = "0-15"),
                         summary = item.title,
-                        description = "PD:\n${Jsoup.parse(item.problemDescription).text()} \n\nPC:\n${Jsoup.parse(item.proposedChange).text()} \n\nER:\n${Jsoup.parse(item.expectedResult).text()}",
-                        fields = arrayListOf(type, proposalQuality, pmAccepted, dmAccepted, areaName, assignee))
-        )
+                        description = "TFS: ${item.id} \n\nPD:\n${Jsoup.parse(item.problemDescription).text()} \n\nPC:\n${Jsoup.parse(item.proposedChange).text()} \n\nER:\n${Jsoup.parse(item.expectedResult).text()}",
+                        fields = arrayListOf(type, proposalQuality, pmAccepted, dmAccepted, areaName, assignee).filterNotNull() as ArrayList<Any>
+                ))
     }
 
     fun getPostableTask(item: TFSTask): String {
@@ -247,12 +279,15 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
             it.fieldName == "Area name" && it.name == item.areaName
         }.firstOrNull().let { it -> if (it !== null) FieldValue(id = it.fieldId, `$type` = types[it.`$type`], value = ActualValue(id = it.id, name = it.name)) else null }
         val estimationDev = PeriodValue(id = "100-17", `$type` = "jetbrains.youtrack.timetracking.periodField.PeriodIssueCustomField", value = ActualPeriodValue(`$type` = "jetbrains.youtrack.timetracking.periodField.PeriodValue", minutes = (item.testEc + item.developmentEc) * 60))
+        val u = users.firstOrNull { it.email == item.developer || it.email == item.tester }
+        val assignee = FieldValue(id = "86-16", `$type` = "jetbrains.charisma.customfields.complex.user.SingleUserIssueCustomField", value = ActualValue(id = u?.id
+                ?: "1-1", name = u?.fullName ?: "admin"))
         return Gson().toJson(
                 IssueIn(
                         project = Project(id = "0-15"),
                         summary = item.title,
-                        description = Jsoup.parse(item.description).text(),
-                        fields = arrayListOf(type, areaName, estimationDev).filterNotNull() as ArrayList<Any>
+                        description = "TFS: ${item.id} \n\n${Jsoup.parse(item.description).text()}",
+                        fields = arrayListOf(type, areaName, estimationDev, assignee).filterNotNull() as ArrayList<Any>
                 ))
     }
 

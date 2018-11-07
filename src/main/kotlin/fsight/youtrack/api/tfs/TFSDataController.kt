@@ -13,8 +13,12 @@ class TFSDataController(private val service: TFSDataService) {
     @GetMapping("/api/tfs")
     fun getItems(
             @RequestParam("offset", required = false) offset: Int? = null,
-            @RequestParam("limit", required = false) limit: Int? = null
-    ) = service.getItems(offset, limit)
+            @RequestParam("limit", required = false) limit: Int? = null,
+            @RequestParam("action", required = false) action: String? = null
+    ): ResponseEntity<Any> = when (action) {
+        "postToYT" -> service.postItemsToYouTrack(offset, limit)
+        else -> service.getItems(offset, limit)
+    }
 
     @GetMapping("/api/tfs/{id}")
     fun postItemToYouTrack(
