@@ -31,6 +31,13 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
     private final val types = hashMapOf<String, String>()
     private final val customFieldValues = arrayListOf<BundleValue>()
     private final val users = arrayListOf<UserDetails>()
+    private final val prioritiesMap: HashMap<String, String> by lazy {
+        hashMapOf<String, String>().also { it ->
+            it["High"] = "Major"
+            it["Medium"] = "Normal"
+            it["Low"] = "Minor"
+        }
+    }
 
     init {
         types["jetbrains.charisma.customfields.complex.state.StateBundle"] = "jetbrains.charisma.customfields.complex.state.StateIssueCustomField"
@@ -145,31 +152,49 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
                 .offset(offset ?: 0)
                 .fetchInto(TFSRequirement::class.java).map { item -> item.id }
 
-        items.forEach {
-            val item = getItemById(it)
-            val postableItem = getPostableRequirement(item)
-            println(postableItem)
-            val id2 = PostIssueRetrofitService.create().createIssue(AUTH, postableItem).execute()
-            /*println("readable id = ${id2.body()} - ${id2.errorBody()}")*/
-            val idReadable = Gson().fromJson(id2.body(), ReadableId::class.java)
-
-            if (id2.errorBody() == null) getTasks(it, idReadable.idReadable ?: "")
-        }
+        items.forEach { postEachItem(it) }
         return ResponseEntity.status(HttpStatus.OK).body(items)
     }
 
     override fun postItemToYouTrack(id: Int): ResponseEntity<Any> {
-        val item = getItemById(id)
+        postEachItem(id)
+        /*val item = getItemById(id)
         val postableItem = getPostableRequirement(item)
-        println(postableItem)
         val id2 = PostIssueRetrofitService.create().createIssue(AUTH, postableItem).execute()
-        println("readable id = ${id2.body()} - ${id2.errorBody()}")
         val idReadable = Gson().fromJson(id2.body(), ReadableId::class.java)
-
-        if (id2.errorBody() == null) getTasks(id, idReadable.idReadable ?: "")
-        return ResponseEntity.status(HttpStatus.OK).body(id2)
+        if (id2.errorBody() == null) getTasks(id, idReadable.idReadable ?: "")*/
+        return ResponseEntity.status(HttpStatus.OK).body("OK")
     }
 
+    override fun postItemsToYouTrack(iteration: String?): ResponseEntity<Any> {
+        val items = dslContext.select(
+                TFS_WI.ID.`as`("id"),
+                TFS_WI.REV.`as`("rev"),
+                TFS_WI.CREATE_DATE.`as`("createDate")
+        )
+                .from(TFS_WI)
+                .where(TFS_WI.ITERATION_NAME.eq(iteration))
+                .orderBy(TFS_WI.ID)
+                .fetchInto(TFSRequirement::class.java).map { item -> item.id }
+
+        items.forEach {
+            postEachItem(it)
+            /* val item = getItemById(it)
+             val postableItem = getPostableRequirement(item)
+             val id2 = PostIssueRetrofitService.create().createIssue(AUTH, postableItem).execute()
+             val idReadable = Gson().fromJson(id2.body(), ReadableId::class.java)
+             if (id2.errorBody() == null) getTasks(it, idReadable.idReadable ?: "")*/
+        }
+        return ResponseEntity.status(HttpStatus.OK).body(items)
+    }
+
+    fun postEachItem(id: Int) {
+        val item = getItemById(id)
+        val postableItem = getPostableRequirement(item)
+        val id2 = PostIssueRetrofitService.create().createIssue(AUTH, postableItem).execute()
+        val idReadable = Gson().fromJson(id2.body(), ReadableId::class.java)
+        if (id2.errorBody() == null) getTasks(id, idReadable.idReadable ?: "")
+    }
 
     data class TFSTask(
             val id: Int,
@@ -242,6 +267,9 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
 
     fun getPostableRequirement(item: TFSRequirement): String {
         println(item.id)
+        val priority = customFieldValues.asSequence().filter {
+            it.fieldName == "Priority" && it.name == (prioritiesMap[item.severity ?: "Medium"])
+        }.first().let { it -> FieldValue(id = it.fieldId, `$type` = types[it.`$type`], value = ActualValue(id = it.id, name = it.name)) }
         val proposalQuality = customFieldValues.asSequence().filter {
             it.fieldName == "Proposal quality" && it.name == (item.proposalQuality ?: "Average")
         }.first().let { it -> FieldValue(id = it.fieldId, `$type` = types[it.`$type`], value = ActualValue(id = it.id, name = it.name)) }
@@ -260,13 +288,12 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
         val u = users.firstOrNull { it.email == item.productManager }
         val assignee = FieldValue(id = "86-16", `$type` = "jetbrains.charisma.customfields.complex.user.SingleUserIssueCustomField", value = ActualValue(id = u?.id
                 ?: "1-1", name = u?.fullName ?: "admin"))
-        /*val estimation = PeriodValue(id = "100-17", `$type` = "jetbrains.youtrack.timetracking.periodField.PeriodIssueCustomField", value = ActualPeriodValue(`$type` = "jetbrains.youtrack.timetracking.periodField.PeriodValue", minutes = 360))*/
         return Gson().toJson(
                 IssueIn(
                         project = Project(id = "0-15"),
                         summary = item.title,
                         description = "TFS: ${item.id} \n\nPD:\n${Jsoup.parse(item.problemDescription).text()} \n\nPC:\n${Jsoup.parse(item.proposedChange).text()} \n\nER:\n${Jsoup.parse(item.expectedResult).text()}",
-                        fields = arrayListOf(type, proposalQuality, pmAccepted, dmAccepted, areaName, assignee).filterNotNull() as ArrayList<Any>
+                        fields = arrayListOf(priority, type, proposalQuality, pmAccepted, dmAccepted, areaName, assignee).filterNotNull() as ArrayList<Any>
                 ))
     }
 

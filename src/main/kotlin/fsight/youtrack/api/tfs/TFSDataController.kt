@@ -14,9 +14,11 @@ class TFSDataController(private val service: TFSDataService) {
     fun getItems(
             @RequestParam("offset", required = false) offset: Int? = null,
             @RequestParam("limit", required = false) limit: Int? = null,
-            @RequestParam("action", required = false) action: String? = null
-    ): ResponseEntity<Any> = when (action) {
-        "postToYT" -> service.postItemsToYouTrack(offset, limit)
+            @RequestParam("action", required = false) action: String? = null,
+            @RequestParam("iteration", required = false) iteration: String? = null
+    ): ResponseEntity<Any> = when {
+        action == "postToYT" && iteration != null -> service.postItemsToYouTrack(iteration)
+        action == "postToYT" && iteration == null && offset != null && limit != null -> service.postItemsToYouTrack(offset, limit)
         else -> service.getItems(offset, limit)
     }
 
