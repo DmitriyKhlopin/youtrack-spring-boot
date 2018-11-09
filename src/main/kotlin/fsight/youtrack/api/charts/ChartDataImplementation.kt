@@ -1,5 +1,8 @@
 package fsight.youtrack.api.charts
 
+import com.google.gson.GsonBuilder
+import fsight.youtrack.AUTH
+import fsight.youtrack.NEW_ROOT_REF
 import fsight.youtrack.generated.jooq.tables.Dynamics.DYNAMICS
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
 import fsight.youtrack.models.SigmaIntermediatePower
@@ -13,6 +16,12 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import retrofit2.Call
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.http.GET
+import retrofit2.http.Header
+import retrofit2.http.Headers
 import java.sql.Timestamp
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -101,7 +110,29 @@ class ChartDataImplementation(private val dslContext: DSLContext) : ChartDataSer
     }
 
     override fun getGanttData(): ResponseEntity<Any> {
+        val i = GetGanttDataRetrofitService.create().get(AUTH).execute().body()
+        i?.data?.tasks?.forEach { println(it) }
         return ResponseEntity.status(HttpStatus.OK).body("Here is some data for you")
     }
+
+    data class Report(val data: ReportData? = null, val `$type`: String? = null)
+    data class ReportData(val tasks: ArrayList<Task>? = null, val id: String? = null, val `$type`: String? = null)
+    data class Task(val id: String? = null, val idealStart: Long? = null, val `$type`: String? = null)
+
+    interface GetGanttDataRetrofitService {
+        @Headers("Accept: application/json", "Content-Type: application/json;charset=UTF-8")
+        @GET("reports/151-13?\$top=-1&fields=data(\$type,id,remainingEffortPresentation,tasks(id,idealStart))")
+        fun get(
+                @Header("Authorization") auth: String): Call<Report>
+
+        companion object Factory {
+            fun create(): GetGanttDataRetrofitService {
+                val gson = GsonBuilder().setLenient().create()
+                val retrofit = Retrofit.Builder().baseUrl(NEW_ROOT_REF).addConverterFactory(GsonConverterFactory.create(gson)).build()
+                return retrofit.create(GetGanttDataRetrofitService::class.java)
+            }
+        }
+    }
+
 }
 
