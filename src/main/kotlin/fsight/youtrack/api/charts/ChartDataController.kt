@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
-@CrossOrigin(origins = ["http://localhost:3000", "http://10.9.172.12:3000"])
+@CrossOrigin
 @RestController
 class ChartDataController(private val service: ChartDataService) {
     @GetMapping("/api/chart/dynamics")
@@ -29,4 +29,6 @@ class ChartDataController(private val service: ChartDataService) {
             @RequestParam("dateTo", required = false) dateTo: String = ""
     ) = service.getCreatedCountOnWeek(projects, dateFrom, dateTo)
 
+    @GetMapping("api/chart/gantt")
+    fun getGanttData() = service.getGanttData()
 }

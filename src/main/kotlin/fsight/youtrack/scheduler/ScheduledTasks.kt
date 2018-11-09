@@ -1,6 +1,6 @@
 package fsight.youtrack.scheduler
 
-import fsight.youtrack.etl.ETLService
+import fsight.youtrack.api.etl.ETLService
 import org.springframework.boot.CommandLineRunner
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component

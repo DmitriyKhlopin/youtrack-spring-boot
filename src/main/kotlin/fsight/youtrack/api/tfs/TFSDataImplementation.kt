@@ -3,7 +3,7 @@ package fsight.youtrack.api.tfs
 import com.google.gson.Gson
 import fsight.youtrack.AUTH
 import fsight.youtrack.NEW_ROOT_REF
-import fsight.youtrack.etl.bundles.v2.BundleValue
+import fsight.youtrack.api.etl.bundles.v2.BundleValue
 import fsight.youtrack.generated.jooq.tables.BundleValues.BUNDLE_VALUES
 import fsight.youtrack.generated.jooq.tables.TfsLinks.TFS_LINKS
 import fsight.youtrack.generated.jooq.tables.TfsTasks.TFS_TASKS
@@ -158,11 +158,6 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
 
     override fun postItemToYouTrack(id: Int): ResponseEntity<Any> {
         postEachItem(id)
-        /*val item = getItemById(id)
-        val postableItem = getPostableRequirement(item)
-        val id2 = PostIssueRetrofitService.create().createIssue(AUTH, postableItem).execute()
-        val idReadable = Gson().fromJson(id2.body(), ReadableId::class.java)
-        if (id2.errorBody() == null) getTasks(id, idReadable.idReadable ?: "")*/
         return ResponseEntity.status(HttpStatus.OK).body("OK")
     }
 
@@ -173,17 +168,12 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
                 TFS_WI.CREATE_DATE.`as`("createDate")
         )
                 .from(TFS_WI)
-                .where(TFS_WI.ITERATION_NAME.eq(iteration))
+                .where(TFS_WI.ITERATION_PATH.eq(iteration))
                 .orderBy(TFS_WI.ID)
                 .fetchInto(TFSRequirement::class.java).map { item -> item.id }
 
         items.forEach {
             postEachItem(it)
-            /* val item = getItemById(it)
-             val postableItem = getPostableRequirement(item)
-             val id2 = PostIssueRetrofitService.create().createIssue(AUTH, postableItem).execute()
-             val idReadable = Gson().fromJson(id2.body(), ReadableId::class.java)
-             if (id2.errorBody() == null) getTasks(it, idReadable.idReadable ?: "")*/
         }
         return ResponseEntity.status(HttpStatus.OK).body(items)
     }

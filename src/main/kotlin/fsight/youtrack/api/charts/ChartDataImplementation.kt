@@ -9,6 +9,8 @@ import fsight.youtrack.models.TimeLine
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.jooq.impl.DSL.sum
+import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.sql.Timestamp
@@ -19,6 +21,8 @@ import kotlin.math.sqrt
 @Service
 @Transactional
 class ChartDataImplementation(private val dslContext: DSLContext) : ChartDataService {
+    data class SimpleAggregatedValue(val name: String, val value: Int)
+
     override fun getTimeLineData(projects: String, dateFrom: String, dateTo: String): List<TimeLine> {
         val df = LocalDate.parse(dateFrom, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
         val dt = LocalDate.parse(dateTo, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
@@ -95,6 +99,9 @@ class ChartDataImplementation(private val dslContext: DSLContext) : ChartDataSer
                 .groupBy(ISSUES.PROJECT)
                 .fetchInto(SimpleAggregatedValue::class.java).sortedByDescending { it.value }
     }
+
+    override fun getGanttData(): ResponseEntity<Any> {
+        return ResponseEntity.status(HttpStatus.OK).body("Here is some data for you")
+    }
 }
 
-data class SimpleAggregatedValue(val name: String, val value: Int)
