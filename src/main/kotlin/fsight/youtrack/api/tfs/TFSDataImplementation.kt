@@ -2,7 +2,6 @@ package fsight.youtrack.api.tfs
 
 import com.google.gson.Gson
 import fsight.youtrack.AUTH
-import fsight.youtrack.NEW_ROOT_REF
 import fsight.youtrack.api.etl.bundles.v2.BundleValue
 import fsight.youtrack.generated.jooq.tables.BundleValues.BUNDLE_VALUES
 import fsight.youtrack.generated.jooq.tables.TfsLinks.TFS_LINKS
@@ -10,6 +9,7 @@ import fsight.youtrack.generated.jooq.tables.TfsTasks.TFS_TASKS
 import fsight.youtrack.generated.jooq.tables.TfsWi.TFS_WI
 import fsight.youtrack.generated.jooq.tables.Users.USERS
 import fsight.youtrack.models.TFSRequirement
+import fsight.youtrack.models.TFSTask
 import fsight.youtrack.models.UserDetails
 import fsight.youtrack.models.YouTrackCommand
 import fsight.youtrack.models.v2.Project
@@ -18,14 +18,6 @@ import org.jsoup.Jsoup
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
-import retrofit2.Call
-import retrofit2.Retrofit
-import retrofit2.converter.scalars.ScalarsConverterFactory
-import retrofit2.http.Body
-import retrofit2.http.Header
-import retrofit2.http.Headers
-import retrofit2.http.POST
-import java.sql.Timestamp
 
 @Service
 class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService {
@@ -189,31 +181,9 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
         val item = getItemById(id)
         val postableItem = getPostableRequirement(item)
         val id2 = PostIssueRetrofitService.create().createIssue(AUTH, postableItem).execute()
-        val idReadable = Gson().fromJson(id2.body(), ReadableId::class.java)
+        val idReadable = Gson().fromJson(id2.body(), IssueIn::class.java)
         if (id2.errorBody() == null) getTasks(id, idReadable.idReadable ?: "")
     }
-
-    data class TFSTask(
-            val id: Int,
-            val rev: Int,
-            val state: String? = null,
-            val type: String? = null,
-            val createDate: Timestamp,
-            val discipline: String? = null,
-            val developmentEc: Int,
-            val testEc: Int,
-            val project: String? = null,
-            val projectNodeName: String? = null,
-            val projectPath: String? = null,
-            val areaName: String? = null,
-            val areaPath: String? = null,
-            val iterationPath: String? = null,
-            val iterationName: String? = null,
-            val title: String? = null,
-            val description: String? = null,
-            val developer: String? = null,
-            val tester: String? = null
-    )
 
 
     fun getTasks(requirementId: Int, parentId: String) {
@@ -247,7 +217,7 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
             val id2 = PostIssueRetrofitService.create().createIssue(AUTH, it).execute()
             println("readable id = ${id2.body()} - ${id2.errorBody()}")
             if (id2.errorBody() != null) println(it)
-            val idReadable = Gson().fromJson(id2.body(), ReadableId::class.java)
+            val idReadable = Gson().fromJson(id2.body(), IssueIn::class.java)
             val command = Gson().toJson(YouTrackCommand(issues = arrayListOf(IssueIn(id = idReadable.id)), silent = true, query = "подзадача $parentId"))
             println(command)
             val r2 = PostCommandService.create().createIssue(AUTH, command).execute()
@@ -321,40 +291,11 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
                 ))
     }
 
-    data class ReadableId(val id: String? = null, val idReadable: String? = null)
+    /*data class ReadableId(val id: String? = null, val idReadable: String? = null)*/
     data class ActualPeriodValue(val `$type`: String?, val minutes: Int?)
+
     data class PeriodValue(val id: String?, val `$type`: String?, val value: ActualPeriodValue?)
     data class ActualValue(val id: String?, val name: String?)
     data class FieldValue(val id: String?, val `$type`: String?, val value: ActualValue?)
-    data class IssueIn(var description: String? = null, var fields: List<Any>? = null, var project: Project? = null, var summary: String? = null, var id: String? = null)
-}
-
-interface PostIssueRetrofitService {
-    @Headers("Accept: application/json", "Content-Type: application/json;charset=UTF-8")
-    @POST("issues?fields=idReadable,id")
-    fun createIssue(
-            @Header("Authorization") auth: String,
-            @Body model: String): Call<String>
-
-    companion object Factory {
-        fun create(): PostIssueRetrofitService {
-            val retrofit = Retrofit.Builder().baseUrl(NEW_ROOT_REF).addConverterFactory(ScalarsConverterFactory.create()).build()
-            return retrofit.create(PostIssueRetrofitService::class.java)
-        }
-    }
-}
-
-interface PostCommandService {
-    @Headers("Accept: application/json", "Content-Type: application/json;charset=UTF-8")
-    @POST("commands")
-    fun createIssue(
-            @Header("Authorization") auth: String,
-            @Body model: String): Call<String>
-
-    companion object Factory {
-        fun create(): PostCommandService {
-            val retrofit = Retrofit.Builder().baseUrl(NEW_ROOT_REF).addConverterFactory(ScalarsConverterFactory.create()).build()
-            return retrofit.create(PostCommandService::class.java)
-        }
-    }
+    data class IssueIn(var description: String? = null, var fields: List<Any>? = null, var project: Project? = null, var summary: String? = null, var id: String? = null, var idReadable: String? = null)
 }
