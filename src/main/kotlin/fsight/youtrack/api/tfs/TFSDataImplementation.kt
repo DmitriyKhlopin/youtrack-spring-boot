@@ -140,25 +140,22 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
         val postableItem = getPostableRequirement(item)
         val id2 = PostIssueRetrofitService.create().createIssue(AUTH, postableItem).execute()
         val idReadable = Gson().fromJson(id2.body(), YouTrackIssue::class.java)
-        if (id2.errorBody() == null) getTasks(id, idReadable.idReadable ?: "")
+        if (id2.errorBody() == null) getTasks(requirement = item, parentId = idReadable.idReadable ?: "")
     }
 
 
-    fun getTasks(requirementId: Int, parentId: String) {
+    fun getTasks(requirement: TFSRequirement, parentId: String) {
         val r = dslContext.select()
                 .from(TFS_TASKS)
                 .leftJoin(TFS_LINKS).on(TFS_TASKS.ID.eq(TFS_LINKS.TARGET_ID))
-                .where(TFS_LINKS.SOURCE_ID.eq(requirementId))
-                .fetchInto(TFSTask::class.java).map { item -> getPostableTask(item) }
+                .where(TFS_LINKS.SOURCE_ID.eq(requirement.id))
+                .fetchInto(TFSTask::class.java).map { item -> getPostableTask(item, requirement.iterationPath) }
         r.forEach {
             val id2 = YouTrackAPI.create().createIssue(AUTH, it).execute()
-            println("readable id = ${id2.body()} - ${id2.errorBody()}")
             if (id2.errorBody() != null) println(it)
             val idReadable = Gson().fromJson(id2.body(), YouTrackIssue::class.java)
             val command = Gson().toJson(YouTrackCommand(issues = arrayListOf(YouTrackIssue(id = idReadable.id)), silent = true, query = "подзадача $parentId"))
-            println(command)
-            val r2 = YouTrackAPI.create().postCommand(AUTH, command).execute()
-            println("readable id = ${r2.body()} - ${r2.errorBody()}")
+            YouTrackAPI.create().postCommand(AUTH, command).execute()
         }
     }
 
@@ -200,21 +197,13 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
                 ))
     }
 
-    fun getPostableTask(item: TFSTask): String {
+    fun getPostableTask(item: TFSTask, iteration: String?): String {
         println(item)
-        val type = customFieldValues.asSequence().filter {
-            it.fieldName == "Type" && it.name == (item.type ?: "Task")
-        }.first().let { it -> FieldValue(id = it.fieldId, `$type` = types[it.`$type`], value = ActualValue(id = it.id, name = it.name)) }
-        val iterationPath = customFieldValues.asSequence().filter {
-            it.fieldName == "Iteration" && it.name == (item.iterationPath ?: "\\P7\\PP9")
-        }.first().let { it -> FieldValue(id = it.fieldId, `$type` = types[it.`$type`], value = ActualValue(id = it.id, name = it.name)) }
-        val areaName = customFieldValues.asSequence().filter {
-            it.fieldName == "Area name" && it.name == item.areaName
-        }.firstOrNull().let { it -> if (it !== null) FieldValue(id = it.fieldId, `$type` = types[it.`$type`], value = ActualValue(id = it.id, name = it.name)) else null }
+        val type = getCustomFieldValue("Type", item.type ?: "Task")
+        val iterationPath = getCustomFieldValue("Iteration", iteration ?: item.iterationPath ?: "\\P7\\PP9")
+        val areaName = getCustomFieldValue("Area name", item.areaName ?: "P7")
         val estimationDev = PeriodValue(id = "100-17", `$type` = "jetbrains.youtrack.timetracking.periodField.PeriodIssueCustomField", value = ActualPeriodValue(`$type` = "jetbrains.youtrack.timetracking.periodField.PeriodValue", minutes = (item.testEc + item.developmentEc) * 60))
-        val u = users.firstOrNull { it.email == item.developer || it.email == item.tester }
-        val assignee = FieldValue(id = "86-16", `$type` = "jetbrains.charisma.customfields.complex.user.SingleUserIssueCustomField", value = ActualValue(id = u?.id
-                ?: "1-1", name = u?.fullName ?: "admin"))
+        val assignee = listOf(getCustomFieldValue("Assignee", item.developer), getCustomFieldValue("Assignee", item.tester)).firstOrNull()
         return Gson().toJson(
                 YouTrackIssue(
                         project = Project(id = "0-15"),
