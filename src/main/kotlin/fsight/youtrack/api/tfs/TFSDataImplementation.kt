@@ -122,16 +122,16 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
 
     override fun postItemsToYouTrack(iteration: String?): ResponseEntity<Any> {
         initDictionaries()
+        val iterations = iteration?.split(",")
         val items = dslContext.select(
                 TFS_WI.ID.`as`("id"),
                 TFS_WI.REV.`as`("rev"),
                 TFS_WI.CREATE_DATE.`as`("createDate")
         )
                 .from(TFS_WI)
-                .where(TFS_WI.ITERATION_PATH.eq(iteration))
+                .where(TFS_WI.ITERATION_PATH.`in`(iterations))
                 .orderBy(TFS_WI.ID)
                 .fetchInto(TFSRequirement::class.java).map { item -> item.id }
-
         items.forEach {
             postEachItem(it)
         }
@@ -141,7 +141,7 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
     fun postEachItem(id: Int) {
         val item = getItemById(id)
         val postableItem = getPostableRequirement(item)
-        val id2 = PostIssueRetrofitService.create().createIssue(AUTH, postableItem).execute()
+        val id2 = YouTrackAPI.create().createIssue(AUTH, postableItem).execute()
         val idReadable = Gson().fromJson(id2.body(), YouTrackIssue::class.java)
         if (id2.errorBody() == null) getTasks(requirement = item, parentId = idReadable.idReadable ?: "")
     }
