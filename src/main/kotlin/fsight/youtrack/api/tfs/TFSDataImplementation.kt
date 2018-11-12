@@ -19,9 +19,15 @@ import org.springframework.stereotype.Service
 
 @Service
 class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService {
-    private final val types = hashMapOf<String, String>()
-    private final val customFieldValues = arrayListOf<BundleValue>()
-    private final val users = arrayListOf<UserDetails>()
+    private final val types: HashMap<String, String> by lazy {
+        hashMapOf<String, String>().also {
+            it["jetbrains.charisma.customfields.complex.state.StateBundle"] = "jetbrains.charisma.customfields.complex.state.StateIssueCustomField"
+            it["jetbrains.charisma.customfields.complex.ownedField.OwnedBundle"] = "jetbrains.charisma.customfields.complex.ownedField.SingleOwnedIssueCustomField"
+            it["jetbrains.charisma.customfields.complex.enumeration.EnumBundle"] = "jetbrains.charisma.customfields.complex.enumeration.SingleEnumIssueCustomField"
+            it["jetbrains.charisma.customfields.complex.version.VersionBundle"] = "jetbrains.charisma.customfields.complex.version.SingleVersionIssueCustomField"
+            it["jetbrains.charisma.customfields.complex.user.UserBundle"] = "jetbrains.charisma.customfields.complex.user.SingleUserIssueCustomField"
+        }
+    }
     private final val prioritiesMap: HashMap<String, String> by lazy {
         hashMapOf<String, String>().also { it ->
             it["High"] = "Major"
@@ -29,13 +35,10 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
             it["Low"] = "Minor"
         }
     }
+    private final val customFieldValues = arrayListOf<BundleValue>()
+    private final val users = arrayListOf<UserDetails>()
 
     init {
-        types["jetbrains.charisma.customfields.complex.state.StateBundle"] = "jetbrains.charisma.customfields.complex.state.StateIssueCustomField"
-        types["jetbrains.charisma.customfields.complex.ownedField.OwnedBundle"] = "jetbrains.charisma.customfields.complex.ownedField.SingleOwnedIssueCustomField"
-        types["jetbrains.charisma.customfields.complex.enumeration.EnumBundle"] = "jetbrains.charisma.customfields.complex.enumeration.SingleEnumIssueCustomField"
-        types["jetbrains.charisma.customfields.complex.version.VersionBundle"] = "jetbrains.charisma.customfields.complex.version.SingleVersionIssueCustomField"
-        types["jetbrains.charisma.customfields.complex.user.UserBundle"] = "jetbrains.charisma.customfields.complex.user.SingleUserIssueCustomField"
         this.initDictionaries()
     }
 
