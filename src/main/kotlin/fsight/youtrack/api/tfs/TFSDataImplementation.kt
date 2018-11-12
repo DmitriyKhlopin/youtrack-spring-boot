@@ -11,6 +11,7 @@ import fsight.youtrack.generated.jooq.tables.TfsWi.TFS_WI
 import fsight.youtrack.generated.jooq.tables.Users.USERS
 import fsight.youtrack.models.TFSRequirement
 import fsight.youtrack.models.UserDetails
+import fsight.youtrack.models.YouTrackCommand
 import fsight.youtrack.models.v2.Project
 import org.jooq.DSLContext
 import org.jsoup.Jsoup
@@ -46,7 +47,12 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
         types["jetbrains.charisma.customfields.complex.version.VersionBundle"] = "jetbrains.charisma.customfields.complex.version.SingleVersionIssueCustomField"
         types["jetbrains.charisma.customfields.complex.user.UserBundle"] = "jetbrains.charisma.customfields.complex.user.SingleUserIssueCustomField"
         /*types["jetbrains.charisma.customfields.complex.user.UserBundle"] = "jetbrains.charisma.persistence.user.User"*/
+        this.initDictionaries()
+    }
 
+    override fun initDictionaries() {
+        customFieldValues.clear()
+        users.clear()
         customFieldValues.addAll(
                 dslContext
                         .select(
@@ -84,21 +90,21 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
                 TFS_WI.REV.`as`("rev"),
                 TFS_WI.STATE.`as`("state"),
                 TFS_WI.TYPE.`as`("type"),
-                TFS_WI.CREATE_DATE.`as`("create_date"),
+                TFS_WI.CREATE_DATE.`as`("createDate"),
                 TFS_WI.SEVERITY.`as`("severity"),
                 TFS_WI.PROJECT.`as`("project"),
                 TFS_WI.CUSTOMER.`as`("customer"),
-                TFS_WI.PRODUCT_MANAGER.`as`("product_manager"),
-                TFS_WI.PRODUCT_MANAGER_DIRECTOR.`as`("product_manager_director"),
-                TFS_WI.PROPOSAL_QUALITY.`as`("proposal_quality"),
-                TFS_WI.PM_ACCEPTED.`as`("pm_accepted"),
-                TFS_WI.DM_ACCEPTED.`as`("dm_accepted"),
-                TFS_WI.PROJECT_NODE_NAME.`as`("project_node_name"),
-                TFS_WI.PROJECT_PATH.`as`("project_path"),
-                TFS_WI.AREA_NAME.`as`("area_name"),
-                TFS_WI.AREA_PATH.`as`("area_path"),
-                TFS_WI.ITERATION_PATH.`as`("iteration_path"),
-                TFS_WI.ITERATION_NAME.`as`("iteration_name"),
+                TFS_WI.PRODUCT_MANAGER.`as`("productManager"),
+                TFS_WI.PRODUCT_MANAGER_DIRECTOR.`as`("productManagerDirector"),
+                TFS_WI.PROPOSAL_QUALITY.`as`("proposalQuality"),
+                TFS_WI.PM_ACCEPTED.`as`("pmAccepted"),
+                TFS_WI.DM_ACCEPTED.`as`("dmAccepted"),
+                TFS_WI.PROJECT_NODE_NAME.`as`("projectNodeName"),
+                TFS_WI.PROJECT_PATH.`as`("projectPath"),
+                TFS_WI.AREA_NAME.`as`("areaName"),
+                TFS_WI.AREA_PATH.`as`("areaPath"),
+                TFS_WI.ITERATION_PATH.`as`("iterationPath"),
+                TFS_WI.ITERATION_NAME.`as`("iterationName"),
                 TFS_WI.TITLE.`as`("title"),
                 TFS_WI.PROBLEM_DESCRIPTION.`as`("problemDescription"),
                 TFS_WI.PROPOSED_CHANGE.`as`("proposedChange"),
@@ -118,21 +124,21 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
                 TFS_WI.REV.`as`("rev"),
                 TFS_WI.STATE.`as`("state"),
                 TFS_WI.TYPE.`as`("type"),
-                TFS_WI.CREATE_DATE.`as`("create_date"),
+                TFS_WI.CREATE_DATE.`as`("createDate"),
                 TFS_WI.SEVERITY.`as`("severity"),
                 TFS_WI.PROJECT.`as`("project"),
                 TFS_WI.CUSTOMER.`as`("customer"),
-                TFS_WI.PRODUCT_MANAGER.`as`("product_manager"),
-                TFS_WI.PRODUCT_MANAGER_DIRECTOR.`as`("product_manager_director"),
-                TFS_WI.PROPOSAL_QUALITY.`as`("proposal_quality"),
-                TFS_WI.PM_ACCEPTED.`as`("pm_accepted"),
-                TFS_WI.DM_ACCEPTED.`as`("dm_accepted"),
-                TFS_WI.PROJECT_NODE_NAME.`as`("project_node_name"),
-                TFS_WI.PROJECT_PATH.`as`("project_path"),
-                TFS_WI.AREA_NAME.`as`("area_name"),
-                TFS_WI.AREA_PATH.`as`("area_path"),
-                TFS_WI.ITERATION_PATH.`as`("iteration_path"),
-                TFS_WI.ITERATION_NAME.`as`("iteration_name"),
+                TFS_WI.PRODUCT_MANAGER.`as`("productManager"),
+                TFS_WI.PRODUCT_MANAGER_DIRECTOR.`as`("productManagerDirector"),
+                TFS_WI.PROPOSAL_QUALITY.`as`("proposalQuality"),
+                TFS_WI.PM_ACCEPTED.`as`("pmAccepted"),
+                TFS_WI.DM_ACCEPTED.`as`("dmAccepted"),
+                TFS_WI.PROJECT_NODE_NAME.`as`("projectNodeName"),
+                TFS_WI.PROJECT_PATH.`as`("projectPath"),
+                TFS_WI.AREA_NAME.`as`("areaName"),
+                TFS_WI.AREA_PATH.`as`("areaPath"),
+                TFS_WI.ITERATION_PATH.`as`("iterationPath"),
+                TFS_WI.ITERATION_NAME.`as`("iterationName"),
                 TFS_WI.TITLE.`as`("title"),
                 TFS_WI.PROBLEM_DESCRIPTION.`as`("problemDescription"),
                 TFS_WI.PROPOSED_CHANGE.`as`("proposedChange"),
@@ -162,6 +168,7 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
     }
 
     override fun postItemsToYouTrack(iteration: String?): ResponseEntity<Any> {
+        initDictionaries()
         val items = dslContext.select(
                 TFS_WI.ID.`as`("id"),
                 TFS_WI.REV.`as`("rev"),
@@ -260,6 +267,9 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
         val priority = customFieldValues.asSequence().filter {
             it.fieldName == "Priority" && it.name == (prioritiesMap[item.severity ?: "Medium"])
         }.first().let { it -> FieldValue(id = it.fieldId, `$type` = types[it.`$type`], value = ActualValue(id = it.id, name = it.name)) }
+        val iterationPath = customFieldValues.asSequence().filter {
+            it.fieldName == "Iteration" && it.name == (item.iterationPath ?: "\\P7\\PP9")
+        }.first().let { it -> FieldValue(id = it.fieldId, `$type` = types[it.`$type`], value = ActualValue(id = it.id, name = it.name)) }
         val proposalQuality = customFieldValues.asSequence().filter {
             it.fieldName == "Proposal quality" && it.name == (item.proposalQuality ?: "Average")
         }.first().let { it -> FieldValue(id = it.fieldId, `$type` = types[it.`$type`], value = ActualValue(id = it.id, name = it.name)) }
@@ -283,15 +293,18 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
                         project = Project(id = "0-15"),
                         summary = item.title,
                         description = "TFS: ${item.id} \n\nPD:\n${Jsoup.parse(item.problemDescription).text()} \n\nPC:\n${Jsoup.parse(item.proposedChange).text()} \n\nER:\n${Jsoup.parse(item.expectedResult).text()}",
-                        fields = arrayListOf(priority, type, proposalQuality, pmAccepted, dmAccepted, areaName, assignee).filterNotNull() as ArrayList<Any>
+                        fields = listOfNotNull(priority, type, proposalQuality, pmAccepted, dmAccepted, areaName, assignee, iterationPath)
                 ))
     }
 
     fun getPostableTask(item: TFSTask): String {
+        println(item)
         val type = customFieldValues.asSequence().filter {
             it.fieldName == "Type" && it.name == (item.type ?: "Task")
         }.first().let { it -> FieldValue(id = it.fieldId, `$type` = types[it.`$type`], value = ActualValue(id = it.id, name = it.name)) }
-
+        val iterationPath = customFieldValues.asSequence().filter {
+            it.fieldName == "Iteration" && it.name == (item.iterationPath ?: "\\P7\\PP9")
+        }.first().let { it -> FieldValue(id = it.fieldId, `$type` = types[it.`$type`], value = ActualValue(id = it.id, name = it.name)) }
         val areaName = customFieldValues.asSequence().filter {
             it.fieldName == "Area name" && it.name == item.areaName
         }.firstOrNull().let { it -> if (it !== null) FieldValue(id = it.fieldId, `$type` = types[it.`$type`], value = ActualValue(id = it.id, name = it.name)) else null }
@@ -304,17 +317,16 @@ class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService
                         project = Project(id = "0-15"),
                         summary = item.title,
                         description = "TFS: ${item.id} \n\n${Jsoup.parse(item.description).text()}",
-                        fields = arrayListOf(type, areaName, estimationDev, assignee).filterNotNull() as ArrayList<Any>
+                        fields = listOfNotNull(type, areaName, estimationDev, assignee, iterationPath)
                 ))
     }
 
-    data class YouTrackCommand(var issues: ArrayList<IssueIn>, var silent: Boolean = false, var query: String = "")
     data class ReadableId(val id: String? = null, val idReadable: String? = null)
     data class ActualPeriodValue(val `$type`: String?, val minutes: Int?)
     data class PeriodValue(val id: String?, val `$type`: String?, val value: ActualPeriodValue?)
     data class ActualValue(val id: String?, val name: String?)
     data class FieldValue(val id: String?, val `$type`: String?, val value: ActualValue?)
-    data class IssueIn(var description: String? = null, var fields: ArrayList<Any>? = null, var project: Project? = null, var summary: String? = null, var id: String? = null)
+    data class IssueIn(var description: String? = null, var fields: List<Any>? = null, var project: Project? = null, var summary: String? = null, var id: String? = null)
 }
 
 interface PostIssueRetrofitService {

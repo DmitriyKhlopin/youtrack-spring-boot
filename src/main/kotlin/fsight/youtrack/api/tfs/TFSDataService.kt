@@ -11,4 +11,5 @@ interface TFSDataService {
     fun postItemsToYouTrack(offset: Int?, limit: Int?): ResponseEntity<Any>
     fun postItemsToYouTrack(iteration: String?): ResponseEntity<Any>
     fun toJson(id: Int): ResponseEntity<Any>
+    fun initDictionaries()
 }
