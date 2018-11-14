@@ -17,4 +17,7 @@ class TimeAccountingController(private val service: TimeAccountingService) {
     @GetMapping("/api/time")
     fun getWorkItems(@RequestParam("dateFrom", required = false) dateFrom: String? = null,
                      @RequestParam("dateTo", required = false) dateTo: String? = null) = service.getWorkItems(dateFrom, dateTo)
+
+    @GetMapping("/api/time/dictionary")
+    fun getDictionary() = service.getDictionary()
 }

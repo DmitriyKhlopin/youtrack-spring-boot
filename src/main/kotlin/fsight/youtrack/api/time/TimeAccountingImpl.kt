@@ -1,6 +1,8 @@
 package fsight.youtrack.api.time
 
+import fsight.youtrack.generated.jooq.tables.DictionaryProjectCustomerEts.DICTIONARY_PROJECT_CUSTOMER_ETS
 import fsight.youtrack.generated.jooq.tables.TimeAccounting.TIME_ACCOUNTING
+import fsight.youtrack.models.TimeAccountingDictionaryItem
 import fsight.youtrack.models.TimeAccountingItem
 import org.jooq.DSLContext
 import org.springframework.stereotype.Service
@@ -128,6 +130,16 @@ class TimeAccountingImpl(private val dsl: DSLContext) : TimeAccountingService {
         }
         return q.fetchInto(TimeAccountingItem::class.java)
                 .sortedBy { it.agent }
+    }
+
+    override fun getDictionary(): List<TimeAccountingDictionaryItem> {
+        return dsl.select(
+                DICTIONARY_PROJECT_CUSTOMER_ETS.PROJ_SHORT_NAME.`as`("projectShortName"),
+                DICTIONARY_PROJECT_CUSTOMER_ETS.CUSTOMER.`as`("customer"),
+                DICTIONARY_PROJECT_CUSTOMER_ETS.PROJ_ETS.`as`("projectEts"),
+                DICTIONARY_PROJECT_CUSTOMER_ETS.ITERATION_PATH.`as`("iterationPath"))
+                .from(DICTIONARY_PROJECT_CUSTOMER_ETS)
+                .fetchInto(TimeAccountingDictionaryItem::class.java)
     }
 }
 
