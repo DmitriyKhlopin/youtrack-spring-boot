@@ -29,3 +29,6 @@ gradlew.bat
 
 src/main/kotlin/fsight/youtrack/Configuration.kt
 src/main/kotlin/fsight/youtrack/generated/
+src/main/kotlin/fsight/youtrack/api/etl/issues/v2/
+src/main/resources/test.json
+src/main/resources/test.txt
