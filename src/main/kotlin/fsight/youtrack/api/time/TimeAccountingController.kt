@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @CrossOrigin
 @RestController
-class TimeAccountingController(private val service: TimeAccountingService) {
+class TimeAccountingController(private val service: ITimeAccounting) {
     @GetMapping("/api/wi_today")
     fun getTimeAccountingToday() = service.getWorkItemsToday("")
 
@@ -20,4 +20,9 @@ class TimeAccountingController(private val service: TimeAccountingService) {
 
     @GetMapping("/api/time/dictionary")
     fun getDictionary() = service.getDictionary()
+
+    @GetMapping("api/time/work/fact")
+    fun getFactWork(@RequestParam("emails", required = false) emails: String? = null,
+                    @RequestParam("dateFrom", required = false) dateFrom: String? = null,
+                    @RequestParam("dateTo", required = false) dateTo: String? = null) = service.getFactWork(emails, dateFrom, dateTo)
 }

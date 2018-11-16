@@ -1,7 +1,9 @@
 package fsight.youtrack.api.time
 
 import fsight.youtrack.generated.jooq.tables.DictionaryProjectCustomerEts.DICTIONARY_PROJECT_CUSTOMER_ETS
+import fsight.youtrack.generated.jooq.tables.FactWork.FACT_WORK
 import fsight.youtrack.generated.jooq.tables.TimeAccounting.TIME_ACCOUNTING
+import fsight.youtrack.models.FactWorkItem
 import fsight.youtrack.models.TimeAccountingDictionaryItem
 import fsight.youtrack.models.TimeAccountingItem
 import org.jooq.DSLContext
@@ -15,7 +17,7 @@ import java.time.format.DateTimeFormatter
 
 @Service
 @Transactional
-class TimeAccountingImpl(private val dsl: DSLContext) : TimeAccountingService {
+class TimeAccounting(private val dsl: DSLContext) : ITimeAccounting {
     override fun getWorkItemsToday(token: String?): List<TimeAccountingItem> {
         val ts = Timestamp.valueOf(LocalDateTime.now().toLocalDate().atStartOfDay())
         val q = dsl.select(
@@ -140,6 +142,34 @@ class TimeAccountingImpl(private val dsl: DSLContext) : TimeAccountingService {
                 DICTIONARY_PROJECT_CUSTOMER_ETS.ITERATION_PATH.`as`("iterationPath"))
                 .from(DICTIONARY_PROJECT_CUSTOMER_ETS)
                 .fetchInto(TimeAccountingDictionaryItem::class.java)
+    }
+
+    override fun getFactWork(emails: String?, dateFrom: String?, dateTo: String?): List<FactWorkItem> {
+        val e = emails?.split(",") ?: listOf("dmitriy.khlopin@fsight.ru")
+        val q = if (dateFrom != null && dateTo != null) {
+            val df = LocalDate.parse(dateFrom, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+            val dt = LocalDate.parse(dateTo, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+            dsl.select(
+                    FACT_WORK.EMAIL.`as`("user"),
+                    FACT_WORK.FACT_DATE.`as`("date"),
+                    FACT_WORK.FACT_TIME.`as`("spentTime"),
+                    FACT_WORK.FACT_TU.`as`("accountedTime")
+            )
+                    .from(FACT_WORK)
+                    .where(FACT_WORK.FACT_DATE.between(Timestamp.valueOf(df.atStartOfDay()), Timestamp.valueOf(dt.atStartOfDay())))
+        } else {
+            val ts = Timestamp.valueOf(LocalDateTime.now().toLocalDate().atStartOfDay())
+            dsl.select(
+                    FACT_WORK.EMAIL.`as`("user"),
+                    FACT_WORK.FACT_DATE.`as`("date"),
+                    FACT_WORK.FACT_TIME.`as`("spentTime"),
+                    FACT_WORK.FACT_TU.`as`("accountedTime")
+            )
+                    .from(FACT_WORK)
+                    .where(FACT_WORK.FACT_DATE.eq(ts))
+        }
+        println(q.sql.toString())
+        return q.and(FACT_WORK.EMAIL.`in`(e)).fetchInto(FactWorkItem::class.java).sortedBy { it.user }
     }
 }
 
