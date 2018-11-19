@@ -3,7 +3,7 @@ package fsight.youtrack.api.etl
 import fsight.youtrack.ETLState
 import fsight.youtrack.api.etl.bundles.BundleService
 import fsight.youtrack.api.etl.bundles.v2.BundleServiceV2
-import fsight.youtrack.api.etl.issues.IssueService
+import fsight.youtrack.api.etl.issues.IIssue
 import fsight.youtrack.api.etl.projects.ProjectsService
 import fsight.youtrack.api.etl.timeline.TimelineService
 import fsight.youtrack.api.etl.users.UsersImplementation
@@ -14,23 +14,21 @@ import org.springframework.stereotype.Service
 import java.util.*
 
 @Service
-class ETLImplementation(private val projects: ProjectsService,
-                        private val bundles: BundleService,
-                        private val issue: IssueService,
-                        private val users: UsersImplementation,
-                        private val timeline: TimelineService,
-                        private val bundleServiceV2: BundleServiceV2,
-                        private val issuesV2: IssuesServiceV2) : ETLService {
-    var state = ETLState.IDLE
-    var lastResult: ETLResult? = null
-
-    override fun getCurrentState(): ETLState = state
+class ETL(private val projects: ProjectsService,
+          private val bundles: BundleService,
+          private val issue: IIssue,
+          private val users: UsersImplementation,
+          private val timeline: TimelineService,
+          private val bundleServiceV2: BundleServiceV2,
+          private val issuesV2: IssuesServiceV2) : IETL {
 
     override fun loadDataFromYT(manual: Boolean, customFilter: String?): ETLResult? {
-        println(customFilter)
-        when (state) {
+        println("Current ETL state: ${etlState.state}")
+        println("Custom filter: $customFilter")
+        when (etlState) {
             ETLState.IDLE, ETLState.DONE -> {
-                state = ETLState.RUNNING
+                println("Launching ETL")
+                /*etlState = ETLState.RUNNING*/
                 val m = GregorianCalendar.getInstance().also { it.time = Date() }.get(Calendar.MINUTE)
                 val issuesCount = issue.getIssues(customFilter)
                 if (m == 30) {
@@ -40,7 +38,7 @@ class ETLImplementation(private val projects: ProjectsService,
                     issue.checkIssues()
                     projects.saveProjects()
                 }
-                state = ETLState.IDLE
+                etlState = ETLState.IDLE
                 lastResult = ETLResult(ETLState.DONE, issuesCount, 0)
             }
             ETLState.RUNNING -> lastResult = ETLResult(ETLState.RUNNING, 0, 0)
@@ -58,5 +56,10 @@ class ETLImplementation(private val projects: ProjectsService,
 
     override fun getIssueById(id: String): Issue {
         return issuesV2.getById(id)
+    }
+
+    companion object {
+        var etlState = ETLState.IDLE
+        var lastResult: ETLResult? = null
     }
 }

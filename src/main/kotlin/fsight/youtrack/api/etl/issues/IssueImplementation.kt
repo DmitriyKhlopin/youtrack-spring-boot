@@ -1,13 +1,14 @@
 package fsight.youtrack.api.etl.issues
 
 import fsight.youtrack.*
+import fsight.youtrack.api.etl.ETL
+import fsight.youtrack.api.etl.logs.ImportLogService
 import fsight.youtrack.generated.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALUES
 import fsight.youtrack.generated.jooq.tables.ErrorLog.ERROR_LOG
 import fsight.youtrack.generated.jooq.tables.IssueComments.ISSUE_COMMENTS
 import fsight.youtrack.generated.jooq.tables.IssueHistory.ISSUE_HISTORY
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
 import fsight.youtrack.generated.jooq.tables.WorkItems.WORK_ITEMS
-import fsight.youtrack.api.etl.logs.ImportLogService
 import fsight.youtrack.models.ImportLogModel
 import fsight.youtrack.models.Issue
 import fsight.youtrack.models.sql.IssueHistoryItem
@@ -22,12 +23,14 @@ import java.time.LocalDateTime
 
 @Service
 @Transactional
-class IssueImplementation(private val dslContext: DSLContext, private val importLogService: ImportLogService) : IssueService {
+class IssueImplementation(private val dslContext: DSLContext, private val importLogService: ImportLogService) : IIssue {
     override fun getIssues(customFilter: String?): Int {
+        println("Loading issues")
         val max = 10
         var i = 1
         var skip = 0
-        val filter =  customFilter ?:getFilter()
+        val filter = customFilter ?: getFilter()
+        println("Actual filter: $filter")
         if (filter == null) {
             while (i > 0) {
                 i = 0
@@ -67,15 +70,20 @@ class IssueImplementation(private val dslContext: DSLContext, private val import
     }
 
     private fun getFilter(): String? {
-        val issuesCount = dslContext.selectCount().from(ISSUES).fetchOneInto(Int::class.java)
-        val mode = if (issuesCount == 0) IssueRequestMode.ALL else IssueRequestMode.TODAY
-
-        return if (mode == 1) {
-            val maxUpdateDate = dslContext.select(DSL.max(ISSUES.UPDATED_DATE)).from(ISSUES).fetchOneInto(Timestamp::class.java)
-            val dateFrom = "${maxUpdateDate.toLocalDateTime().year}-${if (maxUpdateDate.toLocalDateTime().monthValue < 10) "0" else ""}${maxUpdateDate.toLocalDateTime().monthValue}-${if (maxUpdateDate.toLocalDateTime().dayOfMonth < 10) "0" else ""}${maxUpdateDate.toLocalDateTime().dayOfMonth}"
-            val dateTo = "${LocalDate.now().plusDays(1).year}-${if (LocalDate.now().plusDays(1).monthValue < 10) "0" else ""}${LocalDate.now().plusDays(1).monthValue}-${if (LocalDate.now().plusDays(1).dayOfMonth < 10) "0" else ""}${LocalDate.now().plusDays(1).dayOfMonth}"
-            "updated: $dateFrom .. $dateTo"
-        } else null
+        return try {
+            println("waiting for filter")
+            val issuesCount = dslContext.selectCount().from(ISSUES).fetchOneInto(Int::class.java)
+            val mode = if (issuesCount == 0) IssueRequestMode.ALL else IssueRequestMode.TODAY
+            if (mode == 1) {
+                val maxUpdateDate = dslContext.select(DSL.max(ISSUES.UPDATED_DATE)).from(ISSUES).fetchOneInto(Timestamp::class.java)
+                val dateFrom = "${maxUpdateDate.toLocalDateTime().year}-${if (maxUpdateDate.toLocalDateTime().monthValue < 10) "0" else ""}${maxUpdateDate.toLocalDateTime().monthValue}-${if (maxUpdateDate.toLocalDateTime().dayOfMonth < 10) "0" else ""}${maxUpdateDate.toLocalDateTime().dayOfMonth}"
+                val dateTo = "${LocalDate.now().plusDays(1).year}-${if (LocalDate.now().plusDays(1).monthValue < 10) "0" else ""}${LocalDate.now().plusDays(1).monthValue}-${if (LocalDate.now().plusDays(1).dayOfMonth < 10) "0" else ""}${LocalDate.now().plusDays(1).dayOfMonth}"
+                "updated: $dateFrom .. $dateTo"
+            } else null
+        } catch (e: Exception) {
+            ETL.etlState = ETLState.DONE
+            null
+        }
     }
 
     private fun Issue.saveBasicInfo() {
@@ -117,7 +125,7 @@ class IssueImplementation(private val dslContext: DSLContext, private val import
                     .set(ISSUES.ETS, field.getString("Проект (ETS)"))
                     .set(ISSUES.LOADED_DATE, Timestamp.valueOf(LocalDateTime.now().toLocalDate().atStartOfDay()))
                     .set(ISSUES.PROJECT_SHORT_NAME, field.getString("projectShortName"))
-                    .set(ISSUES.CUSTOMER, field.getString("Заказчик")?:"Внутренние работы")
+                    .set(ISSUES.CUSTOMER, field.getString("Заказчик") ?: "Внутренние работы")
                     .onDuplicateKeyUpdate()
                     .set(ISSUES.ENTITY_ID, entityId)
                     .set(ISSUES.SUMMARY, field.getString("summary"))
@@ -152,11 +160,11 @@ class IssueImplementation(private val dslContext: DSLContext, private val import
                     .set(ISSUES.ETS, field.getString("Проект (ETS)"))
                     .set(ISSUES.LOADED_DATE, Timestamp.valueOf(LocalDateTime.now().toLocalDate().atStartOfDay()))
                     .set(ISSUES.PROJECT_SHORT_NAME, field.getString("projectShortName"))
-                    .set(ISSUES.CUSTOMER, field.getString("Заказчик")?:"Внутренние работы")
+                    .set(ISSUES.CUSTOMER, field.getString("Заказчик") ?: "Внутренние работы")
                     .execute()
 
-        } catch (e: DataAccessException) {
-            println(e)
+        } catch (e: Exception) {
+            ETL.etlState = ETLState.DONE
             writeError(this.toString(), e.message ?: "")
         }
     }
@@ -178,8 +186,8 @@ class IssueImplementation(private val dslContext: DSLContext, private val import
                         .set(CUSTOM_FIELD_VALUES.FIELD_NAME, fieldName)
                         .set(CUSTOM_FIELD_VALUES.FIELD_VALUE, value)
                         .execute()
-            } catch (e: DataAccessException) {
-                println(e.message)
+            } catch (e: Exception) {
+                ETL.etlState = ETLState.DONE
                 writeError(field.toString(), e.message ?: "")
             }
         }
@@ -204,8 +212,8 @@ class IssueImplementation(private val dslContext: DSLContext, private val import
                         .set(ISSUE_COMMENTS.PERMITTED_GROUP, comment.permittedGroup)
                         .set(ISSUE_COMMENTS.REPLIES, comment.replies.toString())
                         .execute()
-            } catch (e: DataAccessException) {
-                println(e.message)
+            } catch (e: Exception) {
+                ETL.etlState = ETLState.DONE
                 writeError(comment.toString(), e.message ?: "")
             }
         }
@@ -215,7 +223,6 @@ class IssueImplementation(private val dslContext: DSLContext, private val import
         dslContext.deleteFrom(WORK_ITEMS).where(WORK_ITEMS.ISSUE_ID.eq(id)).execute()
         WorkItemRetrofitService.create().getWorkItems(AUTH, id).execute()?.body()?.forEach {
             try {
-                /*println(it)*/
                 dslContext
                         .insertInto(WORK_ITEMS)
                         .set(WORK_ITEMS.ISSUE_ID, id)
@@ -235,7 +242,7 @@ class IssueImplementation(private val dslContext: DSLContext, private val import
                         .set(WORK_ITEMS.DESCRIPTION, it.description)
                         .execute()
             } catch (e: DataAccessException) {
-                println(e.message)
+                ETL.etlState = ETLState.DONE
                 writeError(it.toString(), e.message ?: "")
             }
         }
@@ -269,30 +276,34 @@ class IssueImplementation(private val dslContext: DSLContext, private val import
                                     .set(ISSUE_HISTORY.NEW_VALUE_STRING, historyItem.newValue?.removeSurrounding("[", "]"))
                                     .set(ISSUE_HISTORY.UPDATE_WEEK, historyItem.updateDateTime.time.toWeek())
                                     .execute()
-                        } catch (e: DataAccessException) {
-                            println(e)
+                        } catch (e: java.lang.Exception) {
+                            ETL.etlState = ETLState.DONE
                         }
                     }
         }
-        val d = dslContext
-                .select(DSL.max(ISSUE_HISTORY.UPDATE_DATE_TIME).`as`("nt"))
-                .from(ISSUE_HISTORY)
-                .where(ISSUE_HISTORY.ISSUE_ID.eq(issueId).and(ISSUE_HISTORY.FIELD_NAME.eq("Оценка")))
-                .fetchOneInto(NullableTimestamp::class.java)
-        if (d.nt != null)
-            dslContext.update(ISSUES)
-                    .set(ISSUES.QUALITY_EVALUATION_DATE_TIME, d.nt)
-                    .set(ISSUES.QUALITY_EVALUATION_DATE, d.nt.time.toDate())
-                    .set(ISSUES.QUALITY_EVALUATION_WEEK, d.nt.time.toWeek())
-                    .where(ISSUES.ID.eq(issueId))
-                    .execute()
+        try {
+            val d = dslContext
+                    .select(DSL.max(ISSUE_HISTORY.UPDATE_DATE_TIME).`as`("nt"))
+                    .from(ISSUE_HISTORY)
+                    .where(ISSUE_HISTORY.ISSUE_ID.eq(issueId).and(ISSUE_HISTORY.FIELD_NAME.eq("Оценка")))
+                    .fetchOneInto(NullableTimestamp::class.java)
+            if (d.nt != null)
+                dslContext.update(ISSUES)
+                        .set(ISSUES.QUALITY_EVALUATION_DATE_TIME, d.nt)
+                        .set(ISSUES.QUALITY_EVALUATION_DATE, d.nt.time.toDate())
+                        .set(ISSUES.QUALITY_EVALUATION_WEEK, d.nt.time.toWeek())
+                        .where(ISSUES.ID.eq(issueId))
+                        .execute()
+        } catch (e: Exception) {
+            ETL.etlState = ETLState.DONE
+        }
     }
 
     data class NullableTimestamp(
             val nt: Timestamp?
     )
 
-   override fun checkIssues() {
+    override fun checkIssues() {
         var count = 0
         val deletedItems = arrayListOf<String>()
         val result = dslContext.select(ISSUES.ID).from(ISSUES).fetchInto(String::class.java)
@@ -311,20 +322,28 @@ class IssueImplementation(private val dslContext: DSLContext, private val import
     }
 
     override fun deleteIssues(issues: ArrayList<String>): Int {
-        dslContext.deleteFrom(ISSUES).where(ISSUES.ID.`in`(issues)).execute()
-        dslContext.deleteFrom(CUSTOM_FIELD_VALUES).where((CUSTOM_FIELD_VALUES.ISSUE_ID.`in`(issues))).execute()
-        dslContext.deleteFrom(ISSUE_COMMENTS).where(ISSUE_COMMENTS.ISSUE_ID.`in`(issues)).execute()
-        dslContext.deleteFrom(WORK_ITEMS).where(WORK_ITEMS.ISSUE_ID.`in`(issues)).execute()
-        dslContext.deleteFrom(ISSUE_HISTORY).where(ISSUE_HISTORY.ISSUE_ID.`in`(issues)).execute()
+        try {
+            dslContext.deleteFrom(ISSUES).where(ISSUES.ID.`in`(issues)).execute()
+            dslContext.deleteFrom(CUSTOM_FIELD_VALUES).where((CUSTOM_FIELD_VALUES.ISSUE_ID.`in`(issues))).execute()
+            dslContext.deleteFrom(ISSUE_COMMENTS).where(ISSUE_COMMENTS.ISSUE_ID.`in`(issues)).execute()
+            dslContext.deleteFrom(WORK_ITEMS).where(WORK_ITEMS.ISSUE_ID.`in`(issues)).execute()
+            dslContext.deleteFrom(ISSUE_HISTORY).where(ISSUE_HISTORY.ISSUE_ID.`in`(issues)).execute()
+        } catch (e: java.lang.Exception) {
+            ETL.etlState = ETLState.DONE
+        }
         return 0
     }
 
     private fun writeError(item: String, message: String) {
-        dslContext
-                .insertInto(ERROR_LOG)
-                .set(ERROR_LOG.DATE, Timestamp.valueOf(LocalDateTime.now()))
-                .set(ERROR_LOG.ITEM, item)
-                .set(ERROR_LOG.ERROR, message)
-                .execute()
+        try {
+            dslContext
+                    .insertInto(ERROR_LOG)
+                    .set(ERROR_LOG.DATE, Timestamp.valueOf(LocalDateTime.now()))
+                    .set(ERROR_LOG.ITEM, item)
+                    .set(ERROR_LOG.ERROR, message)
+                    .execute()
+        } catch (e: Exception) {
+            ETL.etlState = ETLState.DONE
+        }
     }
 }
