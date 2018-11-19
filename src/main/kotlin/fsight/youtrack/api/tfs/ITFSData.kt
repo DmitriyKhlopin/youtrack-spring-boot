@@ -3,7 +3,7 @@ package fsight.youtrack.api.tfs
 import fsight.youtrack.models.TFSRequirement
 import org.springframework.http.ResponseEntity
 
-interface TFSDataService {
+interface ITFSData {
     fun getItemsCount(): Int
     fun getItems(offset: Int?, limit: Int?): ResponseEntity<Any>
     fun getItemById(id: Int): TFSRequirement

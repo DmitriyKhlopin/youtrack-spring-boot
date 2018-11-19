@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service
 class Users(private val dsl: DSLContext) : IUsers {
     override fun getAll(): List<UserDetails> {
         val names = listOf("maltsevav", "khlopinda", "nepomnyasas", "rusinovia", "zolotaryevan", "zolotaryova",
-                "antonlykov", "nesterovmv")
+                "antonlykov", "nesterovmv" ,"maltsevayv")
         return dsl.select(
                 ETS_NAMES.FSIGHT_EMAIL.`as`("email"),
                 ETS_NAMES.FULL_NAME.`as`("fullName")

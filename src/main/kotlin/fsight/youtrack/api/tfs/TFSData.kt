@@ -18,7 +18,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 
 @Service
-class TFSDataImplementation(private val dslContext: DSLContext) : TFSDataService {
+class TFSData(private val dslContext: DSLContext) : ITFSData {
     private final val types: HashMap<String, String> by lazy {
         hashMapOf<String, String>().also {
             it["jetbrains.charisma.customfields.complex.state.StateBundle"] = "jetbrains.charisma.customfields.complex.state.StateIssueCustomField"

@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*
 
 @CrossOrigin
 @RestController
-class TFSDataController(private val service: TFSDataService) {
+class TFSDataController(private val service: ITFSData) {
     @GetMapping("/api/tfs/count")
     fun getItemsCount() = service.getItemsCount()
 
