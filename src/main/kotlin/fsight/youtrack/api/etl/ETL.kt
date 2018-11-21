@@ -14,13 +14,15 @@ import org.springframework.stereotype.Service
 import java.util.*
 
 @Service
-class ETL(private val projects: ProjectsService,
-          private val bundles: BundleService,
-          private val issue: IIssue,
-          private val users: UsersImplementation,
-          private val timeline: TimelineService,
-          private val bundleServiceV2: BundleServiceV2,
-          private val issuesV2: IssuesServiceV2) : IETL {
+class ETL(
+    private val projects: ProjectsService,
+    private val bundles: BundleService,
+    private val issue: IIssue,
+    private val users: UsersImplementation,
+    private val timeline: TimelineService,
+    private val bundleServiceV2: BundleServiceV2,
+    private val issuesV2: IssuesServiceV2
+) : IETL {
 
     override fun loadDataFromYT(manual: Boolean, customFilter: String?): ETLResult? {
         println("Current ETL state: ${etlState.state}")

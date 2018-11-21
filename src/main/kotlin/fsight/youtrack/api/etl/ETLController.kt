@@ -6,11 +6,13 @@ import org.springframework.web.bind.annotation.*
 @RestController
 class ETLController(private val service: IETL) {
     @GetMapping("/api/etl")
-    fun loadData(@RequestParam("dateFrom", required = false) dateFrom: String? = "",
-                 @RequestParam("dateTo", required = false) dateTo: String? = "") =
-            if (dateFrom != null && dateTo != null)
-                service.loadDataFromYT(true, "updated: $dateFrom .. $dateTo") else
-                service.loadDataFromYT(true)
+    fun loadData(
+        @RequestParam("dateFrom", required = false) dateFrom: String? = "",
+        @RequestParam("dateTo", required = false) dateTo: String? = ""
+    ) =
+        if (dateFrom != null && dateTo != null)
+            service.loadDataFromYT(true, "updated: $dateFrom .. $dateTo") else
+            service.loadDataFromYT(true)
 
     @GetMapping("/api/etl/state")
     fun getCurrentState() = ETL.etlState
