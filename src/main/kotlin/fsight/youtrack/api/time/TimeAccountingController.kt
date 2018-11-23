@@ -15,14 +15,18 @@ class TimeAccountingController(private val service: ITimeAccounting) {
     fun getTimeAccountingYesterday() = service.getWorkItemsYesterday("")
 
     @GetMapping("/api/time")
-    fun getWorkItems(@RequestParam("dateFrom", required = false) dateFrom: String? = null,
-                     @RequestParam("dateTo", required = false) dateTo: String? = null) = service.getWorkItems(dateFrom, dateTo)
+    fun getWorkItems(
+        @RequestParam("dateFrom", required = false) dateFrom: String? = null,
+        @RequestParam("dateTo", required = false) dateTo: String? = null
+    ) = service.getWorkItems(dateFrom, dateTo)
 
     @GetMapping("/api/time/dictionary")
     fun getDictionary() = service.getDictionary()
 
     @GetMapping("api/time/work/fact")
-    fun getFactWork(@RequestParam("emails", required = false) emails: String? = null,
-                    @RequestParam("dateFrom", required = false) dateFrom: String? = null,
-                    @RequestParam("dateTo", required = false) dateTo: String? = null) = service.getFactWork(emails, dateFrom, dateTo)
+    fun getFactWork(
+        @RequestParam("emails", required = false) emails: String? = null,
+        @RequestParam("dateFrom", required = false) dateFrom: String? = null,
+        @RequestParam("dateTo", required = false) dateTo: String? = null
+    ) = service.getFactWork(emails, dateFrom, dateTo)
 }
