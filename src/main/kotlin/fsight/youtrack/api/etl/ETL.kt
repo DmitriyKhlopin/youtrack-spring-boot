@@ -23,8 +23,7 @@ class ETL(
     private val bundleServiceV2: BundleV2,
     private val issuesV2: IssuesServiceV2
 ) : IETL {
-
-    override fun loadDataFromYT(manual: Boolean, customFilter: String?): ETLResult? {
+    override fun loadDataFromYT(manual: Boolean, customFilter: String?, complete: Boolean): ETLResult? {
         println("Current ETL state: ${etlState.state}")
         println("Custom filter: $customFilter")
         when (etlState) {
@@ -33,7 +32,7 @@ class ETL(
                 /*etlState = ETLState.RUNNING*/
                 val m = GregorianCalendar.getInstance().also { it.time = Date() }.get(Calendar.MINUTE)
                 val issuesCount = issue.getIssues(customFilter)
-                if (m == 30) {
+                if (m == 30 || complete) {
                     bundles.getBundles()
                     users.getUsers()
                     timeline.launchCalculation()

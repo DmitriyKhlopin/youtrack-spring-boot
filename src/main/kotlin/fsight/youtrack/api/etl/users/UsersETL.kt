@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service
 @Service
 class UsersETL(private val dslContext: DSLContext) : IUsersETL {
     override fun getUsers() {
-        val a = YouTrackAPI.createOld(Converter.GSON).getUserDetails(AUTH)
+        val a = YouTrackAPI.create(Converter.GSON).getUserDetails(AUTH)
         println(a.request().url())
         val b = a.execute()
         println("${b.code()} - ${b.errorBody()}")

@@ -53,7 +53,7 @@ class Projects(private val dslContext: DSLContext) : IProjects {
     override fun saveProjectCustomFields(id: String) {
         YouTrackAPI.createOld(Converter.GSON).getProjectCustomFields(AUTH, id).execute().body()?.forEach { field ->
             val path = field.url.removePrefix(ROOT_REF)
-            val req = YouTrackAPI.create().getProjectCustomFieldParameters(AUTH, path)
+            val req = YouTrackAPI.createOld(Converter.GSON).getProjectCustomFieldParameters(AUTH, path)
             val res = req.execute().body()
             field.projectShortName = id
             field.fieldType = res?.type ?: ""
