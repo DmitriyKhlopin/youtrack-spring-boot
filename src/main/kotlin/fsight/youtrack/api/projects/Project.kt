@@ -6,11 +6,11 @@ import org.jooq.DSLContext
 import org.springframework.stereotype.Service
 
 @Service
-class ProjectImplementation(private val dslContext: DSLContext) : ProjectService {
+class Project(private val dslContext: DSLContext) : IProject {
     override fun getProjects(): List<ProjectModel> {
         return dslContext.select(
-                PROJECTS.NAME.`as`("name"),
-                PROJECTS.SHORT_NAME.`as`("shortName")
+            PROJECTS.NAME.`as`("name"),
+            PROJECTS.SHORT_NAME.`as`("shortName")
         ).from(PROJECTS).fetchInto(ProjectModel::class.java)
     }
 }

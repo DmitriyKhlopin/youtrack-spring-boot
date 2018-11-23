@@ -12,7 +12,7 @@ import org.jooq.exception.DataAccessException
 import org.springframework.stereotype.Service
 
 @Service
-class CleanupImplementation(private val dslContext: DSLContext) {
+class Cleanup(private val dslContext: DSLContext) {
     fun deleteAllFromDatabase() {
         try {
             /*dslContext.deleteFrom(ISSUES).execute()*/
@@ -31,7 +31,8 @@ class CleanupImplementation(private val dslContext: DSLContext) {
 
     fun deleteIssueFromDatabase(issues: ArrayList<String>) {
         dslContext.deleteFrom(ISSUES).where(Issues.ISSUES.ID.`in`(issues)).execute()
-        dslContext.deleteFrom(CUSTOM_FIELD_VALUES).where((CustomFieldValues.CUSTOM_FIELD_VALUES.ISSUE_ID.`in`(issues))).execute()
+        dslContext.deleteFrom(CUSTOM_FIELD_VALUES).where((CustomFieldValues.CUSTOM_FIELD_VALUES.ISSUE_ID.`in`(issues)))
+            .execute()
         dslContext.deleteFrom(ISSUE_COMMENTS).where(ISSUE_COMMENTS.ISSUE_ID.`in`(issues)).execute()
         dslContext.deleteFrom(WORK_ITEMS).where(WORK_ITEMS.ISSUE_ID.`in`(issues)).execute()
         dslContext.deleteFrom(ISSUE_HISTORY).where(ISSUE_HISTORY.ISSUE_ID.`in`(issues)).execute()

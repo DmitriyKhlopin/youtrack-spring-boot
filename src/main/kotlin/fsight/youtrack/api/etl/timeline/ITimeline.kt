@@ -1,6 +1,6 @@
 package fsight.youtrack.api.etl.timeline
 
-interface TimelineService {
+interface ITimeline {
     fun launchCalculation()
     fun calculateForId(issueId: String)
 }

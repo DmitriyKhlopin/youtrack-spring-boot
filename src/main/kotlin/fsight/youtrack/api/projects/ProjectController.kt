@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @CrossOrigin
 @RestController
-class ProjectController(private val service: ProjectService) {
+class ProjectController(private val service: IProject) {
     @GetMapping("/api/project")
     fun getProjects() = service.getProjects()
 }

@@ -5,7 +5,7 @@ import org.jooq.DSLContext
 import org.springframework.stereotype.Service
 
 @Service
-class TFSExportImplementation(private val dslContext: DSLContext) : TFSExportService {
+class TFSExport(private val dslContext: DSLContext) : ITFSExport {
     override fun getTFSItems(): List<TFSRequirement> {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }

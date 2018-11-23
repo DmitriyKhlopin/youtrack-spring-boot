@@ -5,3 +5,7 @@ enum class ETLState(val state: Int) {
     RUNNING(1),
     DONE(2)
 }
+
+enum class Converter {
+    GSON, SCALAR
+}

@@ -1,5 +1,5 @@
 package fsight.youtrack.api.etl.bundles
 
-interface BundleService{
+interface IBundle {
     fun getBundles()
 }

@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional
 
 @Service
 @Transactional
-class ImportLogImplementation(private val dslContext: DSLContext) : ImportLogService {
+class ImportLog(private val dslContext: DSLContext) : IImportLog {
     override fun getLog(): ArrayList<ImportLogModel> {
         return arrayListOf()
     }
@@ -16,10 +16,10 @@ class ImportLogImplementation(private val dslContext: DSLContext) : ImportLogSer
     override fun saveLog(model: ImportLogModel) {
         try {
             dslContext.insertInto(IMPORT_LOG)
-                    .set(IMPORT_LOG.SOURCE_URL, model.source)
-                    .set(IMPORT_LOG.DESTINATION_TABLE_NAME, model.table)
-                    .set(IMPORT_LOG.ITEMS_COUNT, model.items)
-                    .executeAsync()
+                .set(IMPORT_LOG.SOURCE_URL, model.source)
+                .set(IMPORT_LOG.DESTINATION_TABLE_NAME, model.table)
+                .set(IMPORT_LOG.ITEMS_COUNT, model.items)
+                .executeAsync()
         } catch (e: Exception) {
             println(e)
         }

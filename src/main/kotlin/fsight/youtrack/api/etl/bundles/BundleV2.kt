@@ -1,17 +1,19 @@
-package fsight.youtrack.api.etl.bundles.v2
+package fsight.youtrack.api.etl.bundles
 
 import com.google.gson.Gson
 import fsight.youtrack.AUTH
+import fsight.youtrack.Converter
+import fsight.youtrack.api.YouTrackAPI
 import fsight.youtrack.generated.jooq.tables.BundleValues.BUNDLE_VALUES
 import fsight.youtrack.generated.jooq.tables.records.BundleValuesRecord
 import org.jooq.DSLContext
 import org.springframework.stereotype.Service
 
 @Service
-class BundleImplementationsV2(private val dslContext: DSLContext) : BundleServiceV2 {
-    override fun getAllBundles() {
+class BundleV2(private val dslContext: DSLContext) : IBundle {
+    override fun getBundles() {
         val arr = arrayListOf<BundleValue>()
-        val res = BundleRetrofitServiceV2.create().getBundleValues(AUTH).execute()
+        val res = YouTrackAPI.create(Converter.GSON).getBundleValues(AUTH).execute()
         println(Gson().toJson(res.body()?.firstOrNull()))
         res.body()?.forEach { item: CustomField ->
             item.instances?.forEach { instance: FieldInstance ->

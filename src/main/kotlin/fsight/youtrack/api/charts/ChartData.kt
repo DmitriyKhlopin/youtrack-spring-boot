@@ -29,7 +29,7 @@ import kotlin.math.sqrt
 
 @Service
 @Transactional
-class ChartDataImplementation(private val dslContext: DSLContext) : ChartDataService {
+class ChartData(private val dslContext: DSLContext) : IChartData {
     data class SimpleAggregatedValue(val name: String, val value: Int)
 
     override fun getTimeLineData(projects: String, dateFrom: String, dateTo: String): List<TimeLine> {
@@ -38,32 +38,35 @@ class ChartDataImplementation(private val dslContext: DSLContext) : ChartDataSer
 
         val filter = projects.removeSurrounding("[", "]").split(",")
         return dslContext.select(
-                DYNAMICS.W.`as`("week"),
-                sum(DYNAMICS.ACTIVE).`as`("active"),
-                sum(DYNAMICS.CREATED).`as`("created"),
-                sum(DYNAMICS.RESOLVED).`as`("resolved"))
-                .from(DYNAMICS)
-                .where(DYNAMICS.W.between(Timestamp.valueOf(df.atStartOfDay()), Timestamp.valueOf(dt.atStartOfDay())))
-                .and(DYNAMICS.SHORT_NAME.`in`(filter))
-                .groupBy(DYNAMICS.W)
-                .fetchInto(TimeLine::class.java)
+            DYNAMICS.W.`as`("week"),
+            sum(DYNAMICS.ACTIVE).`as`("active"),
+            sum(DYNAMICS.CREATED).`as`("created"),
+            sum(DYNAMICS.RESOLVED).`as`("resolved")
+        )
+            .from(DYNAMICS)
+            .where(DYNAMICS.W.between(Timestamp.valueOf(df.atStartOfDay()), Timestamp.valueOf(dt.atStartOfDay())))
+            .and(DYNAMICS.SHORT_NAME.`in`(filter))
+            .groupBy(DYNAMICS.W)
+            .fetchInto(TimeLine::class.java)
     }
 
     override fun getTimeLineData(): List<TimeLine> {
         return dslContext.select(
-                DYNAMICS.W.`as`("week"),
-                sum(DYNAMICS.ACTIVE).`as`("active"),
-                sum(DYNAMICS.CREATED).`as`("created"),
-                sum(DYNAMICS.RESOLVED).`as`("resolved"))
-                .from(DYNAMICS)
-                .groupBy(DYNAMICS.W)
-                .fetchInto(TimeLine::class.java)
+            DYNAMICS.W.`as`("week"),
+            sum(DYNAMICS.ACTIVE).`as`("active"),
+            sum(DYNAMICS.CREATED).`as`("created"),
+            sum(DYNAMICS.RESOLVED).`as`("resolved")
+        )
+            .from(DYNAMICS)
+            .groupBy(DYNAMICS.W)
+            .fetchInto(TimeLine::class.java)
     }
 
     override fun getSigmaData(projects: String, dateFrom: String, dateTo: String): SigmaResult {
         val filter = projects.removeSurrounding("[", "]").split(",")
         val dt = LocalDate.parse(dateTo, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-        val items: List<Int> = dslContext.select(DSL.coalesce(ISSUES.TIME_AGENT, 0) + DSL.coalesce(ISSUES.TIME_DEVELOPER, 0))
+        val items: List<Int> =
+            dslContext.select(DSL.coalesce(ISSUES.TIME_AGENT, 0) + DSL.coalesce(ISSUES.TIME_DEVELOPER, 0))
                 .from(ISSUES)
                 .where(ISSUES.RESOLVED_DATE.lessOrEqual(Timestamp.valueOf(dt.atStartOfDay())))
                 .and(ISSUES.RESOLVED_DATE.isNotNull)
@@ -71,42 +74,56 @@ class ChartDataImplementation(private val dslContext: DSLContext) : ChartDataSer
                 .orderBy(ISSUES.CREATED_DATE.desc())
                 .limit(100)
                 .fetchInto(Int::class.java)
-        val sourceAgg = items.asSequence().groupBy { 1 + it / 32400 }.map { item -> SigmaItem(item.key, item.value.size) }.sortedBy { it.day }.toList()
+        val sourceAgg =
+            items.asSequence().groupBy { 1 + it / 32400 }.map { item -> SigmaItem(item.key, item.value.size) }
+                .sortedBy { it.day }.toList()
         sourceAgg.forEach { println(it) }
         val average = items.asSequence().map { it / 32400 }.average()
-        val power = sourceAgg.map { it -> SigmaIntermediatePower(it.day, it.count, average.toInt(), (average.toInt() - it.day) * (average.toInt() - it.day)) }
+        val power = sourceAgg.map { it ->
+            SigmaIntermediatePower(
+                it.day,
+                it.count,
+                average.toInt(),
+                (average.toInt() - it.day) * (average.toInt() - it.day)
+            )
+        }
         val p = power.asSequence().map { it.p * it.c }.sum().toDouble()
         val c = power.asSequence().map { it.c }.sum() - 1
         println("$p - $c")
         if (c == 0) return SigmaResult(0.0, listOf(SigmaItem(0, 0)))
         val sigma = sqrt(p / c)
         val active = dslContext.select(DSL.coalesce(ISSUES.TIME_AGENT, 0) + DSL.coalesce(ISSUES.TIME_DEVELOPER, 0))
-                .from(ISSUES)
-                .where(ISSUES.CREATED_DATE.lessOrEqual(Timestamp.valueOf(dt.atStartOfDay())))
-                .and(ISSUES.RESOLVED_DATE.isNull)
-                .and(ISSUES.PROJECT.`in`(filter))
-                .orderBy(ISSUES.CREATED_DATE.desc())
-                .limit(100)
-                .fetchInto(Int::class.java).asSequence().groupBy { 1 + it / 32400 }.map { item -> SigmaItem(item.key, item.value.size) }.sortedBy { it.day }.toList()
+            .from(ISSUES)
+            .where(ISSUES.CREATED_DATE.lessOrEqual(Timestamp.valueOf(dt.atStartOfDay())))
+            .and(ISSUES.RESOLVED_DATE.isNull)
+            .and(ISSUES.PROJECT.`in`(filter))
+            .orderBy(ISSUES.CREATED_DATE.desc())
+            .limit(100)
+            .fetchInto(Int::class.java).asSequence().groupBy { 1 + it / 32400 }
+            .map { item -> SigmaItem(item.key, item.value.size) }.sortedBy { it.day }.toList()
         println(active)
         return SigmaResult(sigma, active)
     }
 
-    override fun getCreatedCountOnWeek(projects: String, dateFrom: String, dateTo: String): List<SimpleAggregatedValue>? {
+    override fun getCreatedCountOnWeek(
+        projects: String,
+        dateFrom: String,
+        dateTo: String
+    ): List<SimpleAggregatedValue>? {
         val filter = projects.removeSurrounding("[", "]").split(",")
         val dt = LocalDate.parse(dateTo, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
         val df = dt.minusDays(7)
         return dslContext
-                .select(
-                        ISSUES.PROJECT.`as`("name"),
-                        DSL.count(ISSUES.PROJECT).`as`("value")
-                )
-                .from(ISSUES)
-                .where(ISSUES.CREATED_DATE.between(Timestamp.valueOf(df.atStartOfDay())).and(Timestamp.valueOf(dt.atStartOfDay())))
-                .and(ISSUES.RESOLVED_DATE.isNull)
-                .and(ISSUES.PROJECT.`in`(filter))
-                .groupBy(ISSUES.PROJECT)
-                .fetchInto(SimpleAggregatedValue::class.java).sortedByDescending { it.value }
+            .select(
+                ISSUES.PROJECT.`as`("name"),
+                DSL.count(ISSUES.PROJECT).`as`("value")
+            )
+            .from(ISSUES)
+            .where(ISSUES.CREATED_DATE.between(Timestamp.valueOf(df.atStartOfDay())).and(Timestamp.valueOf(dt.atStartOfDay())))
+            .and(ISSUES.RESOLVED_DATE.isNull)
+            .and(ISSUES.PROJECT.`in`(filter))
+            .groupBy(ISSUES.PROJECT)
+            .fetchInto(SimpleAggregatedValue::class.java).sortedByDescending { it.value }
     }
 
     override fun getGanttData(): ResponseEntity<Any> {
@@ -123,12 +140,15 @@ class ChartDataImplementation(private val dslContext: DSLContext) : ChartDataSer
         @Headers("Accept: application/json", "Content-Type: application/json;charset=UTF-8")
         @GET("reports/151-13?\$top=-1&fields=data(\$type,id,remainingEffortPresentation,tasks(id,idealStart))")
         fun get(
-                @Header("Authorization") auth: String): Call<Report>
+            @Header("Authorization") auth: String
+        ): Call<Report>
 
         companion object Factory {
             fun create(): GetGanttDataRetrofitService {
                 val gson = GsonBuilder().setLenient().create()
-                val retrofit = Retrofit.Builder().baseUrl(NEW_ROOT_REF).addConverterFactory(GsonConverterFactory.create(gson)).build()
+                val retrofit =
+                    Retrofit.Builder().baseUrl(NEW_ROOT_REF).addConverterFactory(GsonConverterFactory.create(gson))
+                        .build()
                 return retrofit.create(GetGanttDataRetrofitService::class.java)
             }
         }

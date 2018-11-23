@@ -1,12 +1,12 @@
 package fsight.youtrack.api.etl
 
 import fsight.youtrack.ETLState
-import fsight.youtrack.api.etl.bundles.BundleService
-import fsight.youtrack.api.etl.bundles.v2.BundleServiceV2
+import fsight.youtrack.api.etl.bundles.Bundle
+import fsight.youtrack.api.etl.bundles.BundleV2
 import fsight.youtrack.api.etl.issues.IIssue
-import fsight.youtrack.api.etl.projects.ProjectsService
-import fsight.youtrack.api.etl.timeline.TimelineService
-import fsight.youtrack.api.etl.users.UsersImplementation
+import fsight.youtrack.api.etl.projects.IProjects
+import fsight.youtrack.api.etl.timeline.ITimeline
+import fsight.youtrack.api.etl.users.UsersETL
 import fsight.youtrack.etlV2.issues.IssuesServiceV2
 import fsight.youtrack.models.ETLResult
 import fsight.youtrack.models.v2.Issue
@@ -15,12 +15,12 @@ import java.util.*
 
 @Service
 class ETL(
-    private val projects: ProjectsService,
-    private val bundles: BundleService,
+    private val projects: IProjects,
+    private val bundles: Bundle,
     private val issue: IIssue,
-    private val users: UsersImplementation,
-    private val timeline: TimelineService,
-    private val bundleServiceV2: BundleServiceV2,
+    private val users: UsersETL,
+    private val timeline: ITimeline,
+    private val bundleServiceV2: BundleV2,
     private val issuesV2: IssuesServiceV2
 ) : IETL {
 
@@ -49,7 +49,7 @@ class ETL(
     }
 
     override fun getBundles() {
-        bundleServiceV2.getAllBundles()
+        bundleServiceV2.getBundles()
     }
 
     override fun getUsers() {

@@ -3,7 +3,8 @@ package fsight.youtrack.api.tfs
 import com.google.gson.Gson
 import fsight.youtrack.AUTH
 import fsight.youtrack.api.YouTrackAPI
-import fsight.youtrack.api.etl.bundles.v2.BundleValue
+import fsight.youtrack.api.etl.bundles.BundleValue
+
 import fsight.youtrack.generated.jooq.tables.BundleValues.BUNDLE_VALUES
 import fsight.youtrack.generated.jooq.tables.TfsLinks.TFS_LINKS
 import fsight.youtrack.generated.jooq.tables.TfsTasks.TFS_TASKS
