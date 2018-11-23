@@ -1,4 +1,4 @@
-package fsight.youtrack.db.exposed.ms
+package fsight.youtrack.db.exposed.ms.schedule.plan
 
 data class ScheduleTimeIntervalModel(
     var id: Int? = null,

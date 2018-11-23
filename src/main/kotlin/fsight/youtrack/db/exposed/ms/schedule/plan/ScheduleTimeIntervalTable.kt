@@ -1,4 +1,4 @@
-package fsight.youtrack.db.exposed.ms
+package fsight.youtrack.db.exposed.ms.schedule.plan
 
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.Table
