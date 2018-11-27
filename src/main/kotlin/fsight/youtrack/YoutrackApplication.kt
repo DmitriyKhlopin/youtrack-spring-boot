@@ -38,6 +38,16 @@ class YoutrackApplication : SpringBootServletInitializer() {
             password = PG_PASSWORD
         )
     }
+
+    @Bean
+    fun tfsDataSource(): Database {
+        return Database.connect(
+            url = TFS_URL,
+            driver = TFS_DRIVER,
+            user = TFS_USER,
+            password = TFS_PASSWORD
+        )
+    }
 }
 
 fun main(args: Array<String>) {

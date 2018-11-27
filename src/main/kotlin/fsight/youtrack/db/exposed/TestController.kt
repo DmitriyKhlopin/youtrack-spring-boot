@@ -2,6 +2,7 @@ package fsight.youtrack.db.exposed
 
 import fsight.youtrack.db.exposed.ms.schedule.fact.WorkHoursRepo
 import fsight.youtrack.db.exposed.ms.schedule.plan.ScheduleTimeIntervalRepo
+import fsight.youtrack.db.exposed.pg.IssuesRepo
 import fsight.youtrack.db.exposed.pg.ProjectDictionaryRepo
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
@@ -12,7 +13,8 @@ import org.springframework.web.bind.annotation.RestController
 class TestController(
     private val scheduleTimeIntervalRepo: ScheduleTimeIntervalRepo,
     private val projectDictionaryRepo: ProjectDictionaryRepo,
-    private val workHoursRepo: WorkHoursRepo
+    private val workHoursRepo: WorkHoursRepo,
+    private val issuesRepo: IssuesRepo
 ) {
     @GetMapping("/api/project_test")
     fun getProjects() = projectDictionaryRepo.get()
@@ -22,4 +24,7 @@ class TestController(
 
     @GetMapping("/api/fact_hours_test")
     fun getFactHours() = workHoursRepo.getWorkHours()
+
+    @GetMapping("/api/active_issues_test")
+    fun getActiveIssues() = issuesRepo.getActiveIssues()
 }

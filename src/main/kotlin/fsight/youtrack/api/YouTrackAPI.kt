@@ -4,7 +4,7 @@ import com.google.gson.GsonBuilder
 import fsight.youtrack.Converter
 import fsight.youtrack.NEW_ROOT_REF
 import fsight.youtrack.ROOT_REF
-import fsight.youtrack.api.etl.bundles.CustomField
+import fsight.youtrack.etl.bundles.CustomField
 import fsight.youtrack.models.*
 
 import retrofit2.Call
