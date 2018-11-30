@@ -16,9 +16,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 @SpringBootApplication
 @EnableWebMvc
 @EnableScheduling
-class YoutrackApplication : SpringBootServletInitializer() {
+class YouTrackApplication : SpringBootServletInitializer() {
     override fun configure(application: SpringApplicationBuilder): SpringApplicationBuilder {
-        return application.sources(YoutrackApplication::class.java)
+        return application.sources(YouTrackApplication::class.java)
     }
 
     @Bean
@@ -53,7 +53,7 @@ class YoutrackApplication : SpringBootServletInitializer() {
 }
 
 fun main(args: Array<String>) {
-    runApplication<YoutrackApplication>(*args)
+    runApplication<YouTrackApplication>(*args)
 }
 
 @Bean
