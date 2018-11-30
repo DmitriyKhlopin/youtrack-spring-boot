@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
 
+
 @CrossOrigin
 @RestController
 class TestController(
@@ -26,5 +27,5 @@ class TestController(
     fun getFactHours() = workHoursRepo.getWorkHours()
 
     @GetMapping("/api/active_issues_test")
-    fun getActiveIssues() = issuesRepo.getActiveIssues()
+    fun getActiveIssues() = issuesRepo.getActiveIssuesWithClosedTFSIssues()
 }

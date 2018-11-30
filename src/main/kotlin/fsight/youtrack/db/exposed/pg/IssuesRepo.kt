@@ -1,13 +1,9 @@
 package fsight.youtrack.db.exposed.pg
 
 import fsight.youtrack.db.exposed.ms.wi.CurrentWorkItemRepo
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.JoinType
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -27,43 +23,99 @@ class IssuesRepo(
     LEFT JOIN custom_field_values cfv ON i.id = cfv.issue_id AND cfv.field_name = 'Issue'
     WHERE i.resolved_date IS NULL AND cfv.field_value IS NOT NULL;
      */
-    fun getActiveIssues(): ResponseEntity<Any> {
+    fun getActiveIssuesWithClosedTFSIssues(): List<P> {
+        val cfvIssue = CustomFieldValuesTable.alias("cfv_issue")
+        val cfvIssueField = cfvIssue[CustomFieldValuesTable.fieldValue].alias("tfs_issues")
+        val cfvAssignee = CustomFieldValuesTable.alias("cfv_assignee")
+        val cfvAssigneeField = cfvAssignee[CustomFieldValuesTable.fieldValue].alias("assignee")
         val ytIssues = arrayListOf<D>()
         transaction(pg) {
             IssuesTable
                 .join(
-                    CustomFieldValuesTable,
+                    cfvIssue,
                     JoinType.LEFT,
-                    additionalConstraint = { (IssuesTable.id eq CustomFieldValuesTable.issueId) and (CustomFieldValuesTable.fieldName eq "Issue") }
+                    additionalConstraint = { (IssuesTable.id eq cfvIssue[CustomFieldValuesTable.issueId]) and (cfvIssue[CustomFieldValuesTable.fieldName] eq "Issue") })
+                .join(
+                    cfvAssignee,
+                    JoinType.LEFT,
+                    additionalConstraint = { (IssuesTable.id eq cfvAssignee[CustomFieldValuesTable.issueId]) and (cfvAssignee[CustomFieldValuesTable.fieldName] eq "Assignee") }
                 )
-                .slice(IssuesTable.id, CustomFieldValuesTable.fieldValue, IssuesTable.state)
-                .select(where = { (IssuesTable.resolved_date_time.isNull()) and (CustomFieldValuesTable.fieldValue.isNotNull()) })
+                .slice(
+                    IssuesTable.id,
+                    cfvIssueField,
+                    IssuesTable.state,
+                    cfvAssigneeField
+                )
+                .select(where = { (IssuesTable.resolved_date_time.isNull()) and (cfvIssue[CustomFieldValuesTable.fieldValue].isNotNull()) and (IssuesTable.issue_type neq "Новая функциональность") })
                 .map { row ->
                     try {
-                        ytIssues.addAll(row[CustomFieldValuesTable.fieldValue].replace(" ", "").split(",")
-                            .map { item -> D(row[IssuesTable.id], item.toInt(), row[IssuesTable.state]) })
+                        ytIssues.addAll(
+                            row[cfvIssueField]
+                                .replace(" ", "")
+                                .split(",")
+                                .map { item ->
+                                    D(
+                                        row[IssuesTable.id],
+                                        row[cfvAssigneeField],
+                                        row[IssuesTable.state],
+                                        item.toInt()
+                                    )
+                                }
+                        )
                     } catch (e: Exception) {
 
                     }
                 }
         }
-        val actualStates = currentWorkItemRepo.getCurrentStates(ytIssues.map { it.tfsIssueId })
+        val actualStates = currentWorkItemRepo.getCurrentStates(ytIssues.map { it.tfsIssueId ?: 0 })
         val currentStates = actualStates.map { it.systemId to it.state }.toMap()
         val previousStates = actualStates.map { it.systemId to it.previousState }.toMap()
         ytIssues.forEach { it ->
             it.tfsState = currentStates[it.tfsIssueId]
             it.tfsPreviousState = previousStates[it.tfsIssueId]
         }
-        val result = ytIssues.filter { it.ytState == "Направлена разработчику" && it.tfsState == "Closed" }
-        return ResponseEntity.ok().body(result)
+        val result =
+            ytIssues.filter { j -> j.ytState == "Направлена разработчику" && j.tfsState == "Closed" && ytIssues.filter { i -> i.ytIssueId == j.ytIssueId }.all { it.tfsState == "Closed" } }
+        val dist = result.distinctBy { it.ytIssueId }.map { item ->
+            P(
+                item.ytIssueId,
+                item.assignee,
+                item.ytState,
+                result.filter { r -> r.ytIssueId == item.ytIssueId }
+                    .map { e ->
+                        println(result)
+                        CurrentWorkItemRepo.IssueState(e.tfsIssueId ?: 0, e.tfsPreviousState, e.tfsState)
+                    }
+            )
+        }
+        return dist
     }
 
     data class D(
         val ytIssueId: String,
-        /*val responsible: String,*/
-        val tfsIssueId: Int,
+        val assignee: String,
         val ytState: String,
+        var tfsIssueId: Int? = null,
         var tfsState: String? = null,
         var tfsPreviousState: String? = null
+    )
+
+    data class P(
+        val ytIssueId: String,
+        val assignee: String,
+        val ytState: String,
+        var list: List<CurrentWorkItemRepo.IssueState> = listOf()
+    )
+
+    data class IssueError(
+        val ytIssueId: String,
+        val assignee: String,
+        val ytState: String,
+        val list: ArrayList<Error> = arrayListOf()
+    )
+
+    data class Error(
+        val title: String,
+        val reason: String
     )
 }

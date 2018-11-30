@@ -9,10 +9,12 @@ import org.springframework.boot.web.servlet.support.SpringBootServletInitializer
 import org.springframework.context.annotation.Bean
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.web.servlet.config.annotation.CorsRegistry
+import org.springframework.web.servlet.config.annotation.EnableWebMvc
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
 
 @SpringBootApplication
+@EnableWebMvc
 @EnableScheduling
 class YoutrackApplication : SpringBootServletInitializer() {
     override fun configure(application: SpringApplicationBuilder): SpringApplicationBuilder {
@@ -63,5 +65,6 @@ fun corsConfigurer(): WebMvcConfigurer {
                 .allowedOrigins("http://localhost:3000", "http://10.9.172.12:3000", "http://10.9.172.76:3000")
         }
     }
-}
 
+
+}
