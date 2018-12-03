@@ -9,3 +9,6 @@ enum class ETLState(val state: Int) {
 enum class Converter {
     GSON, SCALAR
 }
+
+const val REACT_STATIC_DIR = "static"
+const val REACT_DIR = "/static/"

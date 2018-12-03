@@ -1,5 +1,5 @@
 package fsight.youtrack.etl.users
 
-interface IUsersETL{
+interface IUsersETL {
     fun getUsers()
 }

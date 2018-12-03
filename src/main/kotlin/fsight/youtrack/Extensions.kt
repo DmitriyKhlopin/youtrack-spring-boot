@@ -4,6 +4,8 @@ import fsight.youtrack.db.exposed.ms.schedule.fact.WorkHoursModel
 import fsight.youtrack.db.exposed.ms.schedule.fact.WorkHoursTable
 import fsight.youtrack.db.exposed.ms.schedule.plan.ScheduleTimeIntervalModel
 import fsight.youtrack.db.exposed.ms.schedule.plan.ScheduleTimeIntervalTable
+import fsight.youtrack.etl.bundles.BundleValue
+import fsight.youtrack.generated.jooq.tables.records.BundleValuesRecord
 import fsight.youtrack.models.Field
 import org.jetbrains.exposed.sql.ResultRow
 import java.sql.Date
@@ -31,6 +33,16 @@ fun ResultRow.toScheduleTimeIntervalModel(): ScheduleTimeIntervalModel {
         dateEnd = this[ScheduleTimeIntervalTable.dateEnd]
     )
 }
+
+fun BundleValue.toDatabaseRecord(): BundleValuesRecord =
+    BundleValuesRecord()
+        .setId(this.id)
+        .setName(this.name)
+        .setProjectId(this.projectId)
+        .setProjectName(this.projectName)
+        .setFieldId(this.fieldId)
+        .setFieldName(this.fieldName)
+        .setType(this.`$type`)
 
 fun Boolean.invert() = !this
 

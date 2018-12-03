@@ -34,6 +34,7 @@ class ETL(
                 val issuesCount = issue.getIssues(customFilter)
                 if (m == 30 || complete) {
                     bundles.getBundles()
+                    bundleServiceV2.getBundles()
                     users.getUsers()
                     timeline.launchCalculation()
                     issue.checkIssues()

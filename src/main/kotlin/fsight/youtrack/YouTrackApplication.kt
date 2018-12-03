@@ -12,6 +12,9 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry
 import org.springframework.web.servlet.config.annotation.EnableWebMvc
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
+fun main(args: Array<String>) {
+    runApplication<YouTrackApplication>(*args)
+}
 
 @SpringBootApplication
 @EnableWebMvc
@@ -50,21 +53,21 @@ class YouTrackApplication : SpringBootServletInitializer() {
             password = TFS_PASSWORD
         )
     }
-}
 
-fun main(args: Array<String>) {
-    runApplication<YouTrackApplication>(*args)
-}
-
-@Bean
-fun corsConfigurer(): WebMvcConfigurer {
-    return object : WebMvcConfigurer {
-        override fun addCorsMappings(registry: CorsRegistry) {
-            super.addCorsMappings(registry)
-            registry.addMapping("/**")
-                .allowedOrigins("http://localhost:3000", "http://10.9.172.12:3000", "http://10.9.172.76:3000")
+    @Bean
+    fun corsConfigurer(): WebMvcConfigurer {
+        return object : WebMvcConfigurer {
+            override fun addCorsMappings(registry: CorsRegistry) {
+                super.addCorsMappings(registry)
+                registry.addMapping("/**")
+                    .allowedOrigins(
+                        "http://localhost:3000",
+                        "http://10.9.172.12:3000",
+                        "http://10.9.172.76:3000",
+                        "http://localhost:8080",
+                        "http://10.30.207.22:8080"
+                    )
+            }
         }
     }
-
-
 }

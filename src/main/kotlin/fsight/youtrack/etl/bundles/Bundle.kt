@@ -12,6 +12,7 @@ import java.net.SocketTimeoutException
 
 @Service
 @Transactional
+@Deprecated("Use BundleV2")
 class Bundle(private val dslContext: DSLContext) : IBundle {
     override fun getBundles() {
         dslContext.deleteFrom(BUNDLES).execute()

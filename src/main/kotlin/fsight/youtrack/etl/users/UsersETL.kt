@@ -11,13 +11,8 @@ import org.springframework.stereotype.Service
 @Service
 class UsersETL(private val dslContext: DSLContext) : IUsersETL {
     override fun getUsers() {
-        val a = YouTrackAPI.create(Converter.GSON).getUserDetails(AUTH)
-        println(a.request().url())
-        val b = a.execute()
-        println("${b.code()} - ${b.errorBody()}")
-        b?.body()?.forEach { println(it) }
-        dslContext.deleteFrom(USERS).execute()
-        val i = b?.body()?.map { item ->
+        val response = YouTrackAPI.create(Converter.GSON).getUserDetails(AUTH).execute()
+        val users = response.body()?.map { item ->
             UsersRecord()
                 .setUserLogin(item.login)
                 .setRingId(item.ringId)
@@ -26,9 +21,10 @@ class UsersETL(private val dslContext: DSLContext) : IUsersETL {
                 .setFullName(item.fullName)
                 .setId(item.id)
         }
-        dslContext
+        dslContext.deleteFrom(USERS).execute()
+        val stored = dslContext
             .loadInto(USERS)
-            .loadRecords(i)
+            .loadRecords(users)
             .fields(
                 USERS.USER_LOGIN,
                 USERS.RING_ID,
@@ -37,6 +33,7 @@ class UsersETL(private val dslContext: DSLContext) : IUsersETL {
                 USERS.FULL_NAME,
                 USERS.ID
             )
-            .execute()
+            .execute().stored()
+        println("Loaded ${users?.size} users. Stored $stored users.")
     }
 }
