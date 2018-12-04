@@ -4,6 +4,8 @@ import fsight.youtrack.db.exposed.ms.schedule.fact.WorkHoursModel
 import fsight.youtrack.db.exposed.ms.schedule.fact.WorkHoursTable
 import fsight.youtrack.db.exposed.ms.schedule.plan.ScheduleTimeIntervalModel
 import fsight.youtrack.db.exposed.ms.schedule.plan.ScheduleTimeIntervalTable
+import fsight.youtrack.db.exposed.pg.TimeAccountingExtendedModel
+import fsight.youtrack.db.exposed.pg.TimeAccountingExtendedView
 import fsight.youtrack.etl.bundles.BundleValue
 import fsight.youtrack.generated.jooq.tables.records.BundleValuesRecord
 import fsight.youtrack.models.Field
@@ -22,6 +24,24 @@ fun ResultRow.toWorkHoursModel(): WorkHoursModel {
         cityId = this[WorkHoursTable.cityId]
     )
 }
+
+fun ResultRow.toTimeAccountingExtendedModel() = TimeAccountingExtendedModel(
+    this[TimeAccountingExtendedView.createDate].millis,
+    this[TimeAccountingExtendedView.units],
+    this[TimeAccountingExtendedView.agent],
+    this[TimeAccountingExtendedView.changedDate].millis,
+    this[TimeAccountingExtendedView.server],
+    this[TimeAccountingExtendedView.projects],
+    this[TimeAccountingExtendedView.teamProject],
+    this[TimeAccountingExtendedView.id],
+    this[TimeAccountingExtendedView.discipline],
+    this[TimeAccountingExtendedView.person],
+    this[TimeAccountingExtendedView.wit],
+    this[TimeAccountingExtendedView.title],
+    this[TimeAccountingExtendedView.iterationPath],
+    this[TimeAccountingExtendedView.role],
+    this[TimeAccountingExtendedView.projectType]
+)
 
 fun ResultRow.toScheduleTimeIntervalModel(): ScheduleTimeIntervalModel {
     return ScheduleTimeIntervalModel(
