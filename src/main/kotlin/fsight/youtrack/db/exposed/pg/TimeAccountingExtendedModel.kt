@@ -15,5 +15,6 @@ data class TimeAccountingExtendedModel(
     var title: String? = null,
     var iterationPath: String? = null,
     var role: String? = null,
-    var projectType: String? = null
+    var projectType: String? = null,
+    var ytProject: String? = null
 )

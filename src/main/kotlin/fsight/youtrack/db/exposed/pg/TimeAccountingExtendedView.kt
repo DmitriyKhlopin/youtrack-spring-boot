@@ -18,5 +18,6 @@ object TimeAccountingExtendedView : Table(name = "time_accounting_extended") {
     val iterationPath = text(name = "iterationpath")
     val role = text(name = "role")
     val projectType = text("project_type")
+    val ytProject = text("yt_project")
 }
 

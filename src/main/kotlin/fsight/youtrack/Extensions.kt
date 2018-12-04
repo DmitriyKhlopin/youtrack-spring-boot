@@ -54,6 +54,18 @@ fun ResultRow.toScheduleTimeIntervalModel(): ScheduleTimeIntervalModel {
     )
 }
 
+fun Int?.toWorkTime(): String {
+    if (this == null) return ""
+    val minutes = this % 60
+    val days = this / 480
+    val hours = this / 60 - days * 8
+    val minutesString = if (minutes > 0) "$minutes м. " else ""
+    val hoursString = if (hours > 0) "$hours ч. " else ""
+    val daysString = if (days > 0) "$days д. " else ""
+    return "$daysString$hoursString"
+    /*lreturn "$daysString$hoursString$minutesString"*/
+}
+
 fun BundleValue.toDatabaseRecord(): BundleValuesRecord =
     BundleValuesRecord()
         .setId(this.id)

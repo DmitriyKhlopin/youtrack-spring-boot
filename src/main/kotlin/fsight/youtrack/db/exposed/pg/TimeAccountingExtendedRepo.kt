@@ -1,6 +1,7 @@
 package fsight.youtrack.db.exposed.pg
 
 import fsight.youtrack.toTimeAccountingExtendedModel
+import fsight.youtrack.toWorkTime
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.format.DateTimeFormat
@@ -11,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional
 
 @Repository
 @Transactional
-class TimeAccountingExtendedRepo(@Qualifier("pgDataSource") private val db: Database)/* : ITimeAccountingExtendedRepo*/ {
+class TimeAccountingExtendedRepo(@Qualifier("pgDataSource") private val db: Database) {
     fun getAll(): List<TimeAccountingExtendedModel> {
         return transaction(db) {
             TimeAccountingExtendedView.selectAll().map { it.toTimeAccountingExtendedModel() }
@@ -29,7 +30,7 @@ class TimeAccountingExtendedRepo(@Qualifier("pgDataSource") private val db: Data
                     TimeAccountingExtendedView.createDate.between(
                         from = df,
                         to = dt
-                    ) and TimeAccountingExtendedView.id.substring(0, 2).inList(filter)
+                    ) and TimeAccountingExtendedView.ytProject.inList(filter)
                 })
                 .groupBy(TimeAccountingExtendedView.projectType)
                 .map { item ->
@@ -43,15 +44,8 @@ class TimeAccountingExtendedRepo(@Qualifier("pgDataSource") private val db: Data
 
     data class AggregatedResult(
         val key: String,
-        var value: Int
+        val value: Int,
+        /*val presentation: String = "$key - ${value.toWorkTime()}"*/
+        val presentation: String = value.toWorkTime()
     )
 }
-
-/*
-interface ITimeAccountingExtendedRepo {
-    fun getGroupedByProjectType(
-        projects: String,
-        dateFrom: String,
-        dateTo: String
-    ): List<TimeAccountingExtendedRepo.AggregatedResult>
-}*/
