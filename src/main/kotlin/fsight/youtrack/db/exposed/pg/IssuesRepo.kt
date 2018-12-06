@@ -46,17 +46,17 @@ class IssuesRepo(
                     IssuesTable.state,
                     cfvAssigneeField
                 )
-                .select(where = { (IssuesTable.resolved_date_time.isNull()) and (cfvIssue[CustomFieldValuesTable.fieldValue].isNotNull()) and (IssuesTable.issue_type neq "Новая функциональность") })
+                .select(where = { (IssuesTable.resolvedDateTime.isNull()) and (cfvIssue[CustomFieldValuesTable.fieldValue].isNotNull()) and (IssuesTable.issueType neq "Новая функциональность") })
                 .map { row ->
                     try {
                         ytIssues.addAll(
-                            row[cfvIssueField]
+                            (row[cfvIssueField] ?: "")
                                 .replace(" ", "")
                                 .split(",")
                                 .map { item ->
                                     D(
                                         row[IssuesTable.id],
-                                        row[cfvAssigneeField],
+                                        row[cfvAssigneeField] ?: "",
                                         row[IssuesTable.state],
                                         item.toInt()
                                     )
