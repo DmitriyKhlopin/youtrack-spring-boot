@@ -57,17 +57,23 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
             )
         }
         val totalAgg = intermediate.sumBy { it.total }
-        intermediate.forEach {
-            it.apply {
-                it.result = 10 * (it.total.toFloat() / totalAgg)
-                +20 * (1 - it.postponements / it.total)
-                +20 * (1 - it.requestedClarifications / it.total)
-                +10 * (1 - it.suggestedSolutions / it.total)
-                +30 * (it.violations / it.total - 1)
-                +10 * (it.positiveAssessment / it.total)
-            }
+        val r = intermediate.map {
+            val fTotal = (it.total.toFloat() / totalAgg)
+            val fPostponements = (1 - it.postponements.toFloat() / it.total)
+            val fRequestedClarifications = (1 - it.requestedClarifications.toFloat() / it.total)
+            val fSuggestedSolutions = (1 - it.suggestedSolutions.toFloat() / it.total)
+            val fViolations = (it.violations.toFloat() / it.total)
+            val fPositiveAssessment = (it.positiveAssessment.toFloat() / it.total)
+
+            println("${it.user} $fTotal $fPostponements $fSuggestedSolutions $fRequestedClarifications $fViolations $fPositiveAssessment")
+
+            it.result = (60 * fTotal + 20 * fPostponements + 20 * fRequestedClarifications + 10 *
+                    fSuggestedSolutions + 10 * fPositiveAssessment) / (1 + fViolations * 50)
+            /*    */ /*- 100 * fViolations */
+            it
+
         }
-        return intermediate.sortedByDescending { it.result }
+        return r.sortedByDescending { it.result }
     }
 
     data class R1(
@@ -96,7 +102,7 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
             .on(ISSUES.ID.eq(CUSTOM_FIELD_VALUES.ISSUE_ID).and(CUSTOM_FIELD_VALUES.FIELD_NAME.eq("Assignee")))
             .leftJoin(USERS)
             .on(CUSTOM_FIELD_VALUES.FIELD_VALUE.eq(USERS.USER_LOGIN))
-            .where(ISSUES.CREATED_DATE.between(dateFrom).and(dateTo))
+            .where(ISSUES.RESOLVED_DATE.between(dateFrom).and(dateTo))
             .and(ISSUES.PROJECT_SHORT_NAME.`in`(projects))
             .and(ISSUES.SLA_SOLUTION_DATE_TIME.isNotNull)
             .and(USERS.EMAIL.`in`(emails))
@@ -120,7 +126,7 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
             .on(ISSUES.ID.eq(CUSTOM_FIELD_VALUES.ISSUE_ID).and(CUSTOM_FIELD_VALUES.FIELD_NAME.eq("Assignee")))
             .leftJoin(USERS)
             .on(CUSTOM_FIELD_VALUES.FIELD_VALUE.eq(USERS.USER_LOGIN))
-            .where(ISSUES.CREATED_DATE.between(dateFrom).and(dateTo))
+            .where(ISSUES.RESOLVED_DATE.between(dateFrom).and(dateTo))
             .and(ISSUES.PROJECT_SHORT_NAME.`in`(projects))
             .and(ISSUES.SLA_SOLUTION_DATE_TIME.isNotNull)
             .and(USERS.EMAIL.`in`(emails))
@@ -147,7 +153,7 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
             .on(ISSUES.ID.eq(CUSTOM_FIELD_VALUES.ISSUE_ID).and(CUSTOM_FIELD_VALUES.FIELD_NAME.eq("Assignee")))
             .leftJoin(USERS)
             .on(CUSTOM_FIELD_VALUES.FIELD_VALUE.eq(USERS.USER_LOGIN))
-            .where(ISSUES.CREATED_DATE.between(dateFrom).and(dateTo))
+            .where(ISSUES.RESOLVED_DATE.between(dateFrom).and(dateTo))
             .and(ISSUES.PROJECT_SHORT_NAME.`in`(projects))
             .and(ISSUES.SLA_SOLUTION_DATE_TIME.isNotNull)
             .and(ISSUE_HISTORY.FIELD_NAME.eq("Дата решения"))
@@ -172,7 +178,7 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
             .on(ISSUES.ID.eq(CUSTOM_FIELD_VALUES.ISSUE_ID).and(CUSTOM_FIELD_VALUES.FIELD_NAME.eq("Assignee")))
             .leftJoin(USERS)
             .on(CUSTOM_FIELD_VALUES.FIELD_VALUE.eq(USERS.USER_LOGIN))
-            .where(ISSUES.CREATED_DATE.between(dateFrom).and(dateTo))
+            .where(ISSUES.RESOLVED_DATE.between(dateFrom).and(dateTo))
             .and(ISSUES.PROJECT_SHORT_NAME.`in`(projects))
             .and(ISSUES.SLA_SOLUTION_DATE_TIME.isNotNull)
             .and(ISSUE_HISTORY.FIELD_NAME.eq("Состояние"))
@@ -198,7 +204,7 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
             .on(ISSUES.ID.eq(CUSTOM_FIELD_VALUES.ISSUE_ID).and(CUSTOM_FIELD_VALUES.FIELD_NAME.eq("Assignee")))
             .leftJoin(USERS)
             .on(CUSTOM_FIELD_VALUES.FIELD_VALUE.eq(USERS.USER_LOGIN))
-            .where(ISSUES.CREATED_DATE.between(dateFrom).and(dateTo))
+            .where(ISSUES.RESOLVED_DATE.between(dateFrom).and(dateTo))
             .and(ISSUES.PROJECT_SHORT_NAME.`in`(projects))
             .and(ISSUES.SLA_SOLUTION_DATE_TIME.isNotNull)
             .and(ISSUE_HISTORY.FIELD_NAME.eq("Состояние"))
@@ -223,7 +229,7 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
             .on(ISSUES.ID.eq(CUSTOM_FIELD_VALUES.ISSUE_ID).and(CUSTOM_FIELD_VALUES.FIELD_NAME.eq("Assignee")))
             .leftJoin(USERS)
             .on(CUSTOM_FIELD_VALUES.FIELD_VALUE.eq(USERS.USER_LOGIN))
-            .where(ISSUES.CREATED_DATE.between(dateFrom).and(dateTo))
+            .where(ISSUES.RESOLVED_DATE.between(dateFrom).and(dateTo))
             .and(ISSUES.PROJECT_SHORT_NAME.`in`(projects))
             .and(ISSUES.QUALITY_EVALUATION.`in`(listOf("Отлично", "Удовлетворительно")))
             .and(USERS.EMAIL.`in`(emails))

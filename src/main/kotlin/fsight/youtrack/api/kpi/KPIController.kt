@@ -14,7 +14,7 @@ class KPIController(private val service: IKPI) {
         @RequestParam(
             "projects",
             required = false,
-            defaultValue = "BIP,CL,FP,INNOWAY,INTER,IT,KRIT,PP,LANIT,RS,RIO,SAPRUN,TEST,SA,TC,BSLT,CBR,BIC,GPI,DRT,GN,P_PROJ1,DSU,INTELL,JET,KORUS,KPMG,LMN,PRESALE,PDP,PO,REA,SIGMA,SPAM,T,TN,NAVICON,P,FS,FSC"
+            defaultValue = "BIP,CL,FP,INNOWAY,INTER,IT,KRIT,PP,LANIT,RS,RIO,SAPRUN,TEST,SA,TC,BSLT,CBR,BIC,GPI,DRT,GN,P_PROJ1,DSU,INTELL,JET,KORUS,KPMG,LMN,PRESALE,PDP,PO,REA,SIGMA,SPAM,T,TN,NAVICON,P,FS,FSC,PP_Lic"
         ) projects: String,
         @RequestParam(
             "emails",
