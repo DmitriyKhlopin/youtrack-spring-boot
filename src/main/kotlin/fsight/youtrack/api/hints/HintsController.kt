@@ -1,14 +1,19 @@
 package fsight.youtrack.api.hints
 
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 @RestController
 class HintsController(private val service: IHints) {
     @GetMapping("/api/hints/repositories")
-    fun getTimeLineData(
-        @RequestParam("projects", required = false) project: String? = null,
+    fun getRepositories(
+        @RequestParam("project", required = false) project: String? = null,
         @RequestParam("customer", required = false) customer: String? = null
-    ) = service.getNewIssueHints(project, customer)
+    ) = when (customer) {
+        null -> service.getAllRepositories()
+        else -> service.getRepositoriesByCustomer(project, customer)
+    }
+
+    @PostMapping("/api/hints/repositories")
+    fun postRepository(@RequestBody body: Hints.CustomerRepository) = service.postRepository(body)
+
 }

@@ -14,6 +14,10 @@ import java.sql.Date
 import java.sql.Timestamp
 import java.util.*
 
+fun debugPrint(print: Boolean = false, message: String = "") {
+    if (print) println(message)
+}
+
 fun ResultRow.toWorkHoursModel(): WorkHoursModel {
     return WorkHoursModel(
         id = this[WorkHoursTable.id],

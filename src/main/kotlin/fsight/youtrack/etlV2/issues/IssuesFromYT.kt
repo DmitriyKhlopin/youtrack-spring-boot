@@ -1,7 +1,6 @@
 package fsight.youtrack.etlV2.issues
 
 import com.google.gson.GsonBuilder
-import com.google.gson.JsonObject
 import fsight.youtrack.AUTH
 import fsight.youtrack.NEW_ROOT_REF
 import fsight.youtrack.models.v2.Issue
@@ -17,9 +16,10 @@ interface IssuesFromYT {
     @Headers("Accept: application/json", "Authorization: $AUTH")
     @GET("issues")
     fun getIssueList(
-            @Query("filter") filter: String?,
-            @Query("after") skip: Int,
-            @Query("max") max: Int): Call<List<Issue>>
+        @Query("filter") filter: String?,
+        @Query("after") skip: Int,
+        @Query("max") max: Int
+    ): Call<List<Issue>>
 
     @Headers("Accept: application/json", "Authorization: $AUTH")
     @GET("issues/{id}?fields=id,idReadable,project(id,name,shortName),reporter(login,name),updater(login,name),updated,resolved,summary,description,fields(projectCustomField(field(id,name)),value(id,name)),comments(author(login,name),text,created,updated)")
@@ -28,7 +28,8 @@ interface IssuesFromYT {
     companion object Factory {
         fun create(): IssuesFromYT {
             val gson = GsonBuilder().setLenient().create()
-            val retrofit = Retrofit.Builder().baseUrl(NEW_ROOT_REF).addConverterFactory(GsonConverterFactory.create(gson)).build()
+            val retrofit =
+                Retrofit.Builder().baseUrl(NEW_ROOT_REF).addConverterFactory(GsonConverterFactory.create(gson)).build()
             return retrofit.create(IssuesFromYT::class.java)
         }
     }

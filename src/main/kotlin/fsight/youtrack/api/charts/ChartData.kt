@@ -37,6 +37,7 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
         val dt = LocalDate.parse(dateTo, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
 
         val filter = projects.removeSurrounding("[", "]").split(",")
+        println(filter)
         return dslContext.select(
             DYNAMICS.W.`as`("week"),
             sum(DYNAMICS.ACTIVE).`as`("active"),

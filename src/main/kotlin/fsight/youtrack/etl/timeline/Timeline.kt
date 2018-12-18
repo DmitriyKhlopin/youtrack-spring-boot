@@ -36,7 +36,7 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
             .set(
                 ISSUES.TIME_USER,
                 DSL.select(DSL.sum(ISSUE_TIMELINE.TIME_SPENT)).from(ISSUE_TIMELINE).where(
-                    ISSUE_TIMELINE.TRANSITION_OWNER.eq("User").and(ISSUE_TIMELINE.ISSUE_ID.eq(ISSUES.ID))
+                    ISSUE_TIMELINE.TRANSITION_OWNER.eq("YouTrackUser").and(ISSUE_TIMELINE.ISSUE_ID.eq(ISSUES.ID))
                 ).asField<Long>()
             )
             .set(
@@ -115,7 +115,7 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
 
         a.forEachIndexed { index, issueTimelineItem ->
             issueTimelineItem.stateOwner = when {
-                issueTimelineItem.stateOld in userStates -> "User"
+                issueTimelineItem.stateOld in userStates -> "YouTrackUser"
                 issueTimelineItem.stateOld in agentStates -> "Agent"
                 issueTimelineItem.stateOld in developerStates -> "Developer"
                 else -> "Undefined"

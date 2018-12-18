@@ -166,14 +166,14 @@ class TFSData(private val dslContext: DSLContext) : ITFSData {
             val id2 = YouTrackAPI.create().createIssue(AUTH, it).execute()
             if (id2.errorBody() != null) println(it)
             val idReadable = Gson().fromJson(id2.body(), YouTrackIssue::class.java)
-            val command = Gson().toJson(
+            /*val command = Gson().toJson(
                 YouTrackCommand(
                     issues = arrayListOf(YouTrackIssue(id = idReadable.id)),
                     silent = true,
                     query = "подзадача $parentId"
                 )
             )
-            YouTrackAPI.create().postCommand(AUTH, command).execute()
+            YouTrackAPI.create().postCommand(AUTH, command).execute()*/
         }
     }
 
@@ -218,7 +218,7 @@ class TFSData(private val dslContext: DSLContext) : ITFSData {
         val dmAccepted = getCustomFieldValue("DM accepted", if (item.dmAccepted == "-1") "Yes" else "No")
         val areaName = getCustomFieldValue("Area name", item.areaName ?: "P7")
         val assignee = getCustomFieldValue("Assignee", item.productManager)
-        return Gson().toJson(
+        /*return Gson().toJson(
             YouTrackIssue(
                 project = Project(id = "0-15"),
                 summary = item.title,
@@ -236,7 +236,8 @@ class TFSData(private val dslContext: DSLContext) : ITFSData {
                     iterationPath
                 )
             )
-        )
+        )*/
+        return ""
     }
 
     fun getPostableTask(item: TFSTask, iteration: String?): String {
@@ -256,13 +257,14 @@ class TFSData(private val dslContext: DSLContext) : ITFSData {
             getCustomFieldValue("Assignee", item.developer),
             getCustomFieldValue("Assignee", item.tester)
         ).firstOrNull()
-        return Gson().toJson(
+        /*return Gson().toJson(
             YouTrackIssue(
                 project = Project(id = "0-15"),
                 summary = item.title,
                 description = "TFS: ${item.id} \n\n${Jsoup.parse(item.description).text()}",
                 fields = listOfNotNull(type, areaName, estimationDev, assignee, iterationPath)
             )
-        )
+        )*/
+        return ""
     }
 }

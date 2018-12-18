@@ -28,10 +28,22 @@ data class Issue(
     //var votes: String? = null,
     //var watchers: ArrayList<Any>? = null,
     //var wikifiedDescription: String? = null,
-    var id: String? = null
+    var id: String? = null,
+    var `$type`: String? = null
 )
 
-data class User(var name: String? = null, var login: String? = null)
+data class User(
+    var isLocke: Boolean? = null,
+    var name: String? = null,
+    var fullName: String? = null,
+    var login: String? = null,
+    var email: String? = null,
+    var avatarUrl: String? = null,
+    var online: Boolean? = null,
+    var issueRelatedGroup: Any? = null,
+    var id: String? = null,
+    var `$type`: String? = null
+)
 
 data class IssueComment(
     var author: User,
