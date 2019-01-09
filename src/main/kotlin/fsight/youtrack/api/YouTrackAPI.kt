@@ -43,24 +43,6 @@ interface YouTrackAPI {
         @Header("Authorization") auth: String
     ): Call<List<CustomField>>
 
-    @Headers("Accept: application/json")
-    @GET("issue")
-    fun getIssueList(
-        @Header("Authorization") auth: String,
-        @Query("with") with: ArrayList<String>?,
-        @Query("after") skip: Int,
-        @Query("max") max: Int
-    ): Call<Issues>
-
-    @Headers("Accept: application/json")
-    @GET("issue")
-    fun getIssueList(
-        @Header("Authorization") auth: String,
-        @Query("filter") filter: String?,
-        @Query("with") with: ArrayList<String>?,
-        @Query("after") skip: Int,
-        @Query("max") max: Int
-    ): Call<Issues>
 
     @Headers("Accept: application/json")
     @GET("issue/{issueId}/changes")
@@ -209,18 +191,7 @@ interface YouTrackAPI {
         @Path("path", encoded = true) path: String
     ): Call<ProjectCustomFieldParameters>
 
-    @Headers("Accept: application/json")
-    @GET("admin/users?fields=id,name,email,ringId,login,fullName&\$top=-1")
-    fun getUserDetails(
-        @Header("Authorization") auth: String
-    ): Call<List<UserDetails>>
 
-    @Headers("Accept: application/json")
-    @GET("admin/user")
-    fun getUsers(
-        @Header("Authorization") auth: String,
-        @Query("start") start: Int
-    ): Call<List<User>>
 
     companion object Factory {
         fun create(converter: Converter = Converter.SCALAR): YouTrackAPI {

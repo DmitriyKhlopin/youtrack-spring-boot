@@ -27,6 +27,106 @@ data class Project(
     var name: String? = null
 )
 
+data class YouTrackComment(
+    var id: String? = null,
+    var author: YouTrackUser? = null,
+    var text: String? = null,
+    var created: Long? = null,
+    var updated: Long? = null,
+    var deleted: Boolean? = null
+
+)
+
+data class YouTrackField(
+    var projectCustomField: YouTrackProjectCustomField? = null,
+    var value: Any? = null,
+    var `$type`: String? = null
+)
+
+data class YouTrackProjectCustomField(
+    var field: YouTrackCustomField,
+    var `$type`: String? = null
+)
+
+data class YouTrackCustomField(
+    var name: String? = null,
+    var `$type`: String? = null
+)
+
+data class YouTrackIssueVisibility(
+    var permittedGroups: List<Any>? = null,
+    var permittedUsers: List<Any>? = null,
+    var `$type`: String? = null
+)
+
+data class YouTrackUser(
+    var type: String? = null,
+    var id: String? = null,
+    var profile: HubUserProfile? = null,
+    var name: String? = null,
+    var login: String? = null,
+    var fullName: String? = null,
+    var `$type`: String? = null,
+    var groups: List<HubUserGroup>? = null
+)
+
+data class HubUserProfile(
+    var email: HubUserEmail? = null
+)
+
+data class HubUserEmail(
+    var type: String? = null,
+    var verified: Boolean? = null,
+    var email: String? = null
+)
+
+data class HubUserGroup(
+    var type: String? = null,
+    var name: String? = null, // Group name
+    var email: String? = null // User email
+)
+
+data class YouTrackIssueWorkItem(
+    var created: Long? = null,
+    var date: Long? = null,
+    var duration: YouTrackPeriodValue? = null,
+    var issue: YouTrackIssue? = null,
+    var updated: Long? = null,
+    var author: YouTrackUser? = null,
+    var creator: YouTrackUser? = null,
+    var id: String? = null,
+    var text: String? = null,
+    var type: YouTrackWorkItemType? = null
+)
+
+data class YouTrackWorkItemType(
+    var id: String? = null,
+    var name: String? = null,
+    var autoAttached: Boolean? = null
+)
+
+data class YouTrackPeriodValue(
+    var minutes: Int? = null
+)
+
+fun YouTrackIssue.unwrapIntValue(fieldName: String): Int? {
+    val temp = this.fields?.firstOrNull { it.projectCustomField?.field?.name == fieldName }?.value
+    return if (temp != null) (temp as JsonObject).get("name").asInt else null
+}
+
+
+fun YouTrackIssue.unwrapLongValue(fieldName: String): Long? = 0
+fun YouTrackIssue.unwrapStringValue(fieldName: String): String? =
+    fields?.firstOrNull { field -> field.projectCustomField?.field?.name == fieldName }?.value.toString()
+
+fun YouTrackIssue.unwrapEnumValue(fieldName: String): String? {
+    val temp = fields?.firstOrNull { field -> field.projectCustomField?.field?.name == fieldName }?.value ?: return null
+    return (Gson().toJsonTree(temp).asJsonObject).get("name").asString
+}
+
+fun YouTrackIssue.unwrapTimestampValue(fieldName: String): Timestamp = Timestamp(0)
+
+
 fun YouTrackIssue.getFieldValue() = ""
 
 fun YouTrackField.unwrapValue(): String? {
@@ -62,59 +162,3 @@ fun YouTrackField.unwrapValue(): String? {
         }
     }
 }
-
-data class YouTrackComment(
-    var id: String? = null,
-    var author: YouTrackUser? = null,
-    var text: String? = null,
-    var created: Long? = null,
-    var updated: Long? = null,
-    var deleted: Boolean? = null
-
-)
-
-data class YouTrackField(
-    var projectCustomField: YouTrackProjectCustomField? = null,
-    var value: Any? = null,
-    var `$type`: String? = null
-)
-
-data class YouTrackProjectCustomField(
-    var field: YouTrackCustomField,
-    var `$type`: String? = null
-)
-
-data class YouTrackCustomField(
-    var name: String? = null,
-    var `$type`: String? = null
-)
-
-data class YouTrackIssueVisibility(
-    var permittedGroups: List<Any>? = null,
-    var permittedUsers: List<Any>? = null,
-    var `$type`: String? = null
-)
-
-data class YouTrackUser(
-    var name: String? = null,
-    var login: String? = null,
-    var fullName: String? = null,
-    var `$type`: String? = null
-)
-
-fun YouTrackIssue.unwrapIntValue(fieldName: String): Int? {
-    val temp = this.fields?.firstOrNull { it.projectCustomField?.field?.name == fieldName }?.value
-    return if (temp != null) (temp as JsonObject).get("name").asInt else null
-}
-
-
-fun YouTrackIssue.unwrapLongValue(fieldName: String): Long? = 0
-fun YouTrackIssue.unwrapStringValue(fieldName: String): String? =
-    fields?.firstOrNull { field -> field.projectCustomField?.field?.name == fieldName }?.value.toString()
-
-fun YouTrackIssue.unwrapEnumValue(fieldName: String): String? {
-    val temp = fields?.firstOrNull { field -> field.projectCustomField?.field?.name == fieldName }?.value ?: return null
-    return (Gson().toJsonTree(temp).asJsonObject).get("name").asString
-}
-
-fun YouTrackIssue.unwrapTimestampValue(fieldName: String): Timestamp = Timestamp(0)

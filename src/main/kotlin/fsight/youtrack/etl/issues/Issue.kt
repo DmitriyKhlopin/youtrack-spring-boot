@@ -1,9 +1,5 @@
 package fsight.youtrack.etl.issues
 
-import com.google.gson.JsonArray
-import com.google.gson.JsonElement
-import com.google.gson.JsonNull
-import com.google.gson.JsonObject
 import fsight.youtrack.*
 import fsight.youtrack.api.YouTrackAPI
 import fsight.youtrack.api.YouTrackAPIv2
@@ -16,9 +12,7 @@ import fsight.youtrack.generated.jooq.tables.IssueHistory.ISSUE_HISTORY
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
 import fsight.youtrack.generated.jooq.tables.WorkItems.WORK_ITEMS
 import fsight.youtrack.models.*
-import fsight.youtrack.models.sql.IssueHistoryItem
 import org.jooq.DSLContext
-import org.jooq.exception.DataAccessException
 import org.jooq.impl.DSL
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -29,6 +23,8 @@ import java.time.LocalDateTime
 @Service
 @Transactional
 class Issue(private val dslContext: DSLContext, private val importLogService: IImportLog) : IIssue {
+    private val issueIds = arrayListOf<String?>()
+
     override fun getIssues(customFilter: String?): Int {
         println("Loading issues")
         val fields =
@@ -53,7 +49,33 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
         var skip = 0
         val filter = customFilter ?: getFilter()
         println("Actual filter: $filter")
-        if (filter == null) {
+
+        while (i > 0) {
+            i = 0
+            val j = if (filter == null)
+                YouTrackAPIv2
+                    .create(Converter.GSON)
+                    .getIssueList(auth = AUTH, fields = fields, top = top, skip = skip)
+            else
+                YouTrackAPIv2
+                    .create(Converter.GSON)
+                    .getIssueList(auth = AUTH, fields = fields, top = top, skip = skip, query = filter)
+
+
+
+            j.execute()
+                .body()
+                ?.forEach {
+                    issueIds.add(it.idReadable)
+                    skip += 1
+                    i += 1
+                    it.saveBasicInfo()
+                    it.saveComments()
+                    it.saveCustomFields()
+                }
+        }
+
+        /*if (filter == null) {
             while (i > 0) {
                 i = 0
                 YouTrackAPIv2
@@ -62,6 +84,7 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
                     .execute()
                     .body()
                     ?.forEach {
+                        issueIds.add(it.idReadable)
                         skip += 1
                         i += 1
                         it.saveBasicInfo()
@@ -78,6 +101,7 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
                     .execute()
                     .body()
                     ?.forEach {
+                        issueIds.add(it.idReadable)
                         skip += 1
                         i += 1
                         it.saveBasicInfo()
@@ -85,7 +109,8 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
                         it.saveCustomFields()
                     }
             }
-        }
+        }*/
+        issueIds.filterNotNull().forEach { getTimeAccounting(it) }
         println("Loaded $skip issues")
         importLogService.saveLog(
             ImportLogModel(
@@ -95,6 +120,7 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
                 items = skip
             )
         )
+        issueIds.clear()
         return skip
     }
 
@@ -231,16 +257,12 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
                 .insertInto(ISSUE_COMMENTS)
                 .set(ISSUE_COMMENTS.ID, comment.id)
                 .set(ISSUE_COMMENTS.ISSUE_ID, this.idReadable)
-                /*.set(ISSUE_COMMENTS.PARENT_ID, comment.parentId)*/
                 .set(ISSUE_COMMENTS.DELETED, comment.deleted)
-                /*.set(ISSUE_COMMENTS.SHOWN_FOR_ISSUE_AUTHOR, comment.shownForIssueAuthor)*/
                 .set(ISSUE_COMMENTS.AUTHOR, comment.author?.login)
                 .set(ISSUE_COMMENTS.AUTHOR_FULL_NAME, comment.author?.fullName)
                 .set(ISSUE_COMMENTS.COMMENT_TEXT, comment.text)
                 .set(ISSUE_COMMENTS.CREATED, comment.created?.toTimestamp())
                 .set(ISSUE_COMMENTS.UPDATED, comment.updated?.toTimestamp())
-                /*.set(ISSUE_COMMENTS.PERMITTED_GROUP, comment.permittedGroup)
-                .set(ISSUE_COMMENTS.REPLIES, comment.replies.toString())*/
                 .execute()
             try {
 
@@ -251,36 +273,33 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
         }
     }
 
-    private fun getTimeAccounting(id: String) {
-        YouTrackAPI.createOld(Converter.GSON).getWorkItems(AUTH, id).execute().body()?.forEach {
+    private fun getTimeAccounting(issueId: String) {
+        dslContext.deleteFrom(WORK_ITEMS).where(WORK_ITEMS.ISSUE_ID.eq(issueId)).execute()
+        println(issueId)
+        YouTrackAPIv2.create(Converter.GSON).getWorkItems(AUTH, issueId).execute().body()?.forEach {
+            dslContext
+                .insertInto(WORK_ITEMS)
+                .set(WORK_ITEMS.ISSUE_ID, issueId)
+                .set(WORK_ITEMS.WI_ID, it.id)
+                .set(WORK_ITEMS.WI_DATE, it.date?.toDate())
+                .set(WORK_ITEMS.WI_CREATED, it.created?.toTimestamp())
+                .set(WORK_ITEMS.WI_UPDATED, it.updated?.toTimestamp())
+                .set(WORK_ITEMS.WI_DURATION, it.duration?.minutes)
+                .set(WORK_ITEMS.AUTHOR_LOGIN, it.author?.login)
+                .set(WORK_ITEMS.WORK_NAME, it.type?.name)
+                .set(WORK_ITEMS.WORK_TYPE_ID, it.type?.id)
+                .set(WORK_ITEMS.WORK_TYPE_AUTO_ATTACHED, it.type?.autoAttached)
+                .set(WORK_ITEMS.DESCRIPTION, it.text)
+                .execute()
             try {
-                dslContext.deleteFrom(WORK_ITEMS).where(WORK_ITEMS.ISSUE_ID.eq(id)).execute()
-                dslContext
-                    .insertInto(WORK_ITEMS)
-                    .set(WORK_ITEMS.ISSUE_ID, id)
-                    .set(WORK_ITEMS.WI_URL, it.url)
-                    .set(WORK_ITEMS.WI_ID, it.id)
-                    .set(WORK_ITEMS.WI_DATE, it.date.toTimestamp())
-                    .set(WORK_ITEMS.WI_CREATED, it.created.toTimestamp())
-                    .set(WORK_ITEMS.WI_UPDATED, it.updated?.toTimestamp())
-                    .set(WORK_ITEMS.WI_DURATION, it.duration)
-                    .set(WORK_ITEMS.AUTHOR_LOGIN, it.author.login)
-                    .set(WORK_ITEMS.AUTHOR_RING_ID, it.author.ringId)
-                    .set(WORK_ITEMS.AUTHOR_URL, it.author.url)
-                    .set(WORK_ITEMS.WORK_NAME, it.worktype?.name)
-                    .set(WORK_ITEMS.WORK_TYPE_ID, it.worktype?.id)
-                    .set(WORK_ITEMS.WORK_TYPE_AUTO_ATTACHED, it.worktype?.autoAttached)
-                    .set(WORK_ITEMS.WORK_TYPE_URL, it.worktype?.url)
-                    .set(WORK_ITEMS.DESCRIPTION, it.description)
-                    .execute()
-            } catch (e: DataAccessException) {
+            } catch (e: java.lang.Exception) {
                 ETL.etlState = ETLState.DONE
                 writeError(it.toString(), e.message ?: "")
             }
         }
     }
 
-    fun getActivities(items: JsonArray): List<IssueHistoryItem> {
+    /*fun getActivities(items: JsonArray): List<IssueHistoryItem> {
         val activityItems =
             items.filter { obj: JsonElement -> obj.asJsonObject?.get("\$type")?.asString == ACTIVITY_ITEM }
 
@@ -383,9 +402,9 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
             println(comment)
             comment
         }
-    }
+    }*/
 
-    fun getNotUnwrapped(items: JsonArray) {
+    /*fun getNotUnwrapped(items: JsonArray) {
         val unwrapped =
             items.filter { obj: JsonElement ->
                 obj.asJsonObject?.get("\$type")?.asString !in (listOf(
@@ -407,14 +426,14 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
 
     private fun getIssueHistory(issueId: String) {
         dslContext.deleteFrom(ISSUE_HISTORY).where(ISSUE_HISTORY.ISSUE_ID.eq(issueId)).execute()
-        /*println(issueId)*/
+        *//*println(issueId)*//*
         val issueActivities = YouTrackAPI.create(Converter.GSON).getHistory(AUTH, issueId).execute()
 
         val i = issueActivities.body()?.get("activities") as JsonArray
         val activities = getActivities(i)
         val comments = getComments(issueId, i)
-        /*getNotUnwrapped(i)*/
-        /*getTimeTracking(issueId, i)*/
+        *//*getNotUnwrapped(i)*//*
+        *//*getTimeTracking(issueId, i)*//*
         dslContext.deleteFrom(ISSUE_COMMENTS).where(ISSUE_COMMENTS.ISSUE_ID.eq(issueId)).execute()
         comments.forEach { comment ->
             dslContext
@@ -451,11 +470,11 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
         } catch (e: Exception) {
             ETL.etlState = ETLState.DONE
         }
-    }
+    }*/
 
-    data class NullableTimestamp(
-        val nt: Timestamp?
-    )
+    /* data class NullableTimestamp(
+         val nt: Timestamp?
+     )*/
 
     override fun checkIssues() {
         var count = 0

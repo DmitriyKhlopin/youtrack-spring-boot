@@ -71,7 +71,7 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
                 .from(ISSUES)
                 .where(ISSUES.RESOLVED_DATE.lessOrEqual(Timestamp.valueOf(dt.atStartOfDay())))
                 .and(ISSUES.RESOLVED_DATE.isNotNull)
-                .and(ISSUES.PROJECT.`in`(filter))
+                .and(ISSUES.PROJECT_SHORT_NAME.`in`(filter))
                 .orderBy(ISSUES.CREATED_DATE.desc())
                 .limit(100)
                 .fetchInto(Int::class.java)
@@ -97,9 +97,9 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
             .from(ISSUES)
             .where(ISSUES.CREATED_DATE.lessOrEqual(Timestamp.valueOf(dt.atStartOfDay())))
             .and(ISSUES.RESOLVED_DATE.isNull)
-            .and(ISSUES.PROJECT.`in`(filter))
+            .and(ISSUES.PROJECT_SHORT_NAME.`in`(filter))
             .orderBy(ISSUES.CREATED_DATE.desc())
-            .limit(100)
+            /*.limit(100)*/
             .fetchInto(Int::class.java).asSequence().groupBy { 1 + it / 32400 }
             .map { item -> SigmaItem(item.key, item.value.size) }.sortedBy { it.day }.toList()
         println(active)
@@ -116,15 +116,16 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
         val df = dt.minusDays(7)
         return dslContext
             .select(
-                ISSUES.PROJECT.`as`("name"),
-                DSL.count(ISSUES.PROJECT).`as`("value")
+                ISSUES.PROJECT_SHORT_NAME.`as`("name"),
+                DSL.count(ISSUES.PROJECT_SHORT_NAME).`as`("value")
             )
             .from(ISSUES)
             .where(ISSUES.CREATED_DATE.between(Timestamp.valueOf(df.atStartOfDay())).and(Timestamp.valueOf(dt.atStartOfDay())))
             .and(ISSUES.RESOLVED_DATE.isNull)
-            .and(ISSUES.PROJECT.`in`(filter))
-            .groupBy(ISSUES.PROJECT)
-            .fetchInto(SimpleAggregatedValue::class.java).sortedByDescending { it.value }
+            .and(ISSUES.PROJECT_SHORT_NAME.`in`(filter))
+            .groupBy(ISSUES.PROJECT_SHORT_NAME)
+            .fetchInto(SimpleAggregatedValue::class.java)
+            .sortedByDescending { it.value }
     }
 
     override fun getGanttData(): ResponseEntity<Any> {
@@ -154,6 +155,4 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
             }
         }
     }
-
 }
-
