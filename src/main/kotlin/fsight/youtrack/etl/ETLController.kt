@@ -20,15 +20,15 @@ class ETLController(private val service: IETL) {
     fun loadData(
         @RequestParam("dateFrom", required = false) dateFrom: String? = "",
         @RequestParam("dateTo", required = false) dateTo: String? = "",
-        @RequestParam("complete", required = false) complete: Boolean = false
+        @RequestParam("parameters", required = false) parameters: String = ""
     ) =
         if (dateFrom != null && dateTo != null)
             service.loadDataFromYT(
                 manual = true,
                 customFilter = "updated: $dateFrom .. $dateTo",
-                complete = complete
+                parameters = parameters
             ) else
-            service.loadDataFromYT(manual = true, complete = complete)
+            service.loadDataFromYT(manual = true, parameters = parameters)
 
     @GetMapping("/api/etl/state")
     fun getCurrentState() = ETL.etlState

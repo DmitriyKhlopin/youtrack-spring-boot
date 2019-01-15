@@ -29,6 +29,7 @@ class Projects(private val dslContext: DSLContext) : IProjects {
     override fun saveProjects(): Int {
         var result = 0
         try {
+            dslContext.deleteFrom(PROJECTS).execute()
             YouTrackAPI.createOld(Converter.GSON).getProjectsList(AUTH).execute().body()?.forEach {
                 result = dslContext
                     .insertInto(PROJECTS)

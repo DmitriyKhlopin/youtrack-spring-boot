@@ -23,23 +23,33 @@ class ETL(
     private val bundleServiceV2: BundleV2,
     private val issuesV2: IssuesServiceV2
 ) : IETL {
-    override fun loadDataFromYT(manual: Boolean, customFilter: String?, complete: Boolean): ETLResult? {
+    override fun loadDataFromYT(manual: Boolean, customFilter: String?, parameters: String): ETLResult? {
         println("Current ETL state: ${etlState.state}")
         println("Custom filter: $customFilter")
+        val p = parameters.split(delimiters = *arrayOf(","))
         when (etlState) {
             ETLState.IDLE, ETLState.DONE -> {
                 println("Launching ETL")
                 /*etlState = ETLState.RUNNING*/
                 val m = GregorianCalendar.getInstance().also { it.time = Date() }.get(Calendar.MINUTE)
-                val issuesCount = issue.getIssues(customFilter)
-                if (m == 30 || complete) {
+                var issuesCount = 0
+                if (m == 30 && !manual) {
+                    issuesCount = issue.getIssues(customFilter)
                     bundles.getBundles()
                     bundleServiceV2.getBundles()
                     users.getUsers()
                     timeline.launchCalculation()
                     issue.checkIssues()
                     projects.saveProjects()
+                } else {
+                    if (!manual) issuesCount = issue.getIssues(customFilter)
                 }
+                if (manual && p.contains("issues")) issuesCount = issue.getIssues(customFilter)
+                if (manual && p.contains("bundles")) bundles.getBundles()
+                if (manual && p.contains("users")) users.getUsers()
+                if (manual && p.contains("timeline")) users.getUsers()
+                if (manual && p.contains("check")) issue.checkIssues()
+                if (manual && p.contains("projects")) projects.saveProjects()
                 etlState = ETLState.IDLE
                 lastResult = ETLResult(ETLState.DONE, issuesCount, 0)
             }
