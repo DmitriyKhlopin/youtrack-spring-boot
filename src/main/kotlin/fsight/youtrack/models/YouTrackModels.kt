@@ -21,6 +21,22 @@ data class YouTrackIssue(
     var project: Project? = null
 )
 
+data class YouTrackPostableIssue(
+    var fields: List<FieldValue>? = null,
+    var description: String? = null,
+    var visibility: YouTrackIssueVisibility? = null,
+    var summary: String? = null,
+    var reporter: YouTrackUser? = null,
+    var created: Long? = null,
+    var updated: Long? = null,
+    var resolved: Long? = null,
+    var idReadable: String? = null,
+    var updater: YouTrackUser? = null,
+    var comments: List<YouTrackComment>? = null,
+    var votes: Int? = null,
+    var project: Project? = null
+)
+
 data class Project(
     var shortName: String? = null,
     var id: String? = null,

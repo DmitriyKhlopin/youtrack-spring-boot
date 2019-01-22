@@ -4,6 +4,7 @@ import fsight.youtrack.AUTH
 import fsight.youtrack.Converter
 import fsight.youtrack.ROOT_REF
 import fsight.youtrack.api.YouTrackAPI
+import fsight.youtrack.api.YouTrackAPIv2
 import fsight.youtrack.generated.jooq.tables.ProjectCustomFields.PROJECT_CUSTOM_FIELDS
 import fsight.youtrack.generated.jooq.tables.Projects.PROJECTS
 import fsight.youtrack.models.ProjectModel
@@ -20,7 +21,8 @@ class Projects(private val dslContext: DSLContext) : IProjects {
         return dslContext.select(
             PROJECTS.NAME.`as`("name"),
             PROJECTS.SHORT_NAME.`as`("shortName"),
-            PROJECTS.SHORT_NAME.`as`("description")
+            PROJECTS.SHORT_NAME.`as`("description"),
+            PROJECTS.ID.`as`("id")
         )
             .from(PROJECTS)
             .fetchInto(ProjectModel::class.java)
@@ -30,19 +32,23 @@ class Projects(private val dslContext: DSLContext) : IProjects {
         var result = 0
         try {
             dslContext.deleteFrom(PROJECTS).execute()
-            YouTrackAPI.createOld(Converter.GSON).getProjectsList(AUTH).execute().body()?.forEach {
+            YouTrackAPIv2.create(Converter.GSON).getProjects(AUTH).execute().body()?.forEach {
+                println(it)
                 result = dslContext
                     .insertInto(PROJECTS)
                     .set(PROJECTS.NAME, it.name)
                     .set(PROJECTS.SHORT_NAME, it.shortName)
                     .set(PROJECTS.DESCRIPTION, it.description)
-                    .onDuplicateKeyUpdate()
-                    .set(PROJECTS.NAME, it.name)
+                    .set(PROJECTS.ID, it.id)
+                    .onDuplicateKeyIgnore()
+                    /*.set(PROJECTS.NAME, it.name)
                     .set(PROJECTS.SHORT_NAME, it.shortName)
                     .set(PROJECTS.DESCRIPTION, it.description)
+                    .set(PROJECTS.ID, it.id)*/
                     .execute()
                 saveProjectCustomFields(it.shortName!!)
             }
+            YouTrackAPIv2.create(Converter.GSON).getProjects(AUTH)
         } catch (e: SocketTimeoutException) {
             println(e)
         } catch (e: DataAccessException) {

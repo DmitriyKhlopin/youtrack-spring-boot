@@ -44,12 +44,30 @@ class ETL(
                 } else {
                     if (!manual) issuesCount = issue.getIssues(customFilter)
                 }
-                if (manual && p.contains("issues")) issuesCount = issue.getIssues(customFilter)
-                if (manual && p.contains("bundles")) bundles.getBundles()
-                if (manual && p.contains("users")) users.getUsers()
-                if (manual && p.contains("timeline")) users.getUsers()
-                if (manual && p.contains("check")) issue.checkIssues()
-                if (manual && p.contains("projects")) projects.saveProjects()
+                if (manual && p.contains("issues")) {
+                    println("Loading issues")
+                    issuesCount = issue.getIssues(customFilter)
+                }
+                if (manual && p.contains("bundles")) {
+                    println("Loading bundles")
+                    bundles.getBundles()
+                }
+                if (manual && p.contains("users")) {
+                    println("Loading users")
+                    users.getUsers()
+                }
+                if (manual && p.contains("timeline")) {
+                    println("Calculating timelines")
+                    timeline.launchCalculation()
+                }
+                if (manual && p.contains("check")) {
+                    println("Checking issues")
+                    issue.checkIssues()
+                }
+                if (manual && p.contains("projects")) {
+                    println("Loading projects")
+                    projects.saveProjects()
+                }
                 etlState = ETLState.IDLE
                 lastResult = ETLResult(ETLState.DONE, issuesCount, 0)
             }

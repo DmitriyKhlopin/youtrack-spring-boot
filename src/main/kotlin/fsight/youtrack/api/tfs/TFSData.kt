@@ -4,22 +4,26 @@ import com.google.gson.Gson
 import fsight.youtrack.AUTH
 import fsight.youtrack.api.YouTrackAPI
 import fsight.youtrack.etl.bundles.BundleValue
-
 import fsight.youtrack.generated.jooq.tables.BundleValues.BUNDLE_VALUES
+import fsight.youtrack.generated.jooq.tables.Projects.PROJECTS
 import fsight.youtrack.generated.jooq.tables.TfsLinks.TFS_LINKS
 import fsight.youtrack.generated.jooq.tables.TfsTasks.TFS_TASKS
 import fsight.youtrack.generated.jooq.tables.TfsWi.TFS_WI
 import fsight.youtrack.generated.jooq.tables.Users.USERS
+import fsight.youtrack.headers
 import fsight.youtrack.models.*
-import fsight.youtrack.models.v2.Project
+import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.transactions.TransactionManager
+import org.jetbrains.exposed.sql.transactions.transaction
 import org.jooq.DSLContext
 import org.jsoup.Jsoup
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 
 @Service
-class TFSData(private val dslContext: DSLContext) : ITFSData {
+class TFSData(private val dslContext: DSLContext, @Qualifier("tfsDataSource") private val ms: Database) : ITFSData {
     private final val types: HashMap<String, String> by lazy {
         hashMapOf<String, String>().also {
             it["jetbrains.charisma.customfields.complex.state.StateBundle"] =
@@ -43,12 +47,14 @@ class TFSData(private val dslContext: DSLContext) : ITFSData {
     }
     private final val customFieldValues = arrayListOf<BundleValue>()
     private final val users = arrayListOf<UserDetails>()
+    private final val projects = arrayListOf<ProjectModel>()
 
     init {
         this.initDictionaries()
     }
 
     override fun initDictionaries() {
+        projects.clear()
         customFieldValues.clear()
         users.clear()
         customFieldValues.addAll(
@@ -63,7 +69,7 @@ class TFSData(private val dslContext: DSLContext) : ITFSData {
                     BUNDLE_VALUES.TYPE.`as`("\$type")
                 )
                 .from(BUNDLE_VALUES)
-                .where(BUNDLE_VALUES.PROJECT_ID.eq("0-15"))
+                /*.where(BUNDLE_VALUES.PROJECT_ID.eq("0-15"))*/
                 .fetchInto(BundleValue::class.java)
         )
 
@@ -77,6 +83,16 @@ class TFSData(private val dslContext: DSLContext) : ITFSData {
                 .from(USERS)
                 .where(USERS.EMAIL.isNotNull)
                 .fetchInto(UserDetails::class.java)
+        )
+        projects.addAll(
+            dslContext.select(
+                PROJECTS.NAME.`as`("name"),
+                PROJECTS.SHORT_NAME.`as`("shortName"),
+                PROJECTS.SHORT_NAME.`as`("description"),
+                PROJECTS.ID.`as`("id")
+            )
+                .from(PROJECTS)
+                .fetchInto(ProjectModel::class.java)
         )
     }
 
@@ -267,4 +283,210 @@ class TFSData(private val dslContext: DSLContext) : ITFSData {
         )*/
         return ""
     }
+
+    override fun getBuildsByIteration(iteration: String): ResponseEntity<Any> {
+        val statement = """
+            SELECT
+  DISTINCT changeRequest.Prognoz_P7_ChangeRequest_MergedIn AS build
+FROM CurrentWorkItemView changeRequest
+  LEFT JOIN vFactLinkedCurrentWorkItem links ON changeRequest.WorkItemSK = links.SourceWorkItemSK
+  LEFT JOIN CurrentWorkItemView defect ON links.TargetWorkitemSK = defect.WorkItemSK
+WHERE changeRequest.System_WorkItemType = 'Change Request'
+      AND changeRequest.IterationPath = '$iteration'
+      AND changeRequest.Prognoz_P7_ChangeRequest_MergedIn IS NOT NULL
+ORDER BY changeRequest.Prognoz_P7_ChangeRequest_MergedIn DESC
+      """
+        val result = arrayListOf<String>()
+        transaction(ms) {
+            TransactionManager.current().exec(statement) { rs ->
+                while (rs.next()) {
+                    result.add(rs.getString("build"))
+                }
+                result
+            }?.forEach { println(it) }
+        }
+        return ResponseEntity.status(HttpStatus.OK).body(result)
+    }
+
+    override fun getIterations(): ResponseEntity<Any> {
+        val statement = """SELECT DISTINCT IterationPath
+FROM CurrentWorkItemView
+where IterationPath LIKE '\P7\PP9\9.0%%'
+      """
+        val result = arrayListOf<String>()
+        transaction(ms) {
+            TransactionManager.current().exec(statement) { rs ->
+                while (rs.next()) {
+                    result.add(rs.getString("IterationPath"))
+                }
+                result
+            }?.forEach { println(it) }
+        }
+        return ResponseEntity.status(HttpStatus.OK).body(result)
+    }
+
+    override fun getDefectsByFixedBuildId(iteration: String, build: String): ResponseEntity<Any> {
+        val statement = """SELECT
+  changeRequest.System_Id                         AS CHANGE_REQUEST_ID,
+  defect.System_Id                                AS PARENT_ID,
+  defect.System_WorkItemType                      AS PARENT_TYPE,
+  changeRequest.Prognoz_P7_ChangeRequest_MergedIn AS MERGED_IN,
+  changeRequest.AreaName                          AS AREA_NAME,
+  changeRequest.AreaPath                          AS AREA_PATH,
+  defect.IterationPath                            AS ITERATION_PATH,
+  defect.IterationName                            AS ITERATION_NAME,
+  (SELECT TOP 1 Words
+   FROM
+     Tfs_DefaultCollection.dbo.WorkItemLongTexts t
+   WHERE defect.System_Id = t.ID AND
+         t.FldID = 1
+   ORDER BY Rev DESC)                             AS TITLE,
+  CASE defect.System_WorkItemType
+  WHEN 'Defect'
+    THEN
+      (SELECT TOP 1 Words
+       FROM
+         Tfs_DefaultCollection.dbo.WorkItemLongTexts t
+       WHERE defect.System_Id = t.ID AND
+             t.FldID = 10228
+       ORDER BY Rev DESC)
+  WHEN 'Task'
+    THEN (SELECT TOP 1 Words
+          FROM
+            Tfs_DefaultCollection.dbo.WorkItemLongTexts t
+          WHERE defect.System_Id = t.ID AND
+                t.FldID = 52
+          ORDER BY Rev DESC)
+  ELSE 'Undefined' END                            AS BODY
+FROM CurrentWorkItemView changeRequest
+  LEFT JOIN vFactLinkedCurrentWorkItem links ON changeRequest.WorkItemSK = links.SourceWorkItemSK
+  LEFT JOIN CurrentWorkItemView defect ON links.TargetWorkitemSK = defect.WorkItemSK
+WHERE changeRequest.System_WorkItemType = 'Change Request'
+      AND changeRequest.IterationPath = '$iteration'
+      AND changeRequest.Prognoz_P7_ChangeRequest_MergedIn = $build
+      AND changeRequest.System_State = 'Closed'
+      AND defect.System_WorkItemType IN ('Defect', 'Task')
+      """
+        val result = arrayListOf<TFSDefect>()
+        transaction(ms) {
+            TransactionManager.current().exec(statement) { rs ->
+                /*val result = arrayListOf<Pair<String, String>>()*/
+
+                while (rs.next()) {
+                    val i = TFSDefect(
+                        changeRequestId = rs.getString("CHANGE_REQUEST_ID").toInt(),
+                        parentId = rs.getString("PARENT_ID").toInt(),
+                        parentType = rs.getString("PARENT_TYPE"),
+                        mergedIn = rs.getString("MERGED_IN").toInt(),
+                        areaName = rs.getString("AREA_NAME"),
+                        areaPath = rs.getString("AREA_PATH"),
+                        iterationPath = rs.getString("ITERATION_PATH"),
+                        iterationName = rs.getString("ITERATION_NAME"),
+                        title = rs.getString("TITLE"),
+                        body = Jsoup.parse(rs.getString("BODY")).text()
+                    )
+                    result.add(i)
+                }
+                result
+            }?.forEach { println(it) }
+        }
+        return ResponseEntity.status(HttpStatus.OK).body(result)
+    }
+
+    override fun postChangeRequestById(id: Int): ResponseEntity<Any> {
+        val statement = """SELECT
+  changeRequest.System_Id                         AS CHANGE_REQUEST_ID,
+  defect.System_Id                                AS PARENT_ID,
+  defect.System_WorkItemType                      AS PARENT_TYPE,
+  changeRequest.Prognoz_P7_ChangeRequest_MergedIn AS MERGED_IN,
+  changeRequest.AreaName                          AS AREA_NAME,
+  changeRequest.AreaPath                          AS AREA_PATH,
+  defect.IterationPath                            AS ITERATION_PATH,
+  defect.IterationName                            AS ITERATION_NAME,
+  (SELECT TOP 1 Words
+   FROM
+     Tfs_DefaultCollection.dbo.WorkItemLongTexts t
+   WHERE defect.System_Id = t.ID AND
+         t.FldID = 1
+   ORDER BY Rev DESC)                             AS TITLE,
+  CASE defect.System_WorkItemType
+  WHEN 'Defect'
+    THEN
+      (SELECT TOP 1 Words
+       FROM
+         Tfs_DefaultCollection.dbo.WorkItemLongTexts t
+       WHERE defect.System_Id = t.ID AND
+             t.FldID = 10228
+       ORDER BY Rev DESC)
+  WHEN 'Task'
+    THEN (SELECT TOP 1 Words
+          FROM
+            Tfs_DefaultCollection.dbo.WorkItemLongTexts t
+          WHERE defect.System_Id = t.ID AND
+                t.FldID = 52
+          ORDER BY Rev DESC)
+  ELSE 'Undefined' END                            AS BODY
+FROM CurrentWorkItemView changeRequest
+  LEFT JOIN vFactLinkedCurrentWorkItem links ON changeRequest.WorkItemSK = links.SourceWorkItemSK
+  LEFT JOIN CurrentWorkItemView defect ON links.TargetWorkitemSK = defect.WorkItemSK
+WHERE changeRequest.System_WorkItemType = 'Change Request'
+      AND changeRequest.System_Id = '$id'
+      AND defect.System_WorkItemType IN ('Defect', 'Task')
+      """
+        val result = arrayListOf<TFSDefect>()
+        transaction(ms) {
+            TransactionManager.current().exec(statement) { rs ->
+                while (rs.next()) {
+                    val i = TFSDefect(
+                        changeRequestId = rs.getString("CHANGE_REQUEST_ID").toInt(),
+                        parentId = rs.getString("PARENT_ID").toInt(),
+                        parentType = rs.getString("PARENT_TYPE"),
+                        mergedIn = rs.getString("MERGED_IN").toInt(),
+                        areaName = rs.getString("AREA_NAME"),
+                        areaPath = rs.getString("AREA_PATH"),
+                        iterationPath = rs.getString("ITERATION_PATH"),
+                        iterationName = rs.getString("ITERATION_NAME"),
+                        title = rs.getString("TITLE"),
+                        body = Jsoup.parse(rs.getString("BODY")).text()
+                    )
+                    result.add(i)
+                }
+                result
+            }?.forEach { println(it) }
+        }
+        val item = result.first()
+        /*val id2 = YouTrackAPI.create().createIssue(AUTH, item.toJson("FP")).execute()
+        println(id2)
+        val idReadable = Gson().fromJson(id2.body(), YouTrackIssue::class.java)
+        println(item.toJson("FP"))*/
+
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .headers(headers())
+            .body(item.toJson("FP"))
+        /*.body(idReadable)*/
+    }
+
+    fun TFSDefect.toJson(queueId: String): String {
+        this.parentType = when (this.parentType) {
+            "Defect" -> "Bug"
+            "Task" -> "Feature"
+            else -> "Консультация"
+        }
+        val projectId = projects.firstOrNull { it.shortName == queueId }?.id ?: return ""
+        val type = getCustomFieldValue("Type", this.parentType ?: "Bug")
+        val areaName = getCustomFieldValue("Area name", this.areaName ?: "P7")
+        val database = getCustomFieldValue("СУБД", "Любая СУБД")
+        val os = getCustomFieldValue("Операционная система", "Любая ОС")
+        /*val assignee = getCustomFieldValue("Assignee", item.productManager)*/
+        return Gson().toJson(
+            YouTrackPostableIssue(
+                project = Project(id = projectId),
+                summary = this.title,
+                description = "TFS: ${this.changeRequestId} \n\nPD:\n${this.body}",
+                fields = listOfNotNull(type, areaName, database, os)
+            )
+        )
+    }
+
 }

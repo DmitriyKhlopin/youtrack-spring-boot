@@ -1,5 +1,7 @@
 package fsight.youtrack
 
+import org.springframework.http.HttpHeaders
+
 enum class ETLState(val state: Int) {
     IDLE(0),
     RUNNING(1),
@@ -10,6 +12,11 @@ enum class Converter {
     GSON, SCALAR
 }
 
+fun headers(): HttpHeaders {
+    val h = HttpHeaders()
+    h.add("Content-Type", "application/json; charset=utf-8")
+    return h
+}
 
 const val PRINT = true
 

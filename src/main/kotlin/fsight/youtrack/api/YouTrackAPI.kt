@@ -192,7 +192,6 @@ interface YouTrackAPI {
     ): Call<ProjectCustomFieldParameters>
 
 
-
     companion object Factory {
         fun create(converter: Converter = Converter.SCALAR): YouTrackAPI {
             val converterFactory = when (converter) {
