@@ -68,6 +68,13 @@ interface YouTrackAPIv2 {
         @Header("Authorization") auth: String
     ): Call<HubResponse>
 
+    @Headers("Accept: application/json", "Content-Type: application/json;charset=UTF-8")
+    @POST("api/issues?fields=idReadable,id")
+    fun createIssue(
+        @Header("Authorization") auth: String,
+        @Body model: String
+    ): Call<String>
+
     data class HubResponse(
         var skip: Int? = null,
         var total: Int? = null,

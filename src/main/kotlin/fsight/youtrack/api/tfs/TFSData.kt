@@ -3,6 +3,7 @@ package fsight.youtrack.api.tfs
 import com.google.gson.Gson
 import fsight.youtrack.AUTH
 import fsight.youtrack.api.YouTrackAPI
+import fsight.youtrack.api.YouTrackAPIv2
 import fsight.youtrack.etl.bundles.BundleValue
 import fsight.youtrack.generated.jooq.tables.BundleValues.BUNDLE_VALUES
 import fsight.youtrack.generated.jooq.tables.Projects.PROJECTS
@@ -26,16 +27,21 @@ import org.springframework.stereotype.Service
 class TFSData(private val dslContext: DSLContext, @Qualifier("tfsDataSource") private val ms: Database) : ITFSData {
     private final val types: HashMap<String, String> by lazy {
         hashMapOf<String, String>().also {
+            /*it["jetbrains.charisma.customfields.complex.version.VersionBundle"] =
+                    "jetbrains.charisma.customfields.complex.version.MultiVersionIssueCustomField"*/
+            it["jetbrains.charisma.customfields.complex.version.VersionBundle"] =
+                    "jetbrains.charisma.customfields.complex.version.SingleVersionIssueCustomField"
             it["jetbrains.charisma.customfields.complex.state.StateBundle"] =
                     "jetbrains.charisma.customfields.complex.state.StateIssueCustomField"
             it["jetbrains.charisma.customfields.complex.ownedField.OwnedBundle"] =
                     "jetbrains.charisma.customfields.complex.ownedField.SingleOwnedIssueCustomField"
             it["jetbrains.charisma.customfields.complex.enumeration.EnumBundle"] =
                     "jetbrains.charisma.customfields.complex.enumeration.SingleEnumIssueCustomField"
-            it["jetbrains.charisma.customfields.complex.version.VersionBundle"] =
-                    "jetbrains.charisma.customfields.complex.version.SingleVersionIssueCustomField"
+            /*it["jetbrains.charisma.customfields.complex.version.VersionBundle"] =
+                    "jetbrains.charisma.customfields.complex.version.SingleVersionIssueCustomField"*/
             it["jetbrains.charisma.customfields.complex.user.UserBundle"] =
                     "jetbrains.charisma.customfields.complex.user.SingleUserIssueCustomField"
+
         }
     }
     private final val prioritiesMap: HashMap<String, String> by lazy {
@@ -200,7 +206,40 @@ class TFSData(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pr
         return ResponseEntity.status(HttpStatus.OK).body(postableItem)
     }
 
-    fun getCustomFieldValue(fieldName: String, value: String?): FieldValue? {
+    fun getCustomFieldValue(projectName: String, fieldName: String, value: String?): FieldValueBase? {
+        return when (fieldName) {
+            "Assignee" -> users.firstOrNull { it.email == value }.let { it ->
+                if (it != null) FieldValue(
+                    id = "86-16",
+                    `$type` = "jetbrains.charisma.customfields.complex.user.SingleUserIssueCustomField",
+                    value = ActualValue(
+                        id = it.id
+                            ?: "1-1", name = it.fullName ?: "admin"
+                    )
+                ) else null
+            }
+            "Affected versions" -> customFieldValues.asSequence().firstOrNull {
+                it.fieldName == fieldName && it.name == value && it.projectName == projectName
+            }.let { it ->
+                if (it != null) FieldValue2(
+                    id = it.fieldId,
+                    `$type` = /*types[it.`$type`]*/ "jetbrains.charisma.customfields.complex.version.MultiVersionIssueCustomField",
+                    value = listOf(ActualValue(id = it.id, name = it.name))
+                ) else null
+            }
+            else -> customFieldValues.asSequence().firstOrNull {
+                it.fieldName == fieldName && it.name == value && it.projectName == projectName
+            }.let { it ->
+                if (it != null) FieldValue(
+                    id = it.fieldId,
+                    `$type` = types[it.`$type`],
+                    value = ActualValue(id = it.id, name = it.name)
+                ) else null
+            }
+        }
+    }
+
+    fun getCustomFieldListValue(fieldName: String, value: String?): FieldValueBase? {
         return when (fieldName) {
             "Assignee" -> users.firstOrNull { it.email == value }.let { it ->
                 if (it != null) FieldValue(
@@ -226,14 +265,14 @@ class TFSData(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pr
 
     fun getPostableRequirement(item: TFSRequirement): String {
         println(item.id)
-        val priority = getCustomFieldValue("Priority", prioritiesMap[item.severity] ?: "Normal")
-        val iterationPath = getCustomFieldValue("Iteration", item.iterationPath ?: "\\P7\\PP9")
-        val proposalQuality = getCustomFieldValue("Proposal quality", item.proposalQuality ?: "Average")
-        val type = getCustomFieldValue("Type", item.type ?: "Requirement")
-        val pmAccepted = getCustomFieldValue("PM accepted", if (item.pmAccepted == "-1") "Yes" else "No")
-        val dmAccepted = getCustomFieldValue("DM accepted", if (item.dmAccepted == "-1") "Yes" else "No")
-        val areaName = getCustomFieldValue("Area name", item.areaName ?: "P7")
-        val assignee = getCustomFieldValue("Assignee", item.productManager)
+        val priority = getCustomFieldValue("W", "Priority", prioritiesMap[item.severity] ?: "Normal")
+        val iterationPath = getCustomFieldValue("W", "Iteration", item.iterationPath ?: "\\P7\\PP9")
+        val proposalQuality = getCustomFieldValue("W", "Proposal quality", item.proposalQuality ?: "Average")
+        val type = getCustomFieldValue("W", "Type", item.type ?: "Requirement")
+        val pmAccepted = getCustomFieldValue("W", "PM accepted", if (item.pmAccepted == "-1") "Yes" else "No")
+        val dmAccepted = getCustomFieldValue("W", "DM accepted", if (item.dmAccepted == "-1") "Yes" else "No")
+        val areaName = getCustomFieldValue("W", "Area name", item.areaName ?: "P7")
+        val assignee = getCustomFieldValue("W", "Assignee", item.productManager)
         /*return Gson().toJson(
             YouTrackIssue(
                 project = Project(id = "0-15"),
@@ -258,9 +297,9 @@ class TFSData(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pr
 
     fun getPostableTask(item: TFSTask, iteration: String?): String {
         println(item)
-        val type = getCustomFieldValue("Type", item.type ?: "Task")
-        val iterationPath = getCustomFieldValue("Iteration", iteration ?: item.iterationPath ?: "\\P7\\PP9")
-        val areaName = getCustomFieldValue("Area name", item.areaName ?: "P7")
+        val type = getCustomFieldValue("W", "Type", item.type ?: "Task")
+        val iterationPath = getCustomFieldValue("W", "Iteration", iteration ?: item.iterationPath ?: "\\P7\\PP9")
+        val areaName = getCustomFieldValue("W", "Area name", item.areaName ?: "P7")
         val estimationDev = PeriodValue(
             id = "100-17",
             `$type` = "jetbrains.youtrack.timetracking.periodField.PeriodIssueCustomField",
@@ -270,8 +309,8 @@ class TFSData(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pr
             )
         )
         val assignee = listOf(
-            getCustomFieldValue("Assignee", item.developer),
-            getCustomFieldValue("Assignee", item.tester)
+            getCustomFieldValue("W", "Assignee", item.developer),
+            getCustomFieldValue("W", "Assignee", item.tester)
         ).firstOrNull()
         /*return Gson().toJson(
             YouTrackIssue(
@@ -455,16 +494,12 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
             }?.forEach { println(it) }
         }
         val item = result.first()
-        /*val id2 = YouTrackAPI.create().createIssue(AUTH, item.toJson("FP")).execute()
-        println(id2)
+        val id2 = YouTrackAPIv2.create().createIssue(AUTH, item.toJson("FP")).execute()
         val idReadable = Gson().fromJson(id2.body(), YouTrackIssue::class.java)
-        println(item.toJson("FP"))*/
-
         return ResponseEntity
             .status(HttpStatus.OK)
             .headers(headers())
-            .body(item.toJson("FP"))
-        /*.body(idReadable)*/
+            .body(idReadable)
     }
 
     fun TFSDefect.toJson(queueId: String): String {
@@ -474,19 +509,31 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
             else -> "Консультация"
         }
         val projectId = projects.firstOrNull { it.shortName == queueId }?.id ?: return ""
-        val type = getCustomFieldValue("Type", this.parentType ?: "Bug")
-        val areaName = getCustomFieldValue("Area name", this.areaName ?: "P7")
-        val database = getCustomFieldValue("СУБД", "Любая СУБД")
-        val os = getCustomFieldValue("Операционная система", "Любая ОС")
+        val type = getCustomFieldValue(queueId, "Type", this.parentType ?: "Bug")
+        val product = getCustomFieldValue(queueId, "Продукт", /*this.parentType ?:*/ "FP 9.0")
+        val database = getCustomFieldValue(queueId, "СУБД", "Любая СУБД")
+        val os = getCustomFieldValue(queueId, "Операционная система", "Любая ОС")
+        val component = getCustomFieldValue(queueId, "Subsystem", "8. Прочее") //TODO calculate value from this.areaName
+        val affectedVersions =
+            getCustomFieldValue(queueId, "Affected versions", "9.0.202") //TODO calculate value from this.areaName
+        val fixedInBuild =
+            getCustomFieldValue(queueId, "Исправлено в версии", "9.0.271") //TODO calculate value from this.areaName
         /*val assignee = getCustomFieldValue("Assignee", item.productManager)*/
         return Gson().toJson(
             YouTrackPostableIssue(
                 project = Project(id = projectId),
                 summary = this.title,
                 description = "TFS: ${this.changeRequestId} \n\nPD:\n${this.body}",
-                fields = listOfNotNull(type, areaName, database, os)
+                fields = listOfNotNull(
+                    type, /*areaName,*/
+                    database,
+                    os,
+                    product,
+                    component,
+                    affectedVersions,
+                    fixedInBuild
+                )
             )
         )
     }
-
 }

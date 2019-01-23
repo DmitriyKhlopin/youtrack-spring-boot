@@ -22,7 +22,7 @@ data class YouTrackIssue(
 )
 
 data class YouTrackPostableIssue(
-    var fields: List<FieldValue>? = null,
+    var fields: List<FieldValueBase>? = null,
     var description: String? = null,
     var visibility: YouTrackIssueVisibility? = null,
     var summary: String? = null,
