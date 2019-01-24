@@ -4,7 +4,10 @@ import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import fsight.youtrack.Converter
 import fsight.youtrack.NEW_ROOT_REF
-import fsight.youtrack.models.*
+import fsight.youtrack.models.ProjectModel
+import fsight.youtrack.models.YouTrackIssue
+import fsight.youtrack.models.YouTrackIssueWorkItem
+import fsight.youtrack.models.YouTrackUser
 import retrofit2.Call
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -20,6 +23,13 @@ interface YouTrackAPIv2 {
         @Query("\$top") top: Int,
         @Query("\$skip") skip: Int
     ): Call<List<YouTrackIssue>>
+
+    @Headers("Accept: application/json")
+    @GET("api/issues/{id}?fields=idReadable,project(id,shortName)")
+    fun getIssueProject(
+        @Header("Authorization") auth: String,
+        @Path("id") id: String
+    ): Call<YouTrackIssue>
 
     @Headers("Accept: application/json")
     @GET("api/admin/projects?fields=shortName,id,name,description,fromEmail,replytoEmail,leader(login,id,name),fields(id,canBeEmpty,field(name),isPublic,ordinal)")

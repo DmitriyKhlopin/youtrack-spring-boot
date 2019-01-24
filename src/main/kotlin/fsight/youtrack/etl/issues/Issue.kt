@@ -482,8 +482,8 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
         val result = dslContext.select(ISSUES.ID).from(ISSUES).fetchInto(String::class.java)
         val interval = (result.size / 100) + 1
         result.forEachIndexed { index, issueId ->
-            val requestResult = YouTrackAPI.createOld(Converter.GSON).check(AUTH, issueId).execute()
-            val currentProject = requestResult.body()?.field?.getString("projectShortName")
+            val requestResult = YouTrackAPIv2.create(Converter.GSON).getIssueProject(AUTH, issueId).execute()
+            val currentProject = requestResult.body()?.project?.shortName
             val prevProject = issueId.substringBefore("-")
             if (currentProject != prevProject) {
                 count += 1
