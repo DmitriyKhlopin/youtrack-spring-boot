@@ -2,7 +2,6 @@ package fsight.youtrack.etl
 
 import fsight.youtrack.ETLState
 import fsight.youtrack.etl.bundles.Bundle
-import fsight.youtrack.etl.bundles.BundleV2
 import fsight.youtrack.etl.issues.IIssue
 import fsight.youtrack.etl.projects.IProjects
 import fsight.youtrack.etl.timeline.ITimeline
@@ -15,11 +14,10 @@ import java.util.*
 @Service
 class ETL(
     private val projects: IProjects,
-    /*private val bundles: Bundle,*/
     private val issue: IIssue,
     private val users: UsersETL,
     private val timeline: ITimeline,
-    private val bundleServiceV2: BundleV2
+    private val bundle: Bundle
 ) : IETL {
     override fun loadDataFromYT(manual: Boolean, customFilter: String?, parameters: String): ETLResult? {
         println("Current ETL state: ${etlState.state}")
@@ -34,7 +32,7 @@ class ETL(
                 if (m == 30 && !manual) {
                     issuesCount = issue.getIssues(customFilter)
                     /*bundles.getBundles()*/
-                    bundleServiceV2.getBundles()
+                    bundle.getBundles()
                     users.getUsers()
                     timeline.launchCalculation()
                     issue.checkIssues()
@@ -48,8 +46,7 @@ class ETL(
                 }
                 if (manual && p.contains("bundles")) {
                     println("Loading bundles")
-                    bundleServiceV2.getBundles()
-                    /*bundles.getBundles()*/
+                    bundle.getBundles()
                 }
                 if (manual && p.contains("users")) {
                     println("Loading users")
@@ -76,7 +73,7 @@ class ETL(
     }
 
     override fun getBundles() {
-        bundleServiceV2.getBundles()
+        bundle.getBundles()
     }
 
     override fun getUsers() {
