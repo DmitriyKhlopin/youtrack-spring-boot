@@ -78,6 +78,7 @@ data class ProjectCustomField(
 "id" : "String"*/
 )
 
+@Deprecated("Use CustomField from sight.youtrack.etl.bundles package")
 data class CustomField(
     var id: String? = null,
     var name: String? = null

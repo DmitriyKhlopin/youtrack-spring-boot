@@ -7,7 +7,6 @@ import fsight.youtrack.etl.issues.IIssue
 import fsight.youtrack.etl.projects.IProjects
 import fsight.youtrack.etl.timeline.ITimeline
 import fsight.youtrack.etl.users.UsersETL
-import fsight.youtrack.etlV2.issues.IssuesServiceV2
 import fsight.youtrack.models.ETLResult
 import fsight.youtrack.models.v2.Issue
 import org.springframework.stereotype.Service
@@ -16,12 +15,11 @@ import java.util.*
 @Service
 class ETL(
     private val projects: IProjects,
-    private val bundles: Bundle,
+    /*private val bundles: Bundle,*/
     private val issue: IIssue,
     private val users: UsersETL,
     private val timeline: ITimeline,
-    private val bundleServiceV2: BundleV2,
-    private val issuesV2: IssuesServiceV2
+    private val bundleServiceV2: BundleV2
 ) : IETL {
     override fun loadDataFromYT(manual: Boolean, customFilter: String?, parameters: String): ETLResult? {
         println("Current ETL state: ${etlState.state}")
@@ -35,7 +33,7 @@ class ETL(
                 var issuesCount = 0
                 if (m == 30 && !manual) {
                     issuesCount = issue.getIssues(customFilter)
-                    bundles.getBundles()
+                    /*bundles.getBundles()*/
                     bundleServiceV2.getBundles()
                     users.getUsers()
                     timeline.launchCalculation()
@@ -50,7 +48,8 @@ class ETL(
                 }
                 if (manual && p.contains("bundles")) {
                     println("Loading bundles")
-                    bundles.getBundles()
+                    bundleServiceV2.getBundles()
+                    /*bundles.getBundles()*/
                 }
                 if (manual && p.contains("users")) {
                     println("Loading users")
@@ -85,7 +84,7 @@ class ETL(
     }
 
     override fun getIssueById(id: String): Issue {
-        return issuesV2.getById(id)
+        return Issue()
     }
 
     companion object {

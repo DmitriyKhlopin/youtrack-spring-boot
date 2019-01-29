@@ -65,6 +65,7 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
 
     override fun getSigmaData(projects: String, dateFrom: String, dateTo: String): SigmaResult {
         val filter = projects.removeSurrounding("[", "]").split(",")
+        println(filter)
         val dt = LocalDate.parse(dateTo, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
         val items: List<Int> =
             dslContext.select(DSL.coalesce(ISSUES.TIME_AGENT, 0) + DSL.coalesce(ISSUES.TIME_DEVELOPER, 0))
@@ -99,7 +100,6 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
             .and(ISSUES.RESOLVED_DATE.isNull)
             .and(ISSUES.PROJECT_SHORT_NAME.`in`(filter))
             .orderBy(ISSUES.CREATED_DATE.desc())
-            /*.limit(100)*/
             .fetchInto(Int::class.java).asSequence().groupBy { 1 + it / 32400 }
             .map { item -> SigmaItem(item.key, item.value.size) }.sortedBy { it.day }.toList()
         println(active)

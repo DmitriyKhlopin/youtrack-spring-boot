@@ -4,6 +4,7 @@ import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import fsight.youtrack.Converter
 import fsight.youtrack.NEW_ROOT_REF
+import fsight.youtrack.etl.bundles.CustomField
 import fsight.youtrack.models.ProjectModel
 import fsight.youtrack.models.YouTrackIssue
 import fsight.youtrack.models.YouTrackIssueWorkItem
@@ -35,11 +36,20 @@ interface YouTrackAPIv2 {
     @GET("api/admin/projects?fields=shortName,id,name,description,fromEmail,replytoEmail,leader(login,id,name),fields(id,canBeEmpty,field(name),isPublic,ordinal)")
     fun getProjects(
         @Header("Authorization") auth: String
-        /*@Query("fields") fields: String,*/
-        /*@Query("\$top") top: Int*//*,
-        @Query("\$skip") skip: Int*/
     ): Call<List<ProjectModel>>
 
+    @Headers("Accept: application/json")
+    @GET("api/admin/customFieldSettings/customFields?fields=name,id&\$top=-1")
+    fun getListOfCustomFields(
+        @Header("Authorization") auth: String
+    ): Call<List<CustomField>>
+
+    @Headers("Accept: application/json")
+    @GET("api/admin/customFieldSettings/customFields/{fieldId}?fields=name,id,aliases,fieldType(id),instances(id,project(shortName,id),bundle(name,values(id,name),id))&Cache-Control=no-cache&\$top=-1")
+    fun getCustomFieldInstances(
+        @Header("Authorization") auth: String,
+        @Path("fieldId") fieldId: String
+    ): Call<CustomField>
 
     @Headers("Accept: application/json")
     @GET("api/issues")
@@ -50,7 +60,6 @@ interface YouTrackAPIv2 {
         @Query("\$skip") skip: Int,
         @Query("query") query: String
     ): Call<List<YouTrackIssue>>
-
 
     @Headers("Accept: application/json")
     @GET("api/issues/{issueId}/timeTracking/workItems?\$top=100&fields=created,date,duration(minutes),updated,author(login,email),creator,id,type(id,name,autoAttached),text")

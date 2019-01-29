@@ -2,7 +2,6 @@ package fsight.youtrack.api.tfs
 
 import com.google.gson.Gson
 import fsight.youtrack.AUTH
-import fsight.youtrack.api.YouTrackAPI
 import fsight.youtrack.api.YouTrackAPIv2
 import fsight.youtrack.etl.bundles.BundleValue
 import fsight.youtrack.generated.jooq.tables.BundleValues.BUNDLE_VALUES
@@ -172,9 +171,9 @@ class TFSData(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pr
     fun postEachItem(id: Int) {
         val item = getItemById(id)
         val postableItem = getPostableRequirement(item)
-        val id2 = YouTrackAPI.create().createIssue(AUTH, postableItem).execute()
+        /*val id2 = YouTrackAPI.create().createIssue(AUTH, postableItem).execute()
         val idReadable = Gson().fromJson(id2.body(), YouTrackIssue::class.java)
-        if (id2.errorBody() == null) getTasks(requirement = item, parentId = idReadable.idReadable ?: "")
+        if (id2.errorBody() == null) getTasks(requirement = item, parentId = idReadable.idReadable ?: "")*/
     }
 
 
@@ -185,9 +184,9 @@ class TFSData(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pr
             .where(TFS_LINKS.SOURCE_ID.eq(requirement.id))
             .fetchInto(TFSTask::class.java).map { item -> getPostableTask(item, requirement.iterationPath) }
         r.forEach {
-            val id2 = YouTrackAPI.create().createIssue(AUTH, it).execute()
+            /*val id2 = YouTrackAPI.create().createIssue(AUTH, it).execute()
             if (id2.errorBody() != null) println(it)
-            val idReadable = Gson().fromJson(id2.body(), YouTrackIssue::class.java)
+            val idReadable = Gson().fromJson(id2.body(), YouTrackIssue::class.java)*/
             /*val command = Gson().toJson(
                 YouTrackCommand(
                     issues = arrayListOf(YouTrackIssue(id = idReadable.id)),
