@@ -2,10 +2,7 @@ package fsight.youtrack.etl.projects
 
 import fsight.youtrack.AUTH
 import fsight.youtrack.Converter
-import fsight.youtrack.ROOT_REF
 import fsight.youtrack.api.YouTrackAPI
-import fsight.youtrack.api.YouTrackAPIv2
-import fsight.youtrack.generated.jooq.tables.ProjectCustomFields.PROJECT_CUSTOM_FIELDS
 import fsight.youtrack.generated.jooq.tables.Projects.PROJECTS
 import fsight.youtrack.models.ProjectModel
 import org.jooq.DSLContext
@@ -32,7 +29,7 @@ class Projects(private val dslContext: DSLContext) : IProjects {
         var result = 0
         try {
             dslContext.deleteFrom(PROJECTS).execute()
-            YouTrackAPIv2.create(Converter.GSON).getProjects(AUTH).execute().body()?.forEach {
+            YouTrackAPI.create(Converter.GSON).getProjects(AUTH).execute().body()?.forEach {
                 println(it)
                 result = dslContext
                     .insertInto(PROJECTS)
@@ -48,7 +45,6 @@ class Projects(private val dslContext: DSLContext) : IProjects {
                     .execute()
                 saveProjectCustomFields(it.shortName!!)
             }
-            YouTrackAPIv2.create(Converter.GSON).getProjects(AUTH)
         } catch (e: SocketTimeoutException) {
             println(e)
         } catch (e: DataAccessException) {
@@ -58,7 +54,7 @@ class Projects(private val dslContext: DSLContext) : IProjects {
     }
 
     override fun saveProjectCustomFields(id: String) {
-        YouTrackAPI.createOld(Converter.GSON).getProjectCustomFields(AUTH, id).execute().body()?.forEach { field ->
+        /*YouTrackAPI.createOld(Converter.GSON).getProjectCustomFields(AUTH, id).execute().body()?.forEach { field ->
             val path = field.url.removePrefix(ROOT_REF)
             val req = YouTrackAPI.createOld(Converter.GSON).getProjectCustomFieldParameters(AUTH, path)
             val res = req.execute().body()
@@ -85,6 +81,6 @@ class Projects(private val dslContext: DSLContext) : IProjects {
                 .set(PROJECT_CUSTOM_FIELDS.PARAM, field.param)
                 .set(PROJECT_CUSTOM_FIELDS.DEFAULT_VALUE, field.defaultValue)
                 .executeAsync()
-        }
+        }*/
     }
 }

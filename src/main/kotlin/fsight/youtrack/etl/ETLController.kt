@@ -7,8 +7,7 @@ import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import fsight.youtrack.AUTH
 import fsight.youtrack.Converter
-import fsight.youtrack.api.YouTrackAPIv2
-import fsight.youtrack.models.Comment
+import fsight.youtrack.api.YouTrackAPI
 import fsight.youtrack.models.sql.IssueHistoryItem
 import org.springframework.web.bind.annotation.*
 import java.sql.Timestamp
@@ -46,29 +45,9 @@ class ETLController(private val service: IETL) {
     fun getHistory(@PathVariable("id") id: String) {
         val accepted = listOf("jetbrains.youtrack.event.gaprest.impl.ActivityItemImpl")
         println(id)
-        val categories = listOf(
-            "categories=CommentsCategory",
-            "categories=WorkItemCategory",
-            "categories=AttachmentsCategory",
-            "categories=AttachmentRenameCategory",
-            "categories=CustomFieldCategory",
-            "categories=DescriptionCategory",
-            "categories=IssueCreatedCategory",
-            "categories=IssueResolvedCategory",
-            "categories=LinksCategory",
-            "categories=ProjectCategory",
-            "categories=PermittedGroupCategory",
-            "categories=SprintCategory",
-            "categories=SummaryCategory",
-            "categories=TagsCategory"
-        ).joinToString("&")
-        val fields = listOf(
-            "activities(\$type,added(\$type,\$type,\$type,agile(id),attachments(\$type,author(fullName,id,ringId),comment(id),created,id,imageDimension(height,width),issue(id,project(id,ringId)),mimeType,name,removed,size,thumbnailURL,url,visibility(\$type,implicitPermittedUsers(\$type,avatarUrl,email,fullName,id,isLocked,issueRelatedGroup(icon),login,name,online,ringId),permittedGroups(\$type,allUsersGroup,icon,id,name,ringId),permittedUsers(\$type,avatarUrl,email,fullName,id,isLocked,issueRelatedGroup(icon),login,name,online,ringId))),author(\$type,avatarUrl,email,fullName,id,isLocked,issueRelatedGroup(icon),login,name,online,ringId),author(\$type,avatarUrl,email,fullName,id,isLocked,issueRelatedGroup(icon),login,name,online,ringId),branch,color(id),commands(end,errorText,hasError,start),comment(id),created,created,creator(\$type,avatarUrl,email,fullName,id,isLocked,issueRelatedGroup(icon),login,name,online,ringId),date,date,deleted,duration(id,minutes,presentation),fetched,files,id,id,id,id,id,id,id,idReadable,isDraft,localizedName,mimeType,minutes,name,name,noHubUserReason(id),noUserReason(id),numberInProject,presentation,processor(\$type,committers,enabled,handle,handle,id,login,params,progress(message),project(id),repoName,repoOwnerName,repository,repositoryOwner,server(id,url,enabled),stateMessage,tcId,upsourceHubResourceKey,upsourceProjectName,version),processors(\$type,committers,enabled,handle,handle,id,login,params,progress(message),project(id),repoName,repoOwnerName,repository,repositoryOwner,server(id,url,enabled),stateMessage,tcId,upsourceHubResourceKey,upsourceProjectName,version),project(\$type,id,name,plugins(timeTrackingSettings(enabled,estimate(field(id,name),id),timeSpent(field(id,name),id)),vcsIntegrationSettings(processors(enabled,url,upsourceHubResourceKey,server(enabled,url)))),ringId,shortName),removed,resolved,shortName,size,state,summary,text,text,text,text,textPreview,textPreview,thumbnailURL,type(id,name),url,urls,user(\$type,avatarUrl,email,fullName,id,isLocked,issueRelatedGroup(icon),login,name,online,ringId),userName,usesMarkdown,usesMarkdown,version,visibility(\$type,implicitPermittedUsers(\$type,avatarUrl,email,fullName,id,isLocked,issueRelatedGroup(icon),login,name,online,ringId),permittedGroups(\$type,allUsersGroup,icon,id,name,ringId),permittedUsers(\$type,avatarUrl,email,fullName,id,isLocked,issueRelatedGroup(icon),login,name,online,ringId))),author(\$type,avatarUrl,email,fullName,id,isLocked,issueRelatedGroup(icon),login,name,online,ringId),authorGroup(icon,name),category(id),field(\$type,customField(id,fieldType(isMultiValue,valueType)),id,linkId,presentation),id,markup,removed(\$type,\$type,agile(id),color(id),id,id,idReadable,isDraft,localizedName,name,numberInProject,project(\$type,id,name,plugins(timeTrackingSettings(enabled,estimate(field(id,name),id),timeSpent(field(id,name),id)),vcsIntegrationSettings(processors(enabled,url,upsourceHubResourceKey,server(enabled,url)))),ringId,shortName),resolved,summary,text),target(created,id,usesMarkdown),targetMember,targetSubMember,timestamp)",
-            ",cursor"
-        ).joinToString(",")
-        val issueActivities = YouTrackAPIv2
+        val issueActivities = YouTrackAPI
             .create(Converter.GSON)
-            .getHistory(auth = AUTH, issueId = id/* categories = "$categories&",*/ /*top = -1, fields = fields*/)
+            .getCustomFieldsHistory(auth = AUTH, issueId = id)
             .execute()
         val activities = issueActivities.body()?.get("activities") as JsonArray
         val canBeUnwrapped =

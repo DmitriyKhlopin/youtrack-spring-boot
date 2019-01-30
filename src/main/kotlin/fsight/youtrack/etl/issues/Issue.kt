@@ -2,7 +2,6 @@ package fsight.youtrack.etl.issues
 
 import fsight.youtrack.*
 import fsight.youtrack.api.YouTrackAPI
-import fsight.youtrack.api.YouTrackAPIv2
 import fsight.youtrack.etl.ETL
 import fsight.youtrack.etl.logs.IImportLog
 import fsight.youtrack.generated.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALUES
@@ -53,11 +52,11 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
         while (i > 0) {
             i = 0
             val j = if (filter == null)
-                YouTrackAPIv2
+                YouTrackAPI
                     .create(Converter.GSON)
                     .getIssueList(auth = AUTH, fields = fields, top = top, skip = skip)
             else
-                YouTrackAPIv2
+                YouTrackAPI
                     .create(Converter.GSON)
                     .getIssueList(auth = AUTH, fields = fields, top = top, skip = skip, query = filter)
 
@@ -78,7 +77,7 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
         /*if (filter == null) {
             while (i > 0) {
                 i = 0
-                YouTrackAPIv2
+                YouTrackAPI
                     .create(Converter.GSON)
                     .getIssueList(auth = AUTH, fields = fields, top = top, skip = skip)
                     .execute()
@@ -95,7 +94,7 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
         } else {
             while (i > 0) {
                 i = 0
-                YouTrackAPIv2
+                YouTrackAPI
                     .create(Converter.GSON)
                     .getIssueList(auth = AUTH, fields = fields, top = top, skip = skip, query = filter)
                     .execute()
@@ -276,7 +275,7 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
     private fun getTimeAccounting(issueId: String) {
         dslContext.deleteFrom(WORK_ITEMS).where(WORK_ITEMS.ISSUE_ID.eq(issueId)).execute()
         println(issueId)
-        YouTrackAPIv2.create(Converter.GSON).getWorkItems(AUTH, issueId).execute().body()?.forEach {
+        YouTrackAPI.create(Converter.GSON).getWorkItems(AUTH, issueId).execute().body()?.forEach {
             dslContext
                 .insertInto(WORK_ITEMS)
                 .set(WORK_ITEMS.ISSUE_ID, issueId)
@@ -482,7 +481,7 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
         val result = dslContext.select(ISSUES.ID).from(ISSUES).fetchInto(String::class.java)
         val interval = (result.size / 100) + 1
         result.forEachIndexed { index, issueId ->
-            val requestResult = YouTrackAPIv2.create(Converter.GSON).getIssueProject(AUTH, issueId).execute()
+            val requestResult = YouTrackAPI.create(Converter.GSON).getIssueProject(AUTH, issueId).execute()
             val currentProject = requestResult.body()?.project?.shortName
             val prevProject = issueId.substringBefore("-")
             if (currentProject != prevProject) {

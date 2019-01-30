@@ -6,7 +6,7 @@ import fsight.youtrack.db.exposed.ms.schedule.plan.ScheduleTimeIntervalModel
 import fsight.youtrack.db.exposed.ms.schedule.plan.ScheduleTimeIntervalTable
 import fsight.youtrack.db.exposed.pg.TimeAccountingExtendedModel
 import fsight.youtrack.db.exposed.pg.TimeAccountingExtendedView
-import fsight.youtrack.etl.bundles.BundleValue
+import fsight.youtrack.models.BundleValue
 import fsight.youtrack.generated.jooq.tables.records.BundleValuesRecord
 import fsight.youtrack.models.Field
 import org.jetbrains.exposed.sql.ResultRow

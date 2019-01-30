@@ -2,9 +2,10 @@ package fsight.youtrack.etl.bundles
 
 import fsight.youtrack.AUTH
 import fsight.youtrack.Converter
-import fsight.youtrack.api.YouTrackAPIv2
+import fsight.youtrack.api.YouTrackAPI
 import fsight.youtrack.generated.jooq.tables.BundleValues.BUNDLE_VALUES
 import fsight.youtrack.generated.jooq.tables.records.BundleValuesRecord
+import fsight.youtrack.models.FieldInstance
 import fsight.youtrack.toDatabaseRecord
 import org.jooq.DSLContext
 import org.springframework.stereotype.Service
@@ -13,11 +14,11 @@ import org.springframework.stereotype.Service
 class Bundle(private val dslContext: DSLContext) : IBundle {
     override fun getBundles() {
         val arr = arrayListOf<BundleValuesRecord>()
-        val res = YouTrackAPIv2.create(Converter.GSON).getListOfCustomFields(AUTH).execute()
+        val res = YouTrackAPI.create(Converter.GSON).getListOfCustomFields(AUTH).execute()
         val ids = res.body()?.mapNotNull { field -> field.id }
         println("Loaded ${ids?.size} bundles")
         ids?.forEachIndexed { index, id ->
-            val response = YouTrackAPIv2.create(Converter.GSON).getCustomFieldInstances(AUTH, id).execute()
+            val response = YouTrackAPI.create(Converter.GSON).getCustomFieldInstances(AUTH, id).execute()
             val result = response.body()
             result?.instances?.forEach { instance: FieldInstance ->
                 arr.addAll(instance.bundle?.values?.map { value ->

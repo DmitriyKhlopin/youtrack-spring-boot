@@ -1,4 +1,4 @@
-package fsight.youtrack.etl.bundles
+package fsight.youtrack.models
 
 data class BundleValue(
     val id: String?,

@@ -2,8 +2,8 @@ package fsight.youtrack.api.tfs
 
 import com.google.gson.Gson
 import fsight.youtrack.AUTH
-import fsight.youtrack.api.YouTrackAPIv2
-import fsight.youtrack.etl.bundles.BundleValue
+import fsight.youtrack.api.YouTrackAPI
+import fsight.youtrack.models.BundleValue
 import fsight.youtrack.generated.jooq.tables.BundleValues.BUNDLE_VALUES
 import fsight.youtrack.generated.jooq.tables.Projects.PROJECTS
 import fsight.youtrack.generated.jooq.tables.TfsLinks.TFS_LINKS
@@ -493,7 +493,7 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
             }?.forEach { println(it) }
         }
         val item = result.first()
-        val id2 = YouTrackAPIv2.create().createIssue(AUTH, item.toJson("FP")).execute()
+        val id2 = YouTrackAPI.create().createIssue(AUTH, item.toJson("FP")).execute()
         val idReadable = Gson().fromJson(id2.body(), YouTrackIssue::class.java)
         return ResponseEntity
             .status(HttpStatus.OK)

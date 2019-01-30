@@ -1,4 +1,6 @@
-package fsight.youtrack.etl.bundles
+package fsight.youtrack.models
+
+import fsight.youtrack.models.BundleValue
 
 data class BundleInstance(
     val values: ArrayList<BundleValue>?,

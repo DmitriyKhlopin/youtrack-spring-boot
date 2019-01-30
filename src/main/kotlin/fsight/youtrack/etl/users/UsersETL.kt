@@ -2,7 +2,7 @@ package fsight.youtrack.etl.users
 
 import fsight.youtrack.AUTH
 import fsight.youtrack.Converter
-import fsight.youtrack.api.YouTrackAPIv2
+import fsight.youtrack.api.YouTrackAPI
 import fsight.youtrack.generated.jooq.tables.UserGroup.USER_GROUP
 import fsight.youtrack.generated.jooq.tables.Users.USERS
 import fsight.youtrack.generated.jooq.tables.records.UserGroupRecord
@@ -16,7 +16,7 @@ class UsersETL(private val dslContext: DSLContext) : IUsersETL {
 
 
     override fun getUsers() {
-        val response = YouTrackAPIv2.create(Converter.GSON).getUserDetails(AUTH).execute()
+        val response = YouTrackAPI.create(Converter.GSON).getUserDetails(AUTH).execute()
         val users = response.body()?.users?.map { item ->
             UsersRecord()
                 .setUserLogin(item.login)
