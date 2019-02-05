@@ -3,9 +3,8 @@ package fsight.youtrack.api.tfs
 import com.google.gson.Gson
 import fsight.youtrack.AUTH
 import fsight.youtrack.api.YouTrackAPI
-import fsight.youtrack.models.BundleValue
+import fsight.youtrack.etl.projects.IProjects
 import fsight.youtrack.generated.jooq.tables.BundleValues.BUNDLE_VALUES
-import fsight.youtrack.generated.jooq.tables.Projects.PROJECTS
 import fsight.youtrack.generated.jooq.tables.TfsLinks.TFS_LINKS
 import fsight.youtrack.generated.jooq.tables.TfsTasks.TFS_TASKS
 import fsight.youtrack.generated.jooq.tables.TfsWi.TFS_WI
@@ -23,36 +22,40 @@ import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 
 @Service
-class TFSData(private val dslContext: DSLContext, @Qualifier("tfsDataSource") private val ms: Database) : ITFSData {
+class TFSData(
+    private val dslContext: DSLContext,
+    @Qualifier("tfsDataSource") private val ms: Database,
+    private val projectsService: IProjects
+) : ITFSData {
     private final val types: HashMap<String, String> by lazy {
         hashMapOf<String, String>().also {
             /*it["jetbrains.charisma.customfields.complex.version.VersionBundle"] =
                     "jetbrains.charisma.customfields.complex.version.MultiVersionIssueCustomField"*/
             it["jetbrains.charisma.customfields.complex.version.VersionBundle"] =
-                    "jetbrains.charisma.customfields.complex.version.SingleVersionIssueCustomField"
+                "jetbrains.charisma.customfields.complex.version.SingleVersionIssueCustomField"
             it["jetbrains.charisma.customfields.complex.state.StateBundle"] =
-                    "jetbrains.charisma.customfields.complex.state.StateIssueCustomField"
+                "jetbrains.charisma.customfields.complex.state.StateIssueCustomField"
             it["jetbrains.charisma.customfields.complex.ownedField.OwnedBundle"] =
-                    "jetbrains.charisma.customfields.complex.ownedField.SingleOwnedIssueCustomField"
+                "jetbrains.charisma.customfields.complex.ownedField.SingleOwnedIssueCustomField"
             it["jetbrains.charisma.customfields.complex.enumeration.EnumBundle"] =
-                    "jetbrains.charisma.customfields.complex.enumeration.SingleEnumIssueCustomField"
+                "jetbrains.charisma.customfields.complex.enumeration.SingleEnumIssueCustomField"
             /*it["jetbrains.charisma.customfields.complex.version.VersionBundle"] =
                     "jetbrains.charisma.customfields.complex.version.SingleVersionIssueCustomField"*/
             it["jetbrains.charisma.customfields.complex.user.UserBundle"] =
-                    "jetbrains.charisma.customfields.complex.user.SingleUserIssueCustomField"
+                "jetbrains.charisma.customfields.complex.user.SingleUserIssueCustomField"
 
         }
     }
     private final val prioritiesMap: HashMap<String, String> by lazy {
-        hashMapOf<String, String>().also { it ->
+        hashMapOf<String, String>().also {
             it["High"] = "Major"
             it["Medium"] = "Normal"
             it["Low"] = "Minor"
         }
     }
     private final val customFieldValues = arrayListOf<BundleValue>()
-    private final val users = arrayListOf<UserDetails>()
-    private final val projects = arrayListOf<ProjectModel>()
+    private final val users = arrayListOf<YouTrackUser>()
+    private final val projects = arrayListOf<YouTrackProject>()
 
     init {
         this.initDictionaries()
@@ -74,7 +77,6 @@ class TFSData(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pr
                     BUNDLE_VALUES.TYPE.`as`("\$type")
                 )
                 .from(BUNDLE_VALUES)
-                /*.where(BUNDLE_VALUES.PROJECT_ID.eq("0-15"))*/
                 .fetchInto(BundleValue::class.java)
         )
 
@@ -87,18 +89,9 @@ class TFSData(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pr
                 )
                 .from(USERS)
                 .where(USERS.EMAIL.isNotNull)
-                .fetchInto(UserDetails::class.java)
+                .fetchInto(YouTrackUser::class.java)
         )
-        projects.addAll(
-            dslContext.select(
-                PROJECTS.NAME.`as`("name"),
-                PROJECTS.SHORT_NAME.`as`("shortName"),
-                PROJECTS.SHORT_NAME.`as`("description"),
-                PROJECTS.ID.`as`("id")
-            )
-                .from(PROJECTS)
-                .fetchInto(ProjectModel::class.java)
-        )
+        projects.addAll(projectsService.getProjects())
     }
 
 
@@ -177,6 +170,7 @@ class TFSData(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pr
     }
 
 
+    @Suppress("UNUSED_VARIABLE", "unused")
     fun getTasks(requirement: TFSRequirement, parentId: String) {
         val r = dslContext.select()
             .from(TFS_TASKS)
@@ -184,17 +178,18 @@ class TFSData(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pr
             .where(TFS_LINKS.SOURCE_ID.eq(requirement.id))
             .fetchInto(TFSTask::class.java).map { item -> getPostableTask(item, requirement.iterationPath) }
         r.forEach {
-            /*val id2 = YouTrackAPI.create().createIssue(AUTH, it).execute()
+            val id2 = YouTrackAPI.create().createIssue(AUTH, it).execute()
             if (id2.errorBody() != null) println(it)
-            val idReadable = Gson().fromJson(id2.body(), YouTrackIssue::class.java)*/
-            /*val command = Gson().toJson(
+            val issue = Gson().fromJson(id2.body(), YouTrackIssue::class.java)
+            val command = Gson().toJson(
                 YouTrackCommand(
-                    issues = arrayListOf(YouTrackIssue(id = idReadable.id)),
+                    issues = arrayListOf(YouTrackIssue(idReadable = issue.idReadable)),
                     silent = true,
                     query = "подзадача $parentId"
                 )
             )
-            YouTrackAPI.create().postCommand(AUTH, command).execute()*/
+            //TODO implement commands
+            /*YouTrackAPI.create().postCommand(AUTH, command).execute()*/
         }
     }
 
@@ -207,7 +202,7 @@ class TFSData(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pr
 
     fun getCustomFieldValue(projectName: String, fieldName: String, value: String?): FieldValueBase? {
         return when (fieldName) {
-            "Assignee" -> users.firstOrNull { it.email == value }.let { it ->
+            "Assignee" -> users.firstOrNull { it.profile?.email?.email == value }.let { it ->
                 if (it != null) FieldValue(
                     id = "86-16",
                     `$type` = "jetbrains.charisma.customfields.complex.user.SingleUserIssueCustomField",
@@ -240,7 +235,7 @@ class TFSData(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pr
 
     fun getCustomFieldListValue(fieldName: String, value: String?): FieldValueBase? {
         return when (fieldName) {
-            "Assignee" -> users.firstOrNull { it.email == value }.let { it ->
+            "Assignee" -> users.firstOrNull { it.profile?.email?.email == value }.let { it ->
                 if (it != null) FieldValue(
                     id = "86-16",
                     `$type` = "jetbrains.charisma.customfields.complex.user.SingleUserIssueCustomField",
@@ -252,7 +247,7 @@ class TFSData(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pr
             }
             else -> customFieldValues.asSequence().firstOrNull {
                 it.fieldName == fieldName && it.name == value
-            }.let { it ->
+            }.let {
                 if (it != null) FieldValue(
                     id = it.fieldId,
                     `$type` = types[it.`$type`],
@@ -520,7 +515,7 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
         /*val assignee = getCustomFieldValue("Assignee", item.productManager)*/
         return Gson().toJson(
             YouTrackPostableIssue(
-                project = Project(id = projectId),
+                project = YouTrackProject(id = projectId),
                 summary = this.title,
                 description = "TFS: ${this.changeRequestId} \n\nPD:\n${this.body}",
                 fields = listOfNotNull(

@@ -1,16 +1,10 @@
 package fsight.youtrack.etl
 
 
-import com.google.gson.JsonArray
-import com.google.gson.JsonElement
-import com.google.gson.JsonNull
-import com.google.gson.JsonObject
 import fsight.youtrack.AUTH
 import fsight.youtrack.Converter
 import fsight.youtrack.api.YouTrackAPI
-import fsight.youtrack.models.sql.IssueHistoryItem
 import org.springframework.web.bind.annotation.*
-import java.sql.Timestamp
 
 @CrossOrigin
 @RestController
@@ -49,7 +43,7 @@ class ETLController(private val service: IETL) {
             .create(Converter.GSON)
             .getCustomFieldsHistory(auth = AUTH, issueId = id)
             .execute()
-        val activities = issueActivities.body()?.get("activities") as JsonArray
+        /*val activities = issueActivities.body()?.get("activities") as JsonArray
         val canBeUnwrapped =
             activities.filter { obj: JsonElement -> obj.asJsonObject?.get("\$type")?.asString in accepted }
         val comments =
@@ -103,7 +97,7 @@ class ETLController(private val service: IETL) {
             )
             println(result)
             result
-        }
+        }*/
 
         /*comments.forEach { obj: JsonElement ->
             println()

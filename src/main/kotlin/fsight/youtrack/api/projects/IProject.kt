@@ -1,7 +1,7 @@
 package fsight.youtrack.api.projects
 
-import fsight.youtrack.models.ProjectModel
+import fsight.youtrack.models.YouTrackProject
 
 interface IProject {
-    fun getProjects(): List<ProjectModel>
+    fun getProjects(): List<YouTrackProject>
 }

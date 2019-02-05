@@ -2,6 +2,7 @@ package fsight.youtrack.models.sql
 
 import java.sql.Timestamp
 
+//TODO удалить
 data class IssueHistoryItem(
     var issueId: String?,
     var author: String?,

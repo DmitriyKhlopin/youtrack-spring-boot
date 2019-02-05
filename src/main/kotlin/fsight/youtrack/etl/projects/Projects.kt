@@ -4,7 +4,7 @@ import fsight.youtrack.AUTH
 import fsight.youtrack.Converter
 import fsight.youtrack.api.YouTrackAPI
 import fsight.youtrack.generated.jooq.tables.Projects.PROJECTS
-import fsight.youtrack.models.ProjectModel
+import fsight.youtrack.models.YouTrackProject
 import org.jooq.DSLContext
 import org.jooq.exception.DataAccessException
 import org.springframework.stereotype.Service
@@ -14,7 +14,7 @@ import java.net.SocketTimeoutException
 @Service
 @Transactional
 class Projects(private val dslContext: DSLContext) : IProjects {
-    override fun getProjects(): List<ProjectModel> {
+    override fun getProjects(): List<YouTrackProject> {
         return dslContext.select(
             PROJECTS.NAME.`as`("name"),
             PROJECTS.SHORT_NAME.`as`("shortName"),
@@ -22,7 +22,7 @@ class Projects(private val dslContext: DSLContext) : IProjects {
             PROJECTS.ID.`as`("id")
         )
             .from(PROJECTS)
-            .fetchInto(ProjectModel::class.java)
+            .fetchInto(YouTrackProject::class.java)
     }
 
     override fun saveProjects(): Int {

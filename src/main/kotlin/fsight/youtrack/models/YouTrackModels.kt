@@ -18,7 +18,7 @@ data class YouTrackIssue(
     var updater: YouTrackUser? = null,
     var comments: List<YouTrackComment>? = null,
     var votes: Int? = null,
-    var project: Project? = null
+    var project: YouTrackProject? = null
 )
 
 data class YouTrackPostableIssue(
@@ -34,13 +34,17 @@ data class YouTrackPostableIssue(
     var updater: YouTrackUser? = null,
     var comments: List<YouTrackComment>? = null,
     var votes: Int? = null,
-    var project: Project? = null
+    var project: YouTrackProject? = null
 )
 
-data class Project(
+data class YouTrackProject(
     var shortName: String? = null,
     var id: String? = null,
-    var name: String? = null
+    var name: String? = null,
+    var description: String? = null,
+    var versions: String? = null,
+    var subsystems: String? = null,
+    var assigneesFullName: String? = null
 )
 
 data class YouTrackComment(
@@ -59,6 +63,7 @@ data class YouTrackField(
     var `$type`: String? = null
 )
 
+//TODO стоит ли использовать для получения истории?
 data class YouTrackProjectCustomField(
     var field: YouTrackCustomField,
     var `$type`: String? = null
@@ -66,6 +71,25 @@ data class YouTrackProjectCustomField(
 
 data class YouTrackCustomField(
     var name: String? = null,
+    var `$type`: String? = null
+)
+
+data class YouTrackActivityCursor(
+    var cursor: String? = null,
+    var activities: List<YouTrackActivity>? = null,
+    var `$type`: String
+)
+
+data class YouTrackActivity(
+    var field: Any? = null,
+    var id: String? = null,
+    var target: YouTrackIssue? = null,
+    var timestamp: Long? = null,
+    var category: Any? = null,
+    var removed: List<Any>? = null,
+    var added: List<Any>? = null,
+    var author: YouTrackUser? = null,
+    var targetMember: String? = null,
     var `$type`: String? = null
 )
 
@@ -83,7 +107,9 @@ data class YouTrackUser(
     var login: String? = null,
     var fullName: String? = null,
     var `$type`: String? = null,
-    var groups: List<HubUserGroup>? = null
+    var groups: List<HubUserGroup>? = null,
+    var ringId: String? = null,
+    var jabber: String? = null
 )
 
 data class HubUserProfile(

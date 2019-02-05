@@ -1,9 +1,9 @@
 package fsight.youtrack.etl.projects
 
-import fsight.youtrack.models.ProjectModel
+import fsight.youtrack.models.YouTrackProject
 
 interface IProjects {
-    fun getProjects(): List<ProjectModel>
+    fun getProjects(): List<YouTrackProject>
     fun saveProjects(): Int
     fun saveProjectCustomFields(id: String)
 }

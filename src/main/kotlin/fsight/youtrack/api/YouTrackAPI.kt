@@ -4,7 +4,6 @@ import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import fsight.youtrack.Converter
 import fsight.youtrack.NEW_ROOT_REF
-import fsight.youtrack.models.CustomField
 import fsight.youtrack.models.*
 import retrofit2.Call
 import retrofit2.Retrofit
@@ -30,10 +29,10 @@ interface YouTrackAPI {
     ): Call<YouTrackIssue>
 
     @Headers("Accept: application/json")
-    @GET("api/admin/projects?fields=shortName,id,name,description,fromEmail,replytoEmail,leader(login,id,name),fields(id,canBeEmpty,field(name),isPublic,ordinal)")
+    @GET("api/admin/projects?fields=shortName,id,name,description,fromEmail,replytoEmail,leader(login,id,name),fields(id,canBeEmpty,field(name),isPublic,ordinal)&\$top=-1")
     fun getProjects(
         @Header("Authorization") auth: String
-    ): Call<List<ProjectModel>>
+    ): Call<List<YouTrackProject>>
 
     @Headers("Accept: application/json")
     @GET("api/admin/customFieldSettings/customFields?fields=name,id&\$top=-1")
@@ -83,7 +82,8 @@ interface YouTrackAPI {
     fun getCustomFieldsHistory(
         @Header("Authorization") auth: String,
         @Path("id") issueId: String
-    ): Call<JsonObject>
+    ): Call<YouTrackActivityCursor>
+
 
     @Headers("Accept: application/json")
     @GET("hub/api/rest/users?&\$top=-1&fields=id,login,name,profile(email),groups(name)")

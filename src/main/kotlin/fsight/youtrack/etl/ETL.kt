@@ -7,7 +7,7 @@ import fsight.youtrack.etl.projects.IProjects
 import fsight.youtrack.etl.timeline.ITimeline
 import fsight.youtrack.etl.users.UsersETL
 import fsight.youtrack.models.ETLResult
-import fsight.youtrack.models.v2.Issue
+import fsight.youtrack.models.YouTrackIssue
 import org.springframework.stereotype.Service
 import java.util.*
 
@@ -80,8 +80,8 @@ class ETL(
         users.getUsers()
     }
 
-    override fun getIssueById(id: String): Issue {
-        return Issue()
+    override fun getIssueById(id: String): YouTrackIssue {
+        return YouTrackIssue()
     }
 
     companion object {

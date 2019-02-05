@@ -1,7 +1,5 @@
 package fsight.youtrack.models
 
-import fsight.youtrack.models.FieldInstance
-
 data class CustomField(
     var name: String?,
     var id: String?,

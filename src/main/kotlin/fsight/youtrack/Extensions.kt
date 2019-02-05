@@ -6,17 +6,16 @@ import fsight.youtrack.db.exposed.ms.schedule.plan.ScheduleTimeIntervalModel
 import fsight.youtrack.db.exposed.ms.schedule.plan.ScheduleTimeIntervalTable
 import fsight.youtrack.db.exposed.pg.TimeAccountingExtendedModel
 import fsight.youtrack.db.exposed.pg.TimeAccountingExtendedView
-import fsight.youtrack.models.BundleValue
 import fsight.youtrack.generated.jooq.tables.records.BundleValuesRecord
-import fsight.youtrack.models.Field
+import fsight.youtrack.models.BundleValue
 import org.jetbrains.exposed.sql.ResultRow
 import java.sql.Date
 import java.sql.Timestamp
 import java.util.*
 
-fun debugPrint(print: Boolean = false, message: String = "") {
+/*fun debugPrint(print: Boolean = false, message: String = "") {
     if (print) println(message)
-}
+}*/
 
 fun ResultRow.toWorkHoursModel(): WorkHoursModel {
     return WorkHoursModel(
@@ -60,14 +59,13 @@ fun ResultRow.toScheduleTimeIntervalModel(): ScheduleTimeIntervalModel {
 
 fun Int?.toWorkTime(): String {
     if (this == null) return ""
-    val minutes = this % 60
+    /*val minutes = this % 60*/
     val days = this / 480
     val hours = this / 60 - days * 8
-    val minutesString = if (minutes > 0) "$minutes м. " else ""
+    /*val minutesString = if (minutes > 0) "$minutes м. " else ""*/
     val hoursString = if (hours > 0) "$hours ч. " else ""
     val daysString = if (days > 0) "$days д. " else ""
     return "$daysString$hoursString"
-    /*lreturn "$daysString$hoursString$minutesString"*/
 }
 
 fun BundleValue.toDatabaseRecord(): BundleValuesRecord =
@@ -87,24 +85,9 @@ object IssueRequestMode {
     const val TODAY = 1
 }
 
-fun List<Field>.getLong(fieldName: String): Long? {
-    val filtered = this.filter { it.name == fieldName }
-    return if (filtered.isNotEmpty()) filtered[0].value.toString().removeSurrounding("[", "]").toLong() else null
-}
-
-fun List<Field>.getString(fieldName: String): String? {
-    val filtered = this.filter { it.name == fieldName }
-    return if (filtered.isNotEmpty()) filtered[0].value.toString().removeSurrounding("[", "]") else null
-}
-
-fun List<Field>.getInt(fieldName: String): Int? {
-    val filtered = this.filter { it.name == fieldName }
-    return filtered[0].value.toString().toIntOrNull()
-}
-
 fun Long.toTimestamp() = Timestamp(this)
 
-fun Long?.toDate(): Timestamp? {
+fun Long?.toDate(toStartOfTheWeek: Boolean = false): Timestamp? {
     return if (this != null) {
         val date = Date(this)
         val cal = Calendar.getInstance()
@@ -114,10 +97,15 @@ fun Long?.toDate(): Timestamp? {
         cal.set(Calendar.SECOND, 0)
         cal.set(Calendar.MILLISECOND, 0)
         val time = cal.timeInMillis
+        if (toStartOfTheWeek) cal.set(
+            Calendar.DAY_OF_MONTH,
+            cal.get(Calendar.DAY_OF_MONTH) - cal.get(Calendar.DAY_OF_WEEK) + cal.firstDayOfWeek
+        )
         time.toTimestamp()
     } else null
 }
 
+/*
 fun Long?.toWeek(): Timestamp? {
     return if (this != null) {
         val date = Date(this)
@@ -135,3 +123,4 @@ fun Long?.toWeek(): Timestamp? {
         time.toTimestamp()
     } else null
 }
+*/
