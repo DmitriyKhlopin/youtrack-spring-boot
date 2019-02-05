@@ -86,8 +86,8 @@ data class YouTrackActivity(
     var target: YouTrackIssue? = null,
     var timestamp: Long? = null,
     var category: Any? = null,
-    var removed: List<Any>? = null,
-    var added: List<Any>? = null,
+    var removed: Any? = null,
+    var added: Any? = null,
     var author: YouTrackUser? = null,
     var targetMember: String? = null,
     var `$type`: String? = null

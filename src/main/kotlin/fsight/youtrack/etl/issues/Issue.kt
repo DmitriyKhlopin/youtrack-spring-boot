@@ -10,6 +10,7 @@ import fsight.youtrack.generated.jooq.tables.IssueComments.ISSUE_COMMENTS
 import fsight.youtrack.generated.jooq.tables.IssueHistory.ISSUE_HISTORY
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
 import fsight.youtrack.generated.jooq.tables.WorkItems.WORK_ITEMS
+import fsight.youtrack.generated.jooq.tables.records.IssueHistoryRecord
 import fsight.youtrack.models.*
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
@@ -74,42 +75,8 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
                 }
         }
 
-        /*if (filter == null) {
-            while (i > 0) {
-                i = 0
-                YouTrackAPI
-                    .create(Converter.GSON)
-                    .getIssueList(auth = AUTH, fields = fields, top = top, skip = skip)
-                    .execute()
-                    .body()
-                    ?.forEach {
-                        issueIds.add(it.idReadable)
-                        skip += 1
-                        i += 1
-                        it.saveBasicInfo()
-                        it.saveComments()
-                        it.saveCustomFields()
-                    }
-            }
-        } else {
-            while (i > 0) {
-                i = 0
-                YouTrackAPI
-                    .create(Converter.GSON)
-                    .getIssueList(auth = AUTH, fields = fields, top = top, skip = skip, query = filter)
-                    .execute()
-                    .body()
-                    ?.forEach {
-                        issueIds.add(it.idReadable)
-                        skip += 1
-                        i += 1
-                        it.saveBasicInfo()
-                        it.saveComments()
-                        it.saveCustomFields()
-                    }
-            }
-        }*/
         issueIds.filterNotNull().forEach { getTimeAccounting(it) }
+        issueIds.filterNotNull().forEach { getIssueHistory(it) }
         println("Loaded $skip issues")
         importLogService.saveLog(
             ImportLogModel(
@@ -173,7 +140,10 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
                 .set(ISSUES.SLA_FIRST_RESPONSE_INDEX, this.unwrapEnumValue("SLA по первому ответу"))
                 .set(ISSUES.SLA_FIRST_RESPONSE_DATE_TIME, this.unwrapLongValue("Дата первого ответа")?.toTimestamp())
                 .set(ISSUES.SLA_FIRST_RESPONSE_DATE, this.unwrapLongValue("Дата первого ответа")?.toDate())
-                .set(ISSUES.SLA_FIRST_RESPONSE_WEEK, this.unwrapLongValue("Дата первого ответа")?.toDate(toStartOfTheWeek = true))
+                .set(
+                    ISSUES.SLA_FIRST_RESPONSE_WEEK,
+                    this.unwrapLongValue("Дата первого ответа")?.toDate(toStartOfTheWeek = true)
+                )
                 .set(ISSUES.SLA_SOLUTION_INDEX, this.unwrapEnumValue("SLA по решению"))
                 .set(ISSUES.SLA_SOLUTION_DATE_TIME, this.unwrapLongValue("Дата решения")?.toTimestamp())
                 .set(ISSUES.SLA_SOLUTION_DATE, this.unwrapLongValue("Дата решения")?.toDate())
@@ -208,7 +178,10 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
                 .set(ISSUES.SLA_FIRST_RESPONSE_INDEX, this.unwrapEnumValue("SLA по первому ответу"))
                 .set(ISSUES.SLA_FIRST_RESPONSE_DATE_TIME, this.unwrapLongValue("Дата первого ответа")?.toTimestamp())
                 .set(ISSUES.SLA_FIRST_RESPONSE_DATE, this.unwrapLongValue("Дата первого ответа")?.toDate())
-                .set(ISSUES.SLA_FIRST_RESPONSE_WEEK, this.unwrapLongValue("Дата первого ответа")?.toDate(toStartOfTheWeek = true))
+                .set(
+                    ISSUES.SLA_FIRST_RESPONSE_WEEK,
+                    this.unwrapLongValue("Дата первого ответа")?.toDate(toStartOfTheWeek = true)
+                )
                 .set(ISSUES.SLA_SOLUTION_INDEX, this.unwrapEnumValue("SLA по решению"))
                 .set(ISSUES.SLA_SOLUTION_DATE_TIME, this.unwrapLongValue("Дата решения")?.toTimestamp())
                 .set(ISSUES.SLA_SOLUTION_DATE, this.unwrapLongValue("Дата решения")?.toDate())
@@ -272,13 +245,12 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
         }
     }
 
-    private fun getTimeAccounting(issueId: String) {
-        dslContext.deleteFrom(WORK_ITEMS).where(WORK_ITEMS.ISSUE_ID.eq(issueId)).execute()
-        println(issueId)
-        YouTrackAPI.create(Converter.GSON).getWorkItems(AUTH, issueId).execute().body()?.forEach {
+    private fun getTimeAccounting(idReadable: String) {
+        dslContext.deleteFrom(WORK_ITEMS).where(WORK_ITEMS.ISSUE_ID.eq(idReadable)).execute()
+        YouTrackAPI.create(Converter.GSON).getWorkItems(AUTH, idReadable).execute().body()?.forEach {
             dslContext
                 .insertInto(WORK_ITEMS)
-                .set(WORK_ITEMS.ISSUE_ID, issueId)
+                .set(WORK_ITEMS.ISSUE_ID, idReadable)
                 .set(WORK_ITEMS.WI_ID, it.id)
                 .set(WORK_ITEMS.WI_DATE, it.date?.toDate())
                 .set(WORK_ITEMS.WI_CREATED, it.created?.toTimestamp())
@@ -298,182 +270,48 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
         }
     }
 
-    /*fun getActivities(items: JsonArray): List<IssueHistoryItem> {
-        val activityItems =
-            items.filter { obj: JsonElement -> obj.asJsonObject?.get("\$type")?.asString == ACTIVITY_ITEM }
-
-        return activityItems.map { obj: JsonElement ->
-            debugPrint(PRINT)
-            debugPrint(PRINT, obj.toString())
-            val type: String? = obj.asJsonObject?.get("\$type")?.asString
-            val target: JsonObject? = obj.asJsonObject?.get("target")?.asJsonObject
-            val idReadable = target?.get("idReadable").toString()
-            val updateDateTime = obj.asJsonObject?.get("timestamp")?.asLong
-            val author: JsonObject? = obj.asJsonObject?.get("author")?.asJsonObject
-            val login = author?.get("login").toString()
-            val field: JsonObject? = obj.asJsonObject?.get("field")?.asJsonObject
-            val fieldName = field?.get("presentation")?.asString
-            val customField: JsonObject? = field?.get("customField")?.asJsonObject
-            val fieldType: JsonObject? = customField?.get("fieldType")?.asJsonObject
-            val valueType: String? = fieldType?.get("valueType")?.asString
-            val added: String? = when (valueType) {
-                "string", "date and time" -> {
-                    val t = obj.asJsonObject?.get("added")
-                    if (t is JsonNull) null else obj.asJsonObject?.get("added")?.asString
-                }
-                "enum", "version", "state" ->
-                    obj.asJsonObject?.get("added")?.asJsonArray?.firstOrNull()?.asJsonObject?.get("name")?.asString
-                else ->
-                    "unwrapped ${obj.asJsonObject?.get("added")?.toString()}"
-            }
-            val removed: String? = when (valueType) {
-                "string", "date and time" -> {
-                    val t = obj.asJsonObject?.get("removed")
-                    if (t is JsonNull) null else obj.asJsonObject?.get("removed")?.asString
-                }
-                "enum", "version", "state" ->
-                    obj.asJsonObject?.get("removed")?.asJsonArray?.firstOrNull()?.asJsonObject?.get("name")?.asString
-                else ->
-                    "unwrapped ${obj.asJsonObject?.get("removed")?.toString()}"
-            }
-            println(valueType)
-            println("$type - $added - $removed")
-
-            val result = IssueHistoryItem(
-                issueId = idReadable,
-                author = login,
-                updateDateTime = Timestamp(updateDateTime ?: 0),
-                fieldName = fieldName,
-                value = null,
-                oldValue = removed,
-                newValue = added,
-                fieldType = valueType
-            )
-            println(result)
-            result
+    override fun getIssueHistory(idReadable: String) {
+        val issueActivities = YouTrackAPI
+            .create(Converter.GSON)
+            .getCustomFieldsHistory(auth = AUTH, issueId = idReadable)
+            .execute()
+        issueActivities.body()?.activities?.forEach {
+            val i = it.toIssueHistoryRecord(idReadable)
+            println(i)
         }
     }
 
-    fun getComments(issueId: String, items: JsonArray): List<Comment> {
-        val comments =
-            items.filter { obj: JsonElement ->
-                obj.asJsonObject?.get("\$type")?.asString in listOf(
-                    COMMENT_ACTIVITY_ITEM,
-                    MARKUP_ACTIVITY_ITEM
-                )
-            }
-        return comments.map { obj: JsonElement ->
-            println()
-            println(obj)
 
-            val type: String? = obj.asJsonObject?.get("\$type")?.asString
-            val commentId: String = obj.asJsonObject?.get("id")?.asString ?: ""
-            val updateDateTime = obj.asJsonObject?.get("timestamp")?.asLong ?: 0
-            val author: JsonObject? = obj.asJsonObject?.get("author")?.asJsonObject
-            val login = author?.get("login").toString()
-            val fullName = author?.get("fullName").toString()
-            val added: String = when (type) {
-                COMMENT_ACTIVITY_ITEM -> obj.asJsonObject?.get("added")?.asJsonArray?.firstOrNull()?.asJsonObject?.get("text")?.asString
-                    ?: ""
-                MARKUP_ACTIVITY_ITEM -> obj.asJsonObject?.get("added")?.asString ?: ""
-                else -> ""
-            }
+    /*set(0, issueId);
+    set(1, author);
+    set(2, updateDateTime);
+    set(3, fieldName);
+    set(4, valueType);
+    set(5, oldValueInt);
+    set(6, newValueInt);
+    set(7, oldValueString);
+    set(8, newValueString);
+    set(9, oldValueDateTime);
+    set(10, newValueDateTime);
+    set(11, updateWeek);*/
 
-            val deleted: Boolean = when (type) {
-                COMMENT_ACTIVITY_ITEM -> obj.asJsonObject?.get("added")?.asJsonArray?.firstOrNull()?.asJsonObject?.get("deleted")?.asBoolean
-                    ?: false
-                else -> false
-            }
-            val comment = Comment(
-                id = commentId,
-                issueId = issueId,
-                parentId = null,
-                deleted = deleted,
-                shownForIssueAuthor = true,
-                author = login,
-                authorFullName = fullName,
-                text = added,
-                created = updateDateTime,
-                updated = updateDateTime,
-                permittedGroup = "",
-                replies = listOf()
-            )
-            println(comment)
-            comment
-        }
-    }*/
-
-    /*fun getNotUnwrapped(items: JsonArray) {
-        val unwrapped =
-            items.filter { obj: JsonElement ->
-                obj.asJsonObject?.get("\$type")?.asString !in (listOf(
-                    ACTIVITY_ITEM,
-                    COMMENT_ACTIVITY_ITEM,
-                    MARKUP_ACTIVITY_ITEM,
-                    TIME_TRACKING_ACTIVITY_ITEM,
-                    ATTACHMENT_ACTIVITY_ITEM,
-                    ISSUE_CREATED_ACTIVITY_ITEM,
-                    PROJECT_ACTIVITY_ITEM,
-                    TEXT_FIELD_ACTIVITY_ITEM,
-                    VISIBILITY_GROUP_ACTIVITY_ITEM,
-                    VISIBILITY_USER_ACTIVITY_ITEM
-                ))
-            }
-        unwrapped.forEach { println(it) }
-        println("Not unwrapped ${unwrapped.size} items")
+    fun YouTrackActivity.toIssueHistoryRecord(idReadable: String): IssueHistoryRecord {
+        println("----")
+        return IssueHistoryRecord(
+            idReadable,
+            this.author?.profile?.email?.email,
+            timestamp?.toTimestamp(),
+            field.toString(),
+            "Any",
+            null,
+            null,
+            removed.toString(),
+            added.toString(),
+            null,
+            null,
+            timestamp?.toDate(toStartOfTheWeek = true)
+        )
     }
-
-    private fun getIssueHistory(issueId: String) {
-        dslContext.deleteFrom(ISSUE_HISTORY).where(ISSUE_HISTORY.ISSUE_ID.eq(issueId)).execute()
-        *//*println(issueId)*//*
-        val issueActivities = YouTrackAPI.create(Converter.GSON).getHistory(AUTH, issueId).execute()
-
-        val i = issueActivities.body()?.get("activities") as JsonArray
-        val activities = getActivities(i)
-        val comments = getComments(issueId, i)
-        *//*getNotUnwrapped(i)*//*
-        *//*getTimeTracking(issueId, i)*//*
-        dslContext.deleteFrom(ISSUE_COMMENTS).where(ISSUE_COMMENTS.ISSUE_ID.eq(issueId)).execute()
-        comments.forEach { comment ->
-            dslContext
-                .insertInto(ISSUE_COMMENTS)
-                .set(ISSUE_COMMENTS.ID, comment.id)
-                .set(ISSUE_COMMENTS.ISSUE_ID, comment.issueId)
-                .set(ISSUE_COMMENTS.PARENT_ID, comment.parentId)
-                .set(ISSUE_COMMENTS.DELETED, comment.deleted)
-                .set(ISSUE_COMMENTS.SHOWN_FOR_ISSUE_AUTHOR, comment.shownForIssueAuthor)
-                .set(ISSUE_COMMENTS.AUTHOR, comment.author)
-                .set(ISSUE_COMMENTS.AUTHOR_FULL_NAME, comment.authorFullName)
-                .set(ISSUE_COMMENTS.COMMENT_TEXT, comment.text)
-                .set(ISSUE_COMMENTS.CREATED, comment.created.toTimestamp())
-                .set(ISSUE_COMMENTS.UPDATED, comment.updated?.toTimestamp())
-                .set(ISSUE_COMMENTS.PERMITTED_GROUP, comment.permittedGroup)
-                .set(ISSUE_COMMENTS.REPLIES, comment.replies.toString())
-                .execute()
-        }
-
-
-        try {
-            val d = dslContext
-                .select(DSL.max(ISSUE_HISTORY.UPDATE_DATE_TIME).`as`("nt"))
-                .from(ISSUE_HISTORY)
-                .where(ISSUE_HISTORY.ISSUE_ID.eq(issueId).and(ISSUE_HISTORY.FIELD_NAME.eq("Оценка")))
-                .fetchOneInto(NullableTimestamp::class.java)
-            if (d.nt != null)
-                dslContext.update(ISSUES)
-                    .set(ISSUES.QUALITY_EVALUATION_DATE_TIME, d.nt)
-                    .set(ISSUES.QUALITY_EVALUATION_DATE, d.nt.time.toDate())
-                    .set(ISSUES.QUALITY_EVALUATION_WEEK, d.nt.time.toDate(toStartOfTheWeek = true))
-                    .where(ISSUES.ID.eq(issueId))
-                    .execute()
-        } catch (e: Exception) {
-            ETL.etlState = ETLState.DONE
-        }
-    }*/
-
-    /* data class NullableTimestamp(
-         val nt: Timestamp?
-     )*/
 
     override fun checkIssues() {
         var count = 0

@@ -84,6 +84,10 @@ class ETL(
         return YouTrackIssue()
     }
 
+    override fun getIssueHistory(idReadable: String) {
+        issue.getIssueHistory(idReadable)
+    }
+
     companion object {
         var etlState = ETLState.IDLE
         var lastResult: ETLResult? = null

@@ -8,4 +8,5 @@ interface IETL {
     fun getBundles()
     fun getUsers()
     fun getIssueById(id: String): YouTrackIssue
+    fun getIssueHistory(idReadable: String)
 }
