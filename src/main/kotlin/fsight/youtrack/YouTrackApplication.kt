@@ -11,9 +11,6 @@ import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.web.servlet.config.annotation.CorsRegistry
 import org.springframework.web.servlet.config.annotation.EnableWebMvc
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
-import org.springframework.http.converter.StringHttpMessageConverter
-import org.springframework.web.client.RestTemplate
-import java.nio.charset.Charset
 
 
 fun main(args: Array<String>) {

@@ -76,7 +76,7 @@ class IssuesRepo(
         }
         val result =
             ytIssues.filter { j -> j.ytState == "Направлена разработчику" && j.tfsState == "Closed" && ytIssues.filter { i -> i.ytIssueId == j.ytIssueId }.all { it.tfsState == "Closed" } }
-        val dist = result.distinctBy { it.ytIssueId }.map { item ->
+        return result.distinctBy { it.ytIssueId }.map { item ->
             P(
                 item.ytIssueId,
                 item.assignee,
@@ -88,7 +88,6 @@ class IssuesRepo(
                     }
             )
         }
-        return dist
     }
 
     data class D(

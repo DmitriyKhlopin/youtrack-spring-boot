@@ -10,7 +10,6 @@ import fsight.youtrack.generated.jooq.tables.IssueComments.ISSUE_COMMENTS
 import fsight.youtrack.generated.jooq.tables.IssueHistory.ISSUE_HISTORY
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
 import fsight.youtrack.generated.jooq.tables.WorkItems.WORK_ITEMS
-import fsight.youtrack.generated.jooq.tables.records.IssueHistoryRecord
 import fsight.youtrack.models.*
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
@@ -23,9 +22,8 @@ import java.time.LocalDateTime
 @Service
 @Transactional
 class Issue(private val dslContext: DSLContext, private val importLogService: IImportLog) : IIssue {
-    private val issueIds = arrayListOf<String?>()
-
     override fun getIssues(customFilter: String?): Int {
+        val issueIds = arrayListOf<String?>()
         println("Loading issues")
         val fields =
             listOf(
@@ -44,39 +42,37 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
                 "visibility(permittedGroups(name),permittedUsers(name,login))",
                 "deleted"
             ).joinToString(",")
-        val top = 10
-        var i = 1
+        val top = 40
         var skip = 0
+        var stored = 0
         val filter = customFilter ?: getFilter()
         println("Actual filter: $filter")
 
-        while (i > 0) {
-            i = 0
-            val j = if (filter == null)
-                YouTrackAPI
-                    .create(Converter.GSON)
+        do {
+            val request = if (filter == null)
+                YouTrackAPI.create(Converter.GSON)
                     .getIssueList(auth = AUTH, fields = fields, top = top, skip = skip)
             else
-                YouTrackAPI
-                    .create(Converter.GSON)
+                YouTrackAPI.create(Converter.GSON)
                     .getIssueList(auth = AUTH, fields = fields, top = top, skip = skip, query = filter)
 
+            val result = request.execute().body()
+            issueIds.addAll(result?.mapNotNull { it.idReadable } ?: listOf())
+            skip += result?.size ?: 0
+            stored += result?.map { it.toIssueRecord() }?.loadToDatabase(dslContext) ?: 0
 
+            result?.forEach {
+                it.saveComments()
+                it.saveCustomFields()
+            }
+            print("Loaded ${issueIds.size} issues, stored $stored\r")
+        } while (result?.size ?: 0 > 0)
 
-            j.execute()
-                .body()
-                ?.forEach {
-                    issueIds.add(it.idReadable)
-                    skip += 1
-                    i += 1
-                    it.saveBasicInfo()
-                    it.saveComments()
-                    it.saveCustomFields()
-                }
+        //TODO оптимизировать импорт истории для проблемных запросов
+        issueIds.filterNot { it in listOf("SIGMA-17") }.filterNotNull().forEach {
+            getIssueHistory(it)
+            getTimeAccounting(it)
         }
-
-        issueIds.filterNotNull().forEach { getTimeAccounting(it) }
-        issueIds.filterNotNull().forEach { getIssueHistory(it) }
         println("Loaded $skip issues")
         importLogService.saveLog(
             ImportLogModel(
@@ -86,9 +82,9 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
                 items = skip
             )
         )
-        issueIds.clear()
         return skip
     }
+
 
     private fun getFilter(): String? {
         return try {
@@ -114,97 +110,7 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
         }
     }
 
-
-    private fun YouTrackIssue.saveBasicInfo() {
-        try {
-            dslContext.deleteFrom(ISSUES).where(ISSUES.ID.eq(idReadable)).execute()
-            dslContext
-                .insertInto(ISSUES)
-                .set(ISSUES.ID, idReadable)
-                .set(ISSUES.ENTITY_ID, idReadable)
-                .set(ISSUES.SUMMARY, summary)
-                .set(ISSUES.CREATED_DATE_TIME, created?.toTimestamp())
-                .set(ISSUES.CREATED_DATE, created?.toDate())
-                .set(ISSUES.CREATED_WEEK, created?.toDate(toStartOfTheWeek = true))
-                .set(ISSUES.UPDATED_DATE_TIME, updated?.toTimestamp())
-                .set(ISSUES.UPDATED_DATE, updated.toDate())
-                .set(ISSUES.UPDATED_WEEK, updated.toDate(toStartOfTheWeek = true))
-                .set(ISSUES.RESOLVED_DATE_TIME, resolved?.toTimestamp())
-                .set(ISSUES.RESOLVED_DATE, resolved?.toDate())
-                .set(ISSUES.RESOLVED_WEEK, resolved?.toDate(toStartOfTheWeek = true))
-                .set(ISSUES.REPORTER_LOGIN, reporter?.login ?: "undefined")
-                .set(ISSUES.COMMENTS_COUNT, comments?.size)
-                .set(ISSUES.VOTES, votes)
-                .set(ISSUES.SUBSYSTEM, this.unwrapEnumValue("subsystem"))
-                .set(ISSUES.SLA, this.unwrapEnumValue("SLA"))
-                .set(ISSUES.SLA_FIRST_RESPONSE_INDEX, this.unwrapEnumValue("SLA по первому ответу"))
-                .set(ISSUES.SLA_FIRST_RESPONSE_DATE_TIME, this.unwrapLongValue("Дата первого ответа")?.toTimestamp())
-                .set(ISSUES.SLA_FIRST_RESPONSE_DATE, this.unwrapLongValue("Дата первого ответа")?.toDate())
-                .set(
-                    ISSUES.SLA_FIRST_RESPONSE_WEEK,
-                    this.unwrapLongValue("Дата первого ответа")?.toDate(toStartOfTheWeek = true)
-                )
-                .set(ISSUES.SLA_SOLUTION_INDEX, this.unwrapEnumValue("SLA по решению"))
-                .set(ISSUES.SLA_SOLUTION_DATE_TIME, this.unwrapLongValue("Дата решения")?.toTimestamp())
-                .set(ISSUES.SLA_SOLUTION_DATE, this.unwrapLongValue("Дата решения")?.toDate())
-                .set(ISSUES.SLA_SOLUTION_WEEK, this.unwrapLongValue("Дата решения")?.toDate(toStartOfTheWeek = true))
-                .set(ISSUES.PROJECT, project?.name)
-                .set(ISSUES.ISSUE_TYPE, this.unwrapEnumValue("Type"))
-                .set(ISSUES.STATE, this.unwrapEnumValue("State"))
-                .set(ISSUES.PRIORITY, this.unwrapEnumValue("Priority"))
-                .set(ISSUES.PP_VERSION, this.unwrapEnumValue("Версия Prognoz Platform"))
-                .set(ISSUES.QUALITY_EVALUATION, this.unwrapEnumValue("Оценка"))
-                .set(ISSUES.ETS, this.unwrapEnumValue("Проект (ETS)"))
-                .set(ISSUES.LOADED_DATE, Timestamp.valueOf(LocalDateTime.now()))
-                .set(ISSUES.PROJECT_SHORT_NAME, project?.shortName)
-                .set(ISSUES.CUSTOMER, this.unwrapEnumValue("Заказчик"))
-                .onDuplicateKeyUpdate()
-                .set(ISSUES.ENTITY_ID, idReadable)
-                .set(ISSUES.SUMMARY, summary)
-                .set(ISSUES.CREATED_DATE_TIME, created?.toTimestamp())
-                .set(ISSUES.CREATED_DATE, created?.toDate())
-                .set(ISSUES.CREATED_WEEK, created?.toDate(toStartOfTheWeek = true))
-                .set(ISSUES.UPDATED_DATE_TIME, updated?.toTimestamp())
-                .set(ISSUES.UPDATED_DATE, updated.toDate())
-                .set(ISSUES.UPDATED_WEEK, updated.toDate(toStartOfTheWeek = true))
-                .set(ISSUES.RESOLVED_DATE_TIME, resolved?.toTimestamp())
-                .set(ISSUES.RESOLVED_DATE, resolved?.toDate())
-                .set(ISSUES.RESOLVED_WEEK, resolved?.toDate(toStartOfTheWeek = true))
-                .set(ISSUES.REPORTER_LOGIN, reporter?.login ?: "undefined")
-                .set(ISSUES.COMMENTS_COUNT, comments?.size)
-                .set(ISSUES.VOTES, votes)
-                .set(ISSUES.SUBSYSTEM, this.unwrapEnumValue("subsystem"))
-                .set(ISSUES.SLA, this.unwrapEnumValue("SLA"))
-                .set(ISSUES.SLA_FIRST_RESPONSE_INDEX, this.unwrapEnumValue("SLA по первому ответу"))
-                .set(ISSUES.SLA_FIRST_RESPONSE_DATE_TIME, this.unwrapLongValue("Дата первого ответа")?.toTimestamp())
-                .set(ISSUES.SLA_FIRST_RESPONSE_DATE, this.unwrapLongValue("Дата первого ответа")?.toDate())
-                .set(
-                    ISSUES.SLA_FIRST_RESPONSE_WEEK,
-                    this.unwrapLongValue("Дата первого ответа")?.toDate(toStartOfTheWeek = true)
-                )
-                .set(ISSUES.SLA_SOLUTION_INDEX, this.unwrapEnumValue("SLA по решению"))
-                .set(ISSUES.SLA_SOLUTION_DATE_TIME, this.unwrapLongValue("Дата решения")?.toTimestamp())
-                .set(ISSUES.SLA_SOLUTION_DATE, this.unwrapLongValue("Дата решения")?.toDate())
-                .set(ISSUES.SLA_SOLUTION_WEEK, this.unwrapLongValue("Дата решения")?.toDate(toStartOfTheWeek = true))
-                .set(ISSUES.PROJECT, project?.name)
-                .set(ISSUES.ISSUE_TYPE, this.unwrapEnumValue("Type"))
-                .set(ISSUES.STATE, this.unwrapEnumValue("State"))
-                .set(ISSUES.PRIORITY, this.unwrapEnumValue("Priority"))
-                .set(ISSUES.PP_VERSION, this.unwrapEnumValue("Версия Prognoz Platform"))
-                .set(ISSUES.QUALITY_EVALUATION, this.unwrapEnumValue("Оценка"))
-                .set(ISSUES.ETS, this.unwrapEnumValue("Проект (ETS)"))
-                .set(ISSUES.LOADED_DATE, Timestamp.valueOf(LocalDateTime.now()))
-                .set(ISSUES.PROJECT_SHORT_NAME, project?.shortName)
-                .set(ISSUES.CUSTOMER, this.unwrapEnumValue("Заказчик"))
-                .execute()
-        } catch (e: Exception) {
-            ETL.etlState = ETLState.DONE
-            writeError(this.toString(), e.message ?: "")
-            println(e.message)
-        }
-    }
-
-
+    //TODO преобразовать в loadInto
     private fun YouTrackIssue.saveCustomFields() {
         dslContext.deleteFrom(CUSTOM_FIELD_VALUES).where(CUSTOM_FIELD_VALUES.ISSUE_ID.eq(idReadable)).execute()
         fields?.forEach { field ->
@@ -222,8 +128,10 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
         }
     }
 
+    //TODO преобразовать в loadInto
     private fun YouTrackIssue.saveComments() {
         dslContext.deleteFrom(ISSUE_COMMENTS).where(ISSUE_COMMENTS.ISSUE_ID.eq(idReadable)).execute()
+        //TODO аменить на loadInto
         this.comments?.forEach { comment ->
             dslContext
                 .insertInto(ISSUE_COMMENTS)
@@ -247,6 +155,7 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
 
     private fun getTimeAccounting(idReadable: String) {
         dslContext.deleteFrom(WORK_ITEMS).where(WORK_ITEMS.ISSUE_ID.eq(idReadable)).execute()
+        //TODO заменить на loadInto
         YouTrackAPI.create(Converter.GSON).getWorkItems(AUTH, idReadable).execute().body()?.forEach {
             dslContext
                 .insertInto(WORK_ITEMS)
@@ -271,49 +180,28 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
     }
 
     override fun getIssueHistory(idReadable: String) {
-        val issueActivities = YouTrackAPI
-            .create(Converter.GSON)
-            .getCustomFieldsHistory(auth = AUTH, issueId = idReadable)
-            .execute()
-        issueActivities.body()?.activities?.forEach {
-            val i = it.toIssueHistoryRecord(idReadable)
-            println(i)
-        }
+        val issueActivities =
+            YouTrackAPI.create(Converter.GSON).getCustomFieldsHistory(auth = AUTH, issueId = idReadable).execute()
+        val items = issueActivities.body()?.activities?.map { it.toIssueHistoryRecord(idReadable) }
+        dslContext.deleteFrom(ISSUE_HISTORY).where(ISSUE_HISTORY.ISSUE_ID.eq(idReadable)).execute()
+        val stored = dslContext.loadInto(ISSUE_HISTORY).loadRecords(items).fields(
+            ISSUE_HISTORY.ISSUE_ID,
+            ISSUE_HISTORY.AUTHOR,
+            ISSUE_HISTORY.UPDATE_DATE_TIME,
+            ISSUE_HISTORY.FIELD_NAME,
+            ISSUE_HISTORY.VALUE_TYPE,
+            ISSUE_HISTORY.OLD_VALUE_INT,
+            ISSUE_HISTORY.NEW_VALUE_INT,
+            ISSUE_HISTORY.OLD_VALUE_STRING,
+            ISSUE_HISTORY.NEW_VALUE_STRING,
+            ISSUE_HISTORY.OLD_VALUE_DATE_TIME,
+            ISSUE_HISTORY.NEW_VALUE_DATE_TIME,
+            ISSUE_HISTORY.UPDATE_WEEK
+        ).execute().stored()
+        println("Stored $stored history items")
     }
 
-
-    /*set(0, issueId);
-    set(1, author);
-    set(2, updateDateTime);
-    set(3, fieldName);
-    set(4, valueType);
-    set(5, oldValueInt);
-    set(6, newValueInt);
-    set(7, oldValueString);
-    set(8, newValueString);
-    set(9, oldValueDateTime);
-    set(10, newValueDateTime);
-    set(11, updateWeek);*/
-
-    fun YouTrackActivity.toIssueHistoryRecord(idReadable: String): IssueHistoryRecord {
-        println("----")
-        return IssueHistoryRecord(
-            idReadable,
-            this.author?.profile?.email?.email,
-            timestamp?.toTimestamp(),
-            field.toString(),
-            "Any",
-            null,
-            null,
-            removed.toString(),
-            added.toString(),
-            null,
-            null,
-            timestamp?.toDate(toStartOfTheWeek = true)
-        )
-    }
-
-    override fun checkIssues() {
+    override fun findDeletedIssues() {
         var count = 0
         val deletedItems = arrayListOf<String>()
         val result = dslContext.select(ISSUES.ID).from(ISSUES).fetchInto(String::class.java)
@@ -326,8 +214,9 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
                 count += 1
                 deletedItems.add(issueId)
             }
-            if (index % interval == 0) println("Checked ${index * 100 / result.size}% of issues")
+            if (index % interval == 0) print("Checked ${index * 100 / result.size}% of issues\r")
         }
+        println()
         deleteIssues(deletedItems)
     }
 
@@ -342,6 +231,22 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
             ETL.etlState = ETLState.DONE
         }
         return 0
+    }
+
+    override fun checkPendingIssues() {
+        try {
+            val i = dslContext
+                .select(ISSUES.ID)
+                .from(ISSUES)
+                .leftJoin(CUSTOM_FIELD_VALUES)
+                .on(ISSUES.ID.eq(CUSTOM_FIELD_VALUES.ISSUE_ID).and(CUSTOM_FIELD_VALUES.FIELD_NAME.eq("State")))
+                .where(CUSTOM_FIELD_VALUES.FIELD_VALUE.eq("Ожидает ответа"))
+                .fetchInto(String::class.java)
+                .joinToString(separator = " или ") { "#$it" }
+            getIssues(i)
+        } catch (e: Exception) {
+            println(e)
+        }
     }
 
     private fun writeError(item: String, message: String) {

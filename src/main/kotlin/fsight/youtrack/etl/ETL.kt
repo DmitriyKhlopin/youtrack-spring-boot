@@ -31,12 +31,12 @@ class ETL(
                 var issuesCount = 0
                 if (m == 30 && !manual) {
                     issuesCount = issue.getIssues(customFilter)
-                    /*bundles.getBundles()*/
+                    projects.saveProjects()
                     bundle.getBundles()
                     users.getUsers()
+                    issue.findDeletedIssues()
+                    issue.checkPendingIssues()
                     timeline.launchCalculation()
-                    issue.checkIssues()
-                    projects.saveProjects()
                 } else {
                     if (!manual) issuesCount = issue.getIssues(customFilter)
                 }
@@ -58,11 +58,15 @@ class ETL(
                 }
                 if (manual && p.contains("check")) {
                     println("Checking issues")
-                    issue.checkIssues()
+                    issue.findDeletedIssues()
                 }
                 if (manual && p.contains("projects")) {
                     println("Loading projects")
                     projects.saveProjects()
+                }
+                if (manual && p.contains("pending")) {
+                    println("Checking pending issues")
+                    issue.checkPendingIssues()
                 }
                 etlState = ETLState.IDLE
                 lastResult = ETLResult(ETLState.DONE, issuesCount, 0)
