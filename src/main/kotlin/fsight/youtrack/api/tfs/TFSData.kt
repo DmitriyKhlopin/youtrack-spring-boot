@@ -56,6 +56,24 @@ class TFSData(
     private final val customFieldValues = arrayListOf<BundleValue>()
     private final val users = arrayListOf<YouTrackUser>()
     private final val projects = arrayListOf<YouTrackProject>()
+    private final val areas: HashMap<String, String> by lazy {
+        hashMapOf<String, String>().also {
+            it["\\P7\\Components Library\\Web-Components\\Products\\Data Entry Forms"] = "1.5 Формы ввода"
+            it["\\P7\\Components Library\\Web-Components\\Reporting\\Dashboard"] = "1.1 Аналитические панели"
+            it["Budgeting"] = "9. Бюджетная модель"
+            it["TabSheet"] = "1.2 Регламентные отчеты"
+            it["Fore.NET Language"] = "2.3 Средства разработки (Fore)"
+            it["P7"] = "8. Прочее"
+        }
+    }
+
+    private final val buildPrefixes: HashMap<String, String> by lazy {
+        hashMapOf<String, String>().also { it["\\P7\\PP9\\9.0\\1.0\\Update 1"] = "9.0." }
+    }
+
+    private final val buildSuffixes: HashMap<String, String> by lazy {
+        hashMapOf<String, String>().also { it["\\P7\\PP9\\9.0\\1.0\\Update 1"] = ".June" }
+    }
 
     init {
         this.initDictionaries()
@@ -201,6 +219,10 @@ class TFSData(
     }
 
     fun getCustomFieldValue(projectName: String, fieldName: String, value: String?): FieldValueBase? {
+        if (fieldName == "State") {
+            println(projectName)
+            println(value)
+        }
         return when (fieldName) {
             "Assignee" -> users.firstOrNull { it.profile?.email?.email == value }.let { it ->
                 if (it != null) FieldValue(
@@ -210,6 +232,17 @@ class TFSData(
                         id = it.id
                             ?: "1-1", name = it.fullName ?: "admin"
                     )
+                ) else null
+            }
+            "State" -> customFieldValues.asSequence().firstOrNull {
+                it.fieldName == fieldName && it.name == value && it.projectName == projectName
+            }.let { it ->
+                if (it != null) FieldValue(
+                    id = it.fieldId,
+                    /*`$type` = "jetbrains.charisma.customfields.complex.state.StateIssueCustomField",*/
+                    `$type` = "jetbrains.charisma.workflow.statemachine.StateMachineIssueCustomField",
+                    /*`$type` = "jetbrains.charisma.customfields.complex.state.StateBundleElement",*/
+                    value = ActualValue(id = it.id, name = it.name)
                 ) else null
             }
             "Affected versions" -> customFieldValues.asSequence().firstOrNull {
@@ -432,10 +465,10 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
   defect.System_Id                                AS PARENT_ID,
   defect.System_WorkItemType                      AS PARENT_TYPE,
   changeRequest.Prognoz_P7_ChangeRequest_MergedIn AS MERGED_IN,
-  changeRequest.AreaName                          AS AREA_NAME,
-  changeRequest.AreaPath                          AS AREA_PATH,
-  defect.IterationPath                            AS ITERATION_PATH,
-  defect.IterationName                            AS ITERATION_NAME,
+  defect.AreaName                          AS AREA_NAME,
+  defect.AreaPath                          AS AREA_PATH,
+  changeRequest.IterationPath                            AS ITERATION_PATH,
+  changeRequest.IterationName                            AS ITERATION_NAME,
   (SELECT TOP 1 Words
    FROM
      Tfs_DefaultCollection.dbo.WorkItemLongTexts t
@@ -488,7 +521,11 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
             }?.forEach { println(it) }
         }
         val item = result.first()
-        val id2 = YouTrackAPI.create().createIssue(AUTH, item.toJson("FP")).execute()
+        /*return ResponseEntity
+            .status(HttpStatus.OK)
+            .headers(headers())
+            .body(item.toYouTrackPostableIssue("FP"))*/
+        val id2 = YouTrackAPI.create().createIssue(AUTH, Gson().toJson(item.toYouTrackPostableIssue("FP"))).execute()
         val idReadable = Gson().fromJson(id2.body(), YouTrackIssue::class.java)
         return ResponseEntity
             .status(HttpStatus.OK)
@@ -496,37 +533,51 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
             .body(idReadable)
     }
 
-    fun TFSDefect.toJson(queueId: String): String {
+    fun TFSDefect.toYouTrackPostableIssue(queueId: String): YouTrackPostableIssue? {
         this.parentType = when (this.parentType) {
             "Defect" -> "Bug"
             "Task" -> "Feature"
             else -> "Консультация"
         }
-        val projectId = projects.firstOrNull { it.shortName == queueId }?.id ?: return ""
+        val projectId = projects.firstOrNull { it.shortName == queueId }?.id ?: return null
         val type = getCustomFieldValue(queueId, "Type", this.parentType ?: "Bug")
         val product = getCustomFieldValue(queueId, "Продукт", /*this.parentType ?:*/ "FP 9.0")
         val database = getCustomFieldValue(queueId, "СУБД", "Любая СУБД")
         val os = getCustomFieldValue(queueId, "Операционная система", "Любая ОС")
-        val component = getCustomFieldValue(queueId, "Subsystem", "8. Прочее") //TODO calculate value from this.areaName
+        val component = getCustomFieldValue(
+            queueId,
+            "Subsystem",
+            areas[this.areaPath] ?: "8. Прочее"
+        ) //TODO calculate value from this.areaName
         val affectedVersions =
-            getCustomFieldValue(queueId, "Affected versions", "9.0.202") //TODO calculate value from this.areaName
+            getCustomFieldValue(queueId, "Affected versions", "9.0.202") //TODO calculate value from defect
         val fixedInBuild =
-            getCustomFieldValue(queueId, "Исправлено в версии", "9.0.271") //TODO calculate value from this.areaName
-        /*val assignee = getCustomFieldValue("Assignee", item.productManager)*/
-        return Gson().toJson(
-            YouTrackPostableIssue(
-                project = YouTrackProject(id = projectId),
-                summary = this.title,
-                description = "TFS: ${this.changeRequestId} \n\nPD:\n${this.body}",
-                fields = listOfNotNull(
-                    type, /*areaName,*/
-                    database,
-                    os,
-                    product,
-                    component,
-                    affectedVersions,
-                    fixedInBuild
-                )
+            getCustomFieldValue(
+                queueId,
+                "Исправлено в версии",
+                "${buildPrefixes[this.iterationPath]}${this.mergedIn}${buildSuffixes[this.iterationPath]}"
+            )
+
+        val firstResponseSLA = getCustomFieldValue(queueId, "SLA по первому ответу", "Выполнен")
+        val solutionSLA = getCustomFieldValue(queueId, "SLA по решению", "Выполнен")
+        val characteristics = getCustomFieldValue(queueId, "Характеристика", "Функциональность")
+        /*val state = getCustomFieldValue(queueId, "State", "Подтверждена")*/
+        return YouTrackPostableIssue(
+            project = YouTrackProject(id = projectId),
+            summary = this.title,
+            description = "TFS: ${this.changeRequestId} \n\nPD:\n${this.body}",
+            fields = listOfNotNull(
+                type, /*areaName,*/
+                database,
+                os,
+                product,
+                component,
+                affectedVersions,
+                fixedInBuild,
+                firstResponseSLA,
+                solutionSLA,
+                characteristics/*,
+                state*/
             )
         )
     }
