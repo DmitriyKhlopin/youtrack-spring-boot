@@ -43,7 +43,8 @@ class TFSData(
                     "jetbrains.charisma.customfields.complex.version.SingleVersionIssueCustomField"*/
             it["jetbrains.charisma.customfields.complex.user.UserBundle"] =
                     "jetbrains.charisma.customfields.complex.user.SingleUserIssueCustomField"
-
+            /*it["jetbrains.charisma.customfields.complex.user.UserBundle"] =
+                    "jetbrains.charisma.customfields.simple.common.SimpleIssueCustomField"*/
         }
     }
     private final val prioritiesMap: HashMap<String, String> by lazy {
@@ -219,13 +220,9 @@ class TFSData(
     }
 
     fun getCustomFieldValue(projectName: String, fieldName: String, value: String?): FieldValueBase? {
-        if (fieldName == "State") {
-            println(projectName)
-            println(value)
-        }
         return when (fieldName) {
             "Assignee" -> users.firstOrNull { it.profile?.email?.email == value }.let { it ->
-                if (it != null) FieldValue(
+                if (it != null) SingleFieldValue(
                     id = "86-16",
                     `$type` = "jetbrains.charisma.customfields.complex.user.SingleUserIssueCustomField",
                     value = ActualValue(
@@ -234,10 +231,15 @@ class TFSData(
                     )
                 ) else null
             }
+            "Issue" -> StringFieldValue(
+                id = "114-23",
+                `$type` = "jetbrains.charisma.customfields.simple.common.SimpleIssueCustomField",
+                value = value
+            )
             "State" -> customFieldValues.asSequence().firstOrNull {
                 it.fieldName == fieldName && it.name == value && it.projectName == projectName
             }.let { it ->
-                if (it != null) FieldValue(
+                if (it != null) SingleFieldValue(
                     id = it.fieldId,
                     /*`$type` = "jetbrains.charisma.customfields.complex.state.StateIssueCustomField",*/
                     `$type` = "jetbrains.charisma.workflow.statemachine.StateMachineIssueCustomField",
@@ -248,7 +250,7 @@ class TFSData(
             "Affected versions" -> customFieldValues.asSequence().firstOrNull {
                 it.fieldName == fieldName && it.name == value && it.projectName == projectName
             }.let { it ->
-                if (it != null) FieldValue2(
+                if (it != null) MultiFieldValue(
                     id = it.fieldId,
                     `$type` = /*types[it.`$type`]*/ "jetbrains.charisma.customfields.complex.version.MultiVersionIssueCustomField",
                     value = listOf(ActualValue(id = it.id, name = it.name))
@@ -257,7 +259,7 @@ class TFSData(
             else -> customFieldValues.asSequence().firstOrNull {
                 it.fieldName == fieldName && it.name == value && it.projectName == projectName
             }.let { it ->
-                if (it != null) FieldValue(
+                if (it != null) SingleFieldValue(
                     id = it.fieldId,
                     `$type` = types[it.`$type`],
                     value = ActualValue(id = it.id, name = it.name)
@@ -269,7 +271,7 @@ class TFSData(
     fun getCustomFieldListValue(fieldName: String, value: String?): FieldValueBase? {
         return when (fieldName) {
             "Assignee" -> users.firstOrNull { it.profile?.email?.email == value }.let { it ->
-                if (it != null) FieldValue(
+                if (it != null) SingleFieldValue(
                     id = "86-16",
                     `$type` = "jetbrains.charisma.customfields.complex.user.SingleUserIssueCustomField",
                     value = ActualValue(
@@ -281,7 +283,7 @@ class TFSData(
             else -> customFieldValues.asSequence().firstOrNull {
                 it.fieldName == fieldName && it.name == value
             }.let {
-                if (it != null) FieldValue(
+                if (it != null) SingleFieldValue(
                     id = it.fieldId,
                     `$type` = types[it.`$type`],
                     value = ActualValue(id = it.id, name = it.name)
@@ -544,6 +546,7 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
         val product = getCustomFieldValue(queueId, "Продукт", /*this.parentType ?:*/ "FP 9.0")
         val database = getCustomFieldValue(queueId, "СУБД", "Любая СУБД")
         val os = getCustomFieldValue(queueId, "Операционная система", "Любая ОС")
+        val issue = getCustomFieldValue(queueId, "Issue", this.parentId.toString())
         val component = getCustomFieldValue(
             queueId,
             "Subsystem",
@@ -576,8 +579,8 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
                 fixedInBuild,
                 firstResponseSLA,
                 solutionSLA,
-                characteristics/*,
-                state*/
+                characteristics,
+                issue
             )
         )
     }
