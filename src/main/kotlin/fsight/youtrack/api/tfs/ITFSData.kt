@@ -10,7 +10,7 @@ interface ITFSData {
     fun getIterations(): ResponseEntity<Any>
     fun getBuildsByIteration(iteration: String): ResponseEntity<Any>
     fun getDefectsByFixedBuildId(iteration: String, build: String): ResponseEntity<Any>
-    fun postChangeRequestById(id: Int): ResponseEntity<Any>
+    fun postChangeRequestById(id: Int, body: String?): ResponseEntity<Any>
     fun postItemToYouTrack(id: Int): ResponseEntity<Any>
     fun postItemsToYouTrack(offset: Int?, limit: Int?): ResponseEntity<Any>
     fun postItemsToYouTrack(iteration: String?): ResponseEntity<Any>

@@ -1,6 +1,7 @@
 package fsight.youtrack.api.tfs
 
 import com.google.gson.Gson
+import com.google.gson.internal.LinkedTreeMap
 import fsight.youtrack.AUTH
 import fsight.youtrack.api.YouTrackAPI
 import fsight.youtrack.etl.projects.IProjects
@@ -461,7 +462,7 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
         return ResponseEntity.status(HttpStatus.OK).body(result)
     }
 
-    override fun postChangeRequestById(id: Int): ResponseEntity<Any> {
+    override fun postChangeRequestById(id: Int, body: String?): ResponseEntity<Any> {
         val statement = """SELECT
   changeRequest.System_Id                         AS CHANGE_REQUEST_ID,
   defect.System_Id                                AS PARENT_ID,
@@ -522,7 +523,11 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
                 result
             }?.forEach { println(it) }
         }
-        val item = result.first()
+        val item = result.first().apply {
+            val i = Gson().fromJson(body, LinkedTreeMap::class.java)
+            if (i["title"] != null) this.title = i["title"].toString()
+            if (i["body"] != null) this.body = i["body"].toString()
+        }
         /*return ResponseEntity
             .status(HttpStatus.OK)
             .headers(headers())
