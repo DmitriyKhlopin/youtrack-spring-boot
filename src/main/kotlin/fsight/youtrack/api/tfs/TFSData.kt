@@ -32,17 +32,17 @@ class TFSData(
             /*it["jetbrains.charisma.customfields.complex.version.VersionBundle"] =
                     "jetbrains.charisma.customfields.complex.version.MultiVersionIssueCustomField"*/
             it["jetbrains.charisma.customfields.complex.version.VersionBundle"] =
-                    "jetbrains.charisma.customfields.complex.version.SingleVersionIssueCustomField"
+                "jetbrains.charisma.customfields.complex.version.SingleVersionIssueCustomField"
             it["jetbrains.charisma.customfields.complex.state.StateBundle"] =
-                    "jetbrains.charisma.customfields.complex.state.StateIssueCustomField"
+                "jetbrains.charisma.customfields.complex.state.StateIssueCustomField"
             it["jetbrains.charisma.customfields.complex.ownedField.OwnedBundle"] =
-                    "jetbrains.charisma.customfields.complex.ownedField.SingleOwnedIssueCustomField"
+                "jetbrains.charisma.customfields.complex.ownedField.SingleOwnedIssueCustomField"
             it["jetbrains.charisma.customfields.complex.enumeration.EnumBundle"] =
-                    "jetbrains.charisma.customfields.complex.enumeration.SingleEnumIssueCustomField"
+                "jetbrains.charisma.customfields.complex.enumeration.SingleEnumIssueCustomField"
             /*it["jetbrains.charisma.customfields.complex.version.VersionBundle"] =
                     "jetbrains.charisma.customfields.complex.version.SingleVersionIssueCustomField"*/
             it["jetbrains.charisma.customfields.complex.user.UserBundle"] =
-                    "jetbrains.charisma.customfields.complex.user.SingleUserIssueCustomField"
+                "jetbrains.charisma.customfields.complex.user.SingleUserIssueCustomField"
             /*it["jetbrains.charisma.customfields.complex.user.UserBundle"] =
                     "jetbrains.charisma.customfields.simple.common.SimpleIssueCustomField"*/
         }
@@ -431,7 +431,7 @@ FROM CurrentWorkItemView changeRequest
   LEFT JOIN CurrentWorkItemView defect ON links.TargetWorkitemSK = defect.WorkItemSK
 WHERE changeRequest.System_WorkItemType = 'Change Request'
       AND changeRequest.IterationPath = '$iteration'
-      AND changeRequest.Prognoz_P7_ChangeRequest_MergedIn = $build
+      AND changeRequest.Prognoz_P7_ChangeRequest_MergedIn in (${build.removeSurrounding("[", "]")})
       AND changeRequest.System_State = 'Closed'
       AND defect.System_WorkItemType IN ('Defect', 'Task')
       """
