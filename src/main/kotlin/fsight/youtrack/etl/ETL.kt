@@ -8,6 +8,7 @@ import fsight.youtrack.etl.timeline.ITimeline
 import fsight.youtrack.etl.users.UsersETL
 import fsight.youtrack.models.ETLResult
 import fsight.youtrack.models.YouTrackIssue
+import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import java.util.*
 
@@ -95,5 +96,9 @@ class ETL(
     companion object {
         var etlState = ETLState.IDLE
         var lastResult: ETLResult? = null
+    }
+
+    override fun getTimelineById(idReadable: String): ResponseEntity<Any> {
+        return ResponseEntity.ok(timeline.calculateForId(idReadable))
     }
 }

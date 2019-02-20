@@ -36,4 +36,9 @@ class ETLController(private val service: IETL) {
     fun getHistory(@PathVariable("id") id: String) {
         service.getIssueHistory(id)
     }
+
+    @GetMapping("/api/etl/timeline/{id}")
+    fun getTimeline(@PathVariable("id") id: String): Any {
+        return service.getTimelineById(id)
+    }
 }

@@ -198,7 +198,7 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
             ISSUE_HISTORY.NEW_VALUE_DATE_TIME,
             ISSUE_HISTORY.UPDATE_WEEK
         ).execute().stored()
-        println("Stored $stored history items")
+        println("$idReadable: stored $stored history items")
     }
 
     override fun findDeletedIssues() {
