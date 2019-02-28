@@ -10,7 +10,7 @@ class Users(private val dsl: DSLContext) : IUsers {
     override fun getAll(): List<UserDetails> {
         val names = listOf(
             "maltsevav", "khlopinda", "nepomnyasas", "zolotaryevan", "zolotaryova",
-            "antonlykov", "nesterovmv", "maltsevayv"
+            "antonlykov", "nesterovmv", "maltsevayv", "parkhachens"
         )
         return dsl.select(
             ETS_NAMES.FSIGHT_EMAIL.`as`("email"),

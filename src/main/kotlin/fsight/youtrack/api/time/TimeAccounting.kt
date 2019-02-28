@@ -155,6 +155,8 @@ class TimeAccounting(private val dsl: DSLContext) : ITimeAccounting {
             .fetchInto(TimeAccountingDictionaryItem::class.java)
     }
 
+    /**
+     * Данные с портала загружаются с помощью OBJ771674 в схеме DM*/
     override fun getFactWork(emails: String?, dateFrom: String?, dateTo: String?): List<FactWorkItem> {
         val e = emails?.split(",") ?: listOf("dmitriy.khlopin@fsight.ru")
         val q = if (dateFrom != null && dateTo != null) {
