@@ -2,7 +2,7 @@ package fsight.youtrack.models
 
 import java.sql.Timestamp
 
-class TimeAccountingItem(
+data class TimeAccountingItem(
     var crDate: Timestamp?,
     var units: Int?,
     var agent: String?,
@@ -16,5 +16,6 @@ class TimeAccountingItem(
     var wit: String?,
     var title: String?,
     var iterationPath: String?,
-    var role: String?
+    var role: String?,
+    var priority: String?
 )

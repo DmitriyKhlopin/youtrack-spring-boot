@@ -1,5 +1,6 @@
 package fsight.youtrack.api.time
 
+import fsight.youtrack.generated.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALUES
 import fsight.youtrack.generated.jooq.tables.DictionaryProjectCustomerEts.DICTIONARY_PROJECT_CUSTOMER_ETS
 import fsight.youtrack.generated.jooq.tables.FactWork.FACT_WORK
 import fsight.youtrack.generated.jooq.tables.TimeAccounting.TIME_ACCOUNTING
@@ -109,9 +110,15 @@ class TimeAccounting(private val dsl: DSLContext) : ITimeAccounting {
                 TIME_ACCOUNTING.WIT.`as`("wit"),
                 TIME_ACCOUNTING.TITLE.`as`("title"),
                 TIME_ACCOUNTING.ITERATIONPATH.`as`("iterationPath"),
-                TIME_ACCOUNTING.ROLE.`as`("role")
+                TIME_ACCOUNTING.ROLE.`as`("role"),
+                CUSTOM_FIELD_VALUES.FIELD_VALUE.`as`("priority")
             )
                 .from(TIME_ACCOUNTING)
+                .leftJoin(CUSTOM_FIELD_VALUES).on(
+                    TIME_ACCOUNTING.ID.eq(CUSTOM_FIELD_VALUES.ISSUE_ID).and(
+                        CUSTOM_FIELD_VALUES.FIELD_NAME.eq("Priority")
+                    )
+                )
                 .where(
                     TIME_ACCOUNTING.CRDATE.between(
                         Timestamp.valueOf(df.atStartOfDay()),
@@ -135,9 +142,15 @@ class TimeAccounting(private val dsl: DSLContext) : ITimeAccounting {
                 TIME_ACCOUNTING.WIT.`as`("wit"),
                 TIME_ACCOUNTING.TITLE.`as`("title"),
                 TIME_ACCOUNTING.ITERATIONPATH.`as`("iterationPath"),
-                TIME_ACCOUNTING.ROLE.`as`("role")
+                TIME_ACCOUNTING.ROLE.`as`("role"),
+                CUSTOM_FIELD_VALUES.FIELD_VALUE.`as`("priority")
             )
                 .from(TIME_ACCOUNTING)
+                .leftJoin(CUSTOM_FIELD_VALUES).on(
+                    TIME_ACCOUNTING.ID.eq(CUSTOM_FIELD_VALUES.ISSUE_ID).and(
+                        CUSTOM_FIELD_VALUES.FIELD_NAME.eq("Priority")
+                    )
+                )
                 .where(TIME_ACCOUNTING.CRDATE.eq(ts))
         }
         return q.fetchInto(TimeAccountingItem::class.java)
