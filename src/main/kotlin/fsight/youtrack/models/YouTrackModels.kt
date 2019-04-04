@@ -339,11 +339,6 @@ fun YouTrackIssue.unwrapEnumValue(fieldName: String): String? {
     return (Gson().toJsonTree(temp).asJsonObject).get("name").asString
 }
 
-/*fun YouTrackIssue.unwrapTimestampValue(fieldName: String): Timestamp = Timestamp(0)
-
-
-fun YouTrackIssue.getFieldValue() = ""*/
-
 fun YouTrackField.unwrapValue(): String? {
     return when (this.`$type`) {
         SINGLE_ENUM_ISSUE_CUSTOM_FIELD, SINGLE_OWNED_ISSUE_CUSTOM_FIELD, STATE_ISSUE_CUSTOM_FIELD, STATE_MACHINE_ISSUE_CUSTOM_FIELD, SINGLE_VERSION_ISSUE_CUSTOM_FIELD, SINGLE_BUILD_ISSUE_CUSTOM_FIELD -> {

@@ -240,10 +240,10 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
                 .from(ISSUES)
                 .leftJoin(CUSTOM_FIELD_VALUES)
                 .on(ISSUES.ID.eq(CUSTOM_FIELD_VALUES.ISSUE_ID).and(CUSTOM_FIELD_VALUES.FIELD_NAME.eq("State")))
-                .where(CUSTOM_FIELD_VALUES.FIELD_VALUE.eq("Ожидает ответа"))
+                .where(CUSTOM_FIELD_VALUES.FIELD_VALUE.`in`(listOf("Ожидает ответа", "Ожидает подтверждения")))
+                /*.and(ISSUES.PROJECT_SHORT_NAME.notIn(listOf("TC")))*/
                 .fetchInto(String::class.java)
-                .joinToString(separator = " или ") { "#$it" }
-            getIssues(i)
+            i.forEach { getIssues(it) }
         } catch (e: Exception) {
             println(e)
         }
