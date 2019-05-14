@@ -126,7 +126,18 @@ class Issues(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pri
     AND priority.field_value = 'Major'
     AND type.field_value != 'Feature'
      */
-    override fun getHighPriorityIssuesWithTFSDetails(): Any {
+    override fun getHighPriorityIssuesWithTFSDetails(
+        projectsString: String?,
+        customersString: String?,
+        prioritiesString: String?
+    ): Any {
+        val filter = projectsString?.removeSurrounding("[", "]")?.split(",")?.map { "\'$it\'" }?.joinToString(
+            ",",
+            prefix = "(",
+            postfix = ")"
+        ) ?: "()"
+        println(filter)
+        val f = projectsString?.removeSurrounding("[", "]")?.split(",").orEmpty()
         val priority = CUSTOM_FIELD_VALUES.`as`("priority")
         val state = CUSTOM_FIELD_VALUES.`as`("state")
         val issue = CUSTOM_FIELD_VALUES.`as`("issue")
@@ -155,9 +166,10 @@ class Issues(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pri
             .leftJoin(type).on(ISSUES.ID.eq(type.ISSUE_ID)).and(type.FIELD_NAME.eq("Type"))
             .leftJoin(state).on(ISSUES.ID.eq(state.ISSUE_ID)).and(state.FIELD_NAME.eq("State"))
             .where(ISSUES.RESOLVED_DATE.isNull)
-            .and(priority.FIELD_VALUE.eq("Major"))
-            .and(type.FIELD_VALUE.notEqual("Feature"))
-            .and(ISSUES.PROJECT_SHORT_NAME.notIn(listOf("SD", "PO", "TC", "W", "PP_Lic")))
+            //.and(priority.FIELD_VALUE.eq("Major"))
+            //.and(type.FIELD_VALUE.notEqual("Feature"))
+            .and(ISSUES.PROJECT_SHORT_NAME.`in`(f))
+            //.and(ISSUES.PROJECT_SHORT_NAME.notIn(listOf("SD", "PO", "TC", "W", "PP_Lic")))
             .fetchInto(HighPriorityIssue::class.java)
 
         r.forEachIndexed { index, item ->

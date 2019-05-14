@@ -4,4 +4,5 @@ import fsight.youtrack.models.YouTrackProject
 
 interface IProject {
     fun getProjects(): List<YouTrackProject>
+    fun getPartnerCustomers(): List<Project.PartnerCustomerPair>
 }

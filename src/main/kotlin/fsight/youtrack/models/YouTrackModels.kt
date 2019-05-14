@@ -98,6 +98,8 @@ data class YouTrackFieldType(
 data class YouTrackActivityCursor(
     var cursor: String? = null,
     var activities: List<YouTrackActivity>? = null,
+    var hasAfter: Boolean? = null,
+    var hasBefore: Boolean? = null,
     var `$type`: String
 )
 

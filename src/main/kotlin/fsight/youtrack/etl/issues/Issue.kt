@@ -180,25 +180,39 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
     }
 
     override fun getIssueHistory(idReadable: String) {
-        val issueActivities =
-            YouTrackAPI.create(Converter.GSON).getCustomFieldsHistory(auth = AUTH, issueId = idReadable).execute()
-        val items = issueActivities.body()?.activities?.map { it.toIssueHistoryRecord(idReadable) }
+        var hasAfter: Boolean? = true
         dslContext.deleteFrom(ISSUE_HISTORY).where(ISSUE_HISTORY.ISSUE_ID.eq(idReadable)).execute()
-        val stored = dslContext.loadInto(ISSUE_HISTORY).loadRecords(items).fields(
-            ISSUE_HISTORY.ISSUE_ID,
-            ISSUE_HISTORY.AUTHOR,
-            ISSUE_HISTORY.UPDATE_DATE_TIME,
-            ISSUE_HISTORY.FIELD_NAME,
-            ISSUE_HISTORY.VALUE_TYPE,
-            ISSUE_HISTORY.OLD_VALUE_INT,
-            ISSUE_HISTORY.NEW_VALUE_INT,
-            ISSUE_HISTORY.OLD_VALUE_STRING,
-            ISSUE_HISTORY.NEW_VALUE_STRING,
-            ISSUE_HISTORY.OLD_VALUE_DATE_TIME,
-            ISSUE_HISTORY.NEW_VALUE_DATE_TIME,
-            ISSUE_HISTORY.UPDATE_WEEK
-        ).execute().stored()
-        println("$idReadable: stored $stored history items")
+        var offset = 100
+        while (hasAfter == true) {
+            val issueActivities =
+                YouTrackAPI.create(Converter.GSON)
+                    .getCustomFieldsHistory(auth = AUTH, issueId = idReadable, top = offset)
+                    .execute()
+            val items = issueActivities.body()?.activities?.map { it.toIssueHistoryRecord(idReadable) }
+            val stored = dslContext.loadInto(ISSUE_HISTORY)
+                .onDuplicateKeyUpdate()
+                .loadRecords(items)
+                .fields(
+                    ISSUE_HISTORY.ISSUE_ID,
+                    ISSUE_HISTORY.AUTHOR,
+                    ISSUE_HISTORY.UPDATE_DATE_TIME,
+                    ISSUE_HISTORY.FIELD_NAME,
+                    ISSUE_HISTORY.VALUE_TYPE,
+                    ISSUE_HISTORY.OLD_VALUE_INT,
+                    ISSUE_HISTORY.NEW_VALUE_INT,
+                    ISSUE_HISTORY.OLD_VALUE_STRING,
+                    ISSUE_HISTORY.NEW_VALUE_STRING,
+                    ISSUE_HISTORY.OLD_VALUE_DATE_TIME,
+                    ISSUE_HISTORY.NEW_VALUE_DATE_TIME,
+                    ISSUE_HISTORY.UPDATE_WEEK
+                )
+                .execute()
+                .stored()
+            offset += issueActivities.body()?.activities?.size ?: 0
+            hasAfter = issueActivities.body()?.hasAfter
+            println("$idReadable: stored $stored history items")
+        }
+
     }
 
     override fun findDeletedIssues() {
