@@ -131,14 +131,11 @@ class Issues(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pri
         customersString: String?,
         prioritiesString: String?
     ): Any {
-        val filter = projectsString?.removeSurrounding("[", "]")?.split(",")?.map { "\'$it\'" }?.joinToString(
-            ",",
-            prefix = "(",
-            postfix = ")"
-        ) ?: "()"
-        println(filter)
-        val f = projectsString?.removeSurrounding("[", "]")?.split(",").orEmpty()
+        val projectsFilter = projectsString?.removeSurrounding("[", "]")?.split(",").orEmpty()
+        val customersFilter = customersString?.removeSurrounding("[", "]")?.split(",").orEmpty()
+        val prioritiesFilter = prioritiesString?.removeSurrounding("[", "]")?.split(",").orEmpty()
         val priority = CUSTOM_FIELD_VALUES.`as`("priority")
+        val customer = CUSTOM_FIELD_VALUES.`as`("customer")
         val state = CUSTOM_FIELD_VALUES.`as`("state")
         val issue = CUSTOM_FIELD_VALUES.`as`("issue")
         val type = CUSTOM_FIELD_VALUES.`as`("type")
@@ -162,14 +159,14 @@ class Issues(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pri
             )
             .from(ISSUES)
             .leftJoin(priority).on(ISSUES.ID.eq(priority.ISSUE_ID)).and(priority.FIELD_NAME.eq("Priority"))
+            .leftJoin(customer).on(ISSUES.ID.eq(customer.ISSUE_ID)).and(customer.FIELD_NAME.eq("Заказчик"))
             .leftJoin(issue).on(ISSUES.ID.eq(issue.ISSUE_ID)).and(issue.FIELD_NAME.eq("Issue"))
             .leftJoin(type).on(ISSUES.ID.eq(type.ISSUE_ID)).and(type.FIELD_NAME.eq("Type"))
             .leftJoin(state).on(ISSUES.ID.eq(state.ISSUE_ID)).and(state.FIELD_NAME.eq("State"))
             .where(ISSUES.RESOLVED_DATE.isNull)
-            //.and(priority.FIELD_VALUE.eq("Major"))
-            //.and(type.FIELD_VALUE.notEqual("Feature"))
-            .and(ISSUES.PROJECT_SHORT_NAME.`in`(f))
-            //.and(ISSUES.PROJECT_SHORT_NAME.notIn(listOf("SD", "PO", "TC", "W", "PP_Lic")))
+            .and(ISSUES.PROJECT_SHORT_NAME.`in`(projectsFilter))
+            .and(customer.FIELD_VALUE.`in`(customersFilter))
+            .and(priority.FIELD_VALUE.`in`(prioritiesFilter))
             .fetchInto(HighPriorityIssue::class.java)
 
         r.forEachIndexed { index, item ->
