@@ -44,6 +44,7 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
             .select(ISSUES.ID)
             .from(ISSUES)
             .where(ISSUES.LOADED_DATE.ge(Timestamp.valueOf(LocalDateTime.now().toLocalDate().atStartOfDay())).or(ISSUES.RESOLVED_DATE_TIME.isNull))
+            .and(ISSUES.PROJECT_SHORT_NAME.notIn(listOf("SD", "TC", "SPAM", "PO")))
             .fetchInto(String::class.java)
         println("Need to calculate timelines for ${i.size} items.")
         i.asSequence().forEach { calculateForId(it) }

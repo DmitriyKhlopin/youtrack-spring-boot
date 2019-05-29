@@ -4,6 +4,7 @@ import fsight.youtrack.*
 import fsight.youtrack.api.YouTrackAPI
 import fsight.youtrack.etl.ETL
 import fsight.youtrack.etl.logs.IImportLog
+import fsight.youtrack.etl.timeline.ITimeline
 import fsight.youtrack.generated.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALUES
 import fsight.youtrack.generated.jooq.tables.ErrorLog.ERROR_LOG
 import fsight.youtrack.generated.jooq.tables.IssueComments.ISSUE_COMMENTS
@@ -14,14 +15,17 @@ import fsight.youtrack.models.*
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 import java.sql.Timestamp
 import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Service
-@Transactional
-class Issue(private val dslContext: DSLContext, private val importLogService: IImportLog) : IIssue {
+/*@Transactional*/
+class Issue(
+    private val dslContext: DSLContext,
+    private val importLogService: IImportLog,
+    private val timelineService: ITimeline
+) : IIssue {
     override fun getIssues(customFilter: String?): Int {
         val issueIds = arrayListOf<String?>()
         println("Loading issues")
@@ -82,6 +86,7 @@ class Issue(private val dslContext: DSLContext, private val importLogService: II
                 items = skip
             )
         )
+        issueIds.filterNot { it in listOf("SIGMA-17") }.filterNotNull().forEach { timelineService.calculateForId(it) }
         return skip
     }
 
