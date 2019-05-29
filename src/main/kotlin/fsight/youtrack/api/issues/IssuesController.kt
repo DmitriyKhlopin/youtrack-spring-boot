@@ -22,8 +22,12 @@ class IssuesController(private val service: IIssues) {
         @RequestParam(
             "priorities",
             required = false
-        ) priorities: String? = null
+        ) priorities: String? = null,
+        @RequestParam(
+            "states",
+            required = false
+        ) states: String? = null
     ): ResponseEntity<Any> {
-        return ResponseEntity.ok(service.getHighPriorityIssuesWithTFSDetails(projects, customers, priorities))
+        return ResponseEntity.ok(service.getHighPriorityIssuesWithTFSDetails(projects, customers, priorities, states))
     }
 }

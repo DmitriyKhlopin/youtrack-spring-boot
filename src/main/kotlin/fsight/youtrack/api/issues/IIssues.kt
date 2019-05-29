@@ -4,6 +4,7 @@ interface IIssues {
     fun getHighPriorityIssuesWithTFSDetails(
         projectsString: String?,
         customersString: String?,
-        prioritiesString: String?
+        prioritiesString: String?,
+        statesString: String?
     ): Any
 }

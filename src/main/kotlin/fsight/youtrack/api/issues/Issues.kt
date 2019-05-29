@@ -8,6 +8,7 @@ import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jooq.DSLContext
 import org.jooq.Field
+import org.jooq.impl.DSL
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import java.sql.Timestamp
@@ -20,10 +21,14 @@ class Issues(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pri
         var created: Timestamp? = null,
         var priority: String? = null,
         var state: String? = null,
+        var type: String? = null,
         var comment: String? = null,
         var issue: String? = null,
         var tfsIssues: ArrayList<IssueTFSData> = arrayListOf(),
-        var tfsData: ArrayList<TFSPlainIssue> = arrayListOf()
+        var tfsData: ArrayList<TFSPlainIssue> = arrayListOf(),
+        var timeUser: Long? = null,
+        var timeAgent: Long? = null,
+        var timeDeveloper: Long? = null
     )
 
 
@@ -103,37 +108,18 @@ class Issues(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pri
             )
         }.distinctBy { it.changeRequestId })
 
-
-    /**
-    SELECT issues.id,
-    issues.summary,
-    issues.created_date_time,
-    priority.field_value  AS issue_priority,
-    type.field_value      AS issue_type,
-    (SELECT work_items.description
-    FROM work_items
-    WHERE issues.id = work_items.issue_id
-    AND work_items.work_name = 'Анализ качества выполнения'
-    ORDER BY work_items.wi_created DESC
-    LIMIT 1)             AS issue_comment,
-    tfs_issue.field_value AS tfs_issue
-    FROM issues
-    LEFT JOIN custom_field_values priority ON issues.id = priority.issue_id AND priority.field_name = 'Priority'
-    LEFT JOIN custom_field_values tfs_issue ON issues.id = tfs_issue.issue_id AND tfs_issue.field_name = 'Issue'
-    LEFT JOIN custom_field_values type ON issues.id = type.issue_id AND type.field_name = 'Type'
-    WHERE resolved_date IS NULL
-    AND issues.project_short_name NOT IN ('SD', 'PO', 'TC', 'W', 'PP_Lic')
-    AND priority.field_value = 'Major'
-    AND type.field_value != 'Feature'
-     */
     override fun getHighPriorityIssuesWithTFSDetails(
         projectsString: String?,
         customersString: String?,
-        prioritiesString: String?
+        prioritiesString: String?,
+        statesString: String?
     ): Any {
         val projectsFilter = projectsString?.removeSurrounding("[", "]")?.split(",").orEmpty()
         val customersFilter = customersString?.removeSurrounding("[", "]")?.split(",").orEmpty()
         val prioritiesFilter = prioritiesString?.removeSurrounding("[", "]")?.split(",").orEmpty()
+        val statesFilter = statesString?.removeSurrounding("[", "]")?.split(",").orEmpty()
+
+        val issues = ISSUES.`as`("i")
         val priority = CUSTOM_FIELD_VALUES.`as`("priority")
         val customer = CUSTOM_FIELD_VALUES.`as`("customer")
         val state = CUSTOM_FIELD_VALUES.`as`("state")
@@ -141,35 +127,51 @@ class Issues(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pri
         val type = CUSTOM_FIELD_VALUES.`as`("type")
         val comment: Field<Int> = dslContext.select(WORK_ITEMS.DESCRIPTION)
             .from(WORK_ITEMS)
-            .where(WORK_ITEMS.ISSUE_ID.eq(ISSUES.ID))
+            .where(WORK_ITEMS.ISSUE_ID.eq(issues.ID))
             .and(WORK_ITEMS.WORK_NAME.eq("Анализ сроков выполнения"))
             .orderBy(WORK_ITEMS.WI_CREATED.desc())
             .limit(1)
             .asField()
+        println(statesFilter)
+        val statesCondition =
+            when {
+                (statesFilter.contains("Активные") && statesFilter.contains("Завершенные")) || statesFilter.isEmpty() -> {
+                    DSL.trueCondition()
+                }
+                statesFilter.contains("Активные") -> DSL.and(issues.RESOLVED_DATE.isNull)
+                statesFilter.contains("Завершенные") -> DSL.and(issues.RESOLVED_DATE.isNotNull)
+                else -> DSL.and(issues.RESOLVED_DATE.isNull)
+            }
 
-        val r = dslContext
+
+        val query = dslContext
             .select(
-                ISSUES.ID.`as`("id"),
-                ISSUES.SUMMARY.`as`("summary"),
-                ISSUES.CREATED_DATE_TIME.`as`("created"),
+                issues.ID.`as`("id"),
+                issues.SUMMARY.`as`("summary"),
+                issues.CREATED_DATE_TIME.`as`("created"),
                 issue.FIELD_VALUE.`as`("issue"),
                 state.FIELD_VALUE.`as`("state"),
                 comment.`as`("comment"),
-                priority.FIELD_VALUE.`as`("priority")
+                priority.FIELD_VALUE.`as`("priority"),
+                issues.ISSUE_TYPE.`as`("type"),
+                issues.TIME_USER.`as`("timeUser"),
+                issues.TIME_AGENT.`as`("timeAgent"),
+                issues.TIME_DEVELOPER.`as`("timeDeveloper")
             )
-            .from(ISSUES)
-            .leftJoin(priority).on(ISSUES.ID.eq(priority.ISSUE_ID)).and(priority.FIELD_NAME.eq("Priority"))
-            .leftJoin(customer).on(ISSUES.ID.eq(customer.ISSUE_ID)).and(customer.FIELD_NAME.eq("Заказчик"))
-            .leftJoin(issue).on(ISSUES.ID.eq(issue.ISSUE_ID)).and(issue.FIELD_NAME.eq("Issue"))
-            .leftJoin(type).on(ISSUES.ID.eq(type.ISSUE_ID)).and(type.FIELD_NAME.eq("Type"))
-            .leftJoin(state).on(ISSUES.ID.eq(state.ISSUE_ID)).and(state.FIELD_NAME.eq("State"))
-            .where(ISSUES.RESOLVED_DATE.isNull)
-            .and(ISSUES.PROJECT_SHORT_NAME.`in`(projectsFilter))
+            .from(issues)
+            .leftJoin(priority).on(issues.ID.eq(priority.ISSUE_ID)).and(priority.FIELD_NAME.eq("Priority"))
+            .leftJoin(customer).on(issues.ID.eq(customer.ISSUE_ID)).and(customer.FIELD_NAME.eq("Заказчик"))
+            .leftJoin(issue).on(issues.ID.eq(issue.ISSUE_ID)).and(issue.FIELD_NAME.eq("Issue"))
+            .leftJoin(type).on(issues.ID.eq(type.ISSUE_ID)).and(type.FIELD_NAME.eq("Type"))
+            .leftJoin(state).on(issues.ID.eq(state.ISSUE_ID)).and(state.FIELD_NAME.eq("State"))
+            .where(issues.PROJECT_SHORT_NAME.`in`(projectsFilter))
             .and(customer.FIELD_VALUE.`in`(customersFilter))
             .and(priority.FIELD_VALUE.`in`(prioritiesFilter))
-            .fetchInto(HighPriorityIssue::class.java)
-
-        r.forEachIndexed { index, item ->
+            .and(statesCondition)
+        /*.and(issues.RESOLVED_DATE.isNull)*/
+        println(query.sql)
+        val result = query.fetchInto(HighPriorityIssue::class.java)
+        result.forEachIndexed { index, item ->
             val statement = """
             SELECT issue.system_id                                  AS issue_id,
        issue.System_State                               AS issue_state,
@@ -224,13 +226,17 @@ WHERE issue.System_Id IN (${item.issue?.split(",")?.joinToString("','", prefix =
                             iterationPath = rs.getString("iteration_path"),
                             changeRequestReason = rs.getString("change_request_reason")
                         )
-                        r[index].tfsIssues.add(i)
+                        result[index].tfsIssues.add(i)
                     }
                 }
             }
-            r[index].tfsData = r[index].tfsIssues.transformToIssues()
-            r[index].tfsIssues = arrayListOf()
+            result[index].tfsData = result[index].tfsIssues.transformToIssues()
+            result[index].tfsIssues = arrayListOf()
+            result[index].timeAgent = result[index].timeAgent?.div(3600)
+            result[index].timeUser = result[index].timeUser?.div(3600)
+            result[index].timeDeveloper = result[index].timeDeveloper?.div(3600)
+
         }
-        return r
+        return result
     }
 }
