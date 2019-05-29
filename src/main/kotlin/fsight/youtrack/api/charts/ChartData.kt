@@ -28,7 +28,7 @@ import java.time.format.DateTimeFormatter
 import kotlin.math.sqrt
 
 @Service
-@Transactional
+/*@Transactional*/
 class ChartData(private val dslContext: DSLContext) : IChartData {
     data class SimpleAggregatedValue(val name: String, val value: Int)
 
