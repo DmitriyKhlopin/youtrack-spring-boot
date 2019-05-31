@@ -329,10 +329,10 @@ data class YouTrackPeriodValue(
 /*fun YouTrackIssue.unwrapIntValue(fieldName: String): Int? {
     val temp = this.fields?.firstOrNull { it.projectCustomField?.field?.name == fieldName }?.value
     return if (temp != null) (temp as JsonObject).get("name").asInt else null
-}*/
+}
 
 
-fun YouTrackIssue.unwrapLongValue(fieldName: String): Long? = 0
+fun YouTrackIssue.unwrapLongValue(fieldName: String): Long? = 0*/
 /*fun YouTrackIssue.unwrapStringValue(fieldName: String): String? =
     fields?.firstOrNull { field -> field.projectCustomField?.field?.name == fieldName }?.value.toString()*/
 
@@ -352,8 +352,11 @@ fun YouTrackField.unwrapValue(): String? {
             (Gson().toJsonTree(temp).asJsonObject).get("login").asString
         }
         SIMPLE_ISSUE_CUSTOM_FIELD, DATE_ISSUE_CUSTOM_FIELD -> {
-            this.value ?: return null
-            this.value.toString()
+            val i: Any? = when (val t = this.value) {
+                is Double -> t.toLong()
+                else -> t
+            }
+            i.toString()
         }
         MULTI_VERSION_ISSUE_CUSTOM_FIELD, MULTI_ENUM_ISSUE_CUSTOM_FIELD -> {
             val temp = this.value ?: return null
