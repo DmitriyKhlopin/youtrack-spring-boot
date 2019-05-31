@@ -329,10 +329,10 @@ data class YouTrackPeriodValue(
 /*fun YouTrackIssue.unwrapIntValue(fieldName: String): Int? {
     val temp = this.fields?.firstOrNull { it.projectCustomField?.field?.name == fieldName }?.value
     return if (temp != null) (temp as JsonObject).get("name").asInt else null
-}
+}*/
 
 
-fun YouTrackIssue.unwrapLongValue(fieldName: String): Long? = 0*/
+fun YouTrackIssue.unwrapLongValue(fieldName: String): Long? = 0
 /*fun YouTrackIssue.unwrapStringValue(fieldName: String): String? =
     fields?.firstOrNull { field -> field.projectCustomField?.field?.name == fieldName }?.value.toString()*/
 

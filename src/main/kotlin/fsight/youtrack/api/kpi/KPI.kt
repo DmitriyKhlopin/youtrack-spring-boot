@@ -4,6 +4,7 @@ import fsight.youtrack.generated.jooq.Tables.CUSTOM_FIELD_VALUES
 import fsight.youtrack.generated.jooq.Tables.ISSUE_HISTORY
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
 import fsight.youtrack.generated.jooq.tables.Users.USERS
+import fsight.youtrack.generated.jooq.tables.WorkItems.WORK_ITEMS
 import org.jetbrains.exposed.sql.Database
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
@@ -21,6 +22,7 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
         var solutionSlaIndex: String? = null,
         var user: String? = null
     )
+
 
     override fun getResult(
         projects: List<String>,
@@ -73,8 +75,46 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
             it
 
         }
+
+        val q = dsl.select(
+            ISSUES.ID.`as`("id"),
+            USERS.EMAIL.`as`("email"),
+            DSL.sum(WORK_ITEMS.WI_DURATION).`as`("duration"),
+            DSL.rowNumber().over().partitionBy(ISSUES.ID).orderBy(
+                DSL.sum(
+                    WORK_ITEMS.WI_DURATION
+                )
+            ).`as`("rn")
+        )
+            .from(ISSUES)
+            .leftJoin(WORK_ITEMS).on(ISSUES.ID.eq(WORK_ITEMS.ISSUE_ID))
+            .leftJoin(USERS).on(WORK_ITEMS.AUTHOR_LOGIN.eq(USERS.USER_LOGIN))
+            .where(ISSUES.PROJECT_SHORT_NAME.`in`(projects))
+            .and(USERS.EMAIL.`in`(emails))
+            .and(
+                (ISSUES.CREATED_DATE.between(dateFrom, dateTo)
+                    .or(ISSUES.RESOLVED_DATE.between(dateFrom, dateTo))
+                    .or(ISSUES.RESOLVED_DATE.isNull))
+            )
+            .groupBy(ISSUES.ID, USERS.EMAIL)
+        println(q.sql)
+        println(dateFrom)
+        println(dateTo)
+        println(emails)
+        println(projects)
+        val res1 = q.execute()
+
+        println(res1)
+
         return r.sortedByDescending { it.result }
     }
+
+    data class ResponsibilityObject(
+        var id: String? = null,
+        var email: String? = null,
+        var duration: Int? = null,
+        var rn: Int? = null
+    )
 
     data class R1(
         val user: String,
@@ -93,6 +133,7 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
         dateFrom: Timestamp,
         dateTo: Timestamp
     ): List<T1> {
+        //TODO исполнителем является сотрудник, который внёс болше всего ТЗ по заявке
         return dsl.select(
             USERS.FULL_NAME.`as`("user"),
             DSL.count(ISSUES.ID).`as`("count")
@@ -116,7 +157,7 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
         dateFrom: Timestamp,
         dateTo: Timestamp
     ): List<T1> {
-
+        //TODO сотрудник должен быть исполнителем во время нарушения
         return dsl.select(
             USERS.FULL_NAME.`as`("user"),
             DSL.count(ISSUES.ID).`as`("count")
@@ -137,12 +178,18 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
 
     data class T1(var user: String? = null, var count: Int? = null)
 
+    //TODO % самосотоятельно решенных (определяетяс по наличию номера issue/требования)
+
+    //TODO средние ТЗ, считать только по исполнителям из getTotal
+
     override fun getPostponements(
         projects: List<String>,
         emails: List<String>,
         dateFrom: Timestamp,
         dateTo: Timestamp
     ): List<T1> {
+
+        //TODO перенос засчитывать исполнителю в момент переноса
         return dsl.select(
             USERS.FULL_NAME.`as`("user"),
             DSL.count(ISSUE_HISTORY.NEW_VALUE_STRING).`as`("count")
@@ -168,6 +215,7 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
         dateFrom: Timestamp,
         dateTo: Timestamp
     ): List<T1> {
+        //TODO считать только по исполнителям из getTotal
         return dsl.select(
             USERS.FULL_NAME.`as`("user"),
             DSL.count(ISSUE_HISTORY.NEW_VALUE_STRING).`as`("count")
@@ -220,6 +268,7 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
         dateFrom: Timestamp,
         dateTo: Timestamp
     ): List<T1> {
+
         return dsl.select(
             USERS.FULL_NAME.`as`("user"),
             DSL.count(ISSUES.ID).`as`("count")
