@@ -172,7 +172,9 @@ class Issues(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pri
         println(query.sql)
         val result = query.fetchInto(HighPriorityIssue::class.java)
         result.forEachIndexed { index, item ->
-            val statement = """
+            val issueIds = item.issue?.split(",")?.joinToString("','", prefix = "'", postfix = "'")
+            if (issueIds != null && issueIds != "\'null\'") {
+                val statement = """
             SELECT issue.system_id                                  AS issue_id,
        issue.System_State                               AS issue_state,
        issue.Prognoz_P7_ChangeRequest_MergedIn          AS issue_merged_in,
@@ -202,40 +204,39 @@ FROM CurrentWorkItemView issue
          LEFT JOIN CurrentWorkItemView change_request
                    ON link_to_change_request.TargetWorkitemSK = change_request.WorkItemSK AND
                       change_request.System_WorkItemType = 'Change request'
-WHERE issue.System_Id IN (${item.issue?.split(",")?.joinToString("','", prefix = "'", postfix = "'")})
+WHERE issue.System_Id IN ($issueIds)
   AND issue.System_WorkItemType = 'Issue'
   AND (linked_to_issue.System_WorkItemType NOT IN ('Issue', 'Task') OR linked_to_issue.System_WorkItemType IS NULL)
       """
-
-            transaction(ms) {
-                TransactionManager.current().exec(statement) { rs ->
-                    while (rs.next()) {
-                        val i = IssueTFSData(
-                            issueId = rs.getString("issue_id").toInt(),
-                            issueState = rs.getString("issue_state"),
-                            issueMergedIn = rs.getString("issue_merged_in")?.toInt(),
-                            issueReason = rs.getString("issue_reason"),
-                            issueLastUpdate = rs.getString("issue_last_update"),
-                            issueIterationPath = rs.getString("issue_iteration_path"),
-                            defectId = rs.getString("defect_id")?.toInt(),
-                            defectReason = rs.getString("defect_reason"),
-                            defectIterationPath = rs.getString("issue_iteration_path"),
-                            defectDevelopmentManager = rs.getString("defect_development_manager"),
-                            changeRequestId = rs.getString("change_request_id")?.toInt(),
-                            changeRequestMergedIn = rs.getString("changed_request_merged_in"),
-                            iterationPath = rs.getString("iteration_path"),
-                            changeRequestReason = rs.getString("change_request_reason")
-                        )
-                        result[index].tfsIssues.add(i)
+                transaction(ms) {
+                    TransactionManager.current().exec(statement) { rs ->
+                        while (rs.next()) {
+                            val i = IssueTFSData(
+                                issueId = rs.getString("issue_id").toInt(),
+                                issueState = rs.getString("issue_state"),
+                                issueMergedIn = rs.getString("issue_merged_in")?.toInt(),
+                                issueReason = rs.getString("issue_reason"),
+                                issueLastUpdate = rs.getString("issue_last_update"),
+                                issueIterationPath = rs.getString("issue_iteration_path"),
+                                defectId = rs.getString("defect_id")?.toInt(),
+                                defectReason = rs.getString("defect_reason"),
+                                defectIterationPath = rs.getString("issue_iteration_path"),
+                                defectDevelopmentManager = rs.getString("defect_development_manager"),
+                                changeRequestId = rs.getString("change_request_id")?.toInt(),
+                                changeRequestMergedIn = rs.getString("changed_request_merged_in"),
+                                iterationPath = rs.getString("iteration_path"),
+                                changeRequestReason = rs.getString("change_request_reason")
+                            )
+                            result[index].tfsIssues.add(i)
+                        }
                     }
                 }
+                result[index].tfsData = result[index].tfsIssues.transformToIssues()
+                result[index].tfsIssues = arrayListOf()
+                result[index].timeAgent = result[index].timeAgent?.div(3600)
+                result[index].timeUser = result[index].timeUser?.div(3600)
+                result[index].timeDeveloper = result[index].timeDeveloper?.div(3600)
             }
-            result[index].tfsData = result[index].tfsIssues.transformToIssues()
-            result[index].tfsIssues = arrayListOf()
-            result[index].timeAgent = result[index].timeAgent?.div(3600)
-            result[index].timeUser = result[index].timeUser?.div(3600)
-            result[index].timeDeveloper = result[index].timeDeveloper?.div(3600)
-
         }
         return result
     }
