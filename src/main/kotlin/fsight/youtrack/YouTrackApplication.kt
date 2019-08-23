@@ -1,7 +1,9 @@
 package fsight.youtrack
 
 
+import fsight.youtrack.api.dictionaries.IDictionary
 import org.jetbrains.exposed.sql.Database
+import org.springframework.boot.CommandLineRunner
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.builder.SpringApplicationBuilder
 import org.springframework.boot.runApplication
@@ -70,6 +72,12 @@ class YouTrackApplication : SpringBootServletInitializer() {
                     )
             }
         }
+    }
+
+    @Bean
+    fun initProjects(service: IDictionary) = CommandLineRunner {
+        service.preloadCommercialProjects()
+        service.preloadInnerProjects()
     }
 
     /*@Bean

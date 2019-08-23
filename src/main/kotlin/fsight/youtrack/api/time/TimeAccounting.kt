@@ -162,7 +162,9 @@ class TimeAccounting(private val dsl: DSLContext) : ITimeAccounting {
             DICTIONARY_PROJECT_CUSTOMER_ETS.PROJ_SHORT_NAME.`as`("projectShortName"),
             DICTIONARY_PROJECT_CUSTOMER_ETS.CUSTOMER.`as`("customer"),
             DICTIONARY_PROJECT_CUSTOMER_ETS.PROJ_ETS.`as`("projectEts"),
-            DICTIONARY_PROJECT_CUSTOMER_ETS.ITERATION_PATH.`as`("iterationPath")
+            DICTIONARY_PROJECT_CUSTOMER_ETS.ITERATION_PATH.`as`("iterationPath"),
+            DICTIONARY_PROJECT_CUSTOMER_ETS.DATE_FROM.`as`("dateFrom"),
+            DICTIONARY_PROJECT_CUSTOMER_ETS.DATE_TO.`as`("dateTo")
         )
             .from(DICTIONARY_PROJECT_CUSTOMER_ETS)
             .fetchInto(TimeAccountingDictionaryItem::class.java)

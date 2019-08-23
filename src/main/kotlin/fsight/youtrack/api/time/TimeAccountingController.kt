@@ -23,7 +23,7 @@ class TimeAccountingController(private val service: ITimeAccounting) {
     @GetMapping("/api/time/dictionary")
     fun getDictionary() = service.getDictionary()
 
-    @GetMapping("api/time/work/fact")
+    @GetMapping("/api/time/work/fact")
     fun getFactWork(
         @RequestParam("emails", required = false) emails: String? = null,
         @RequestParam("dateFrom", required = false) dateFrom: String? = null,

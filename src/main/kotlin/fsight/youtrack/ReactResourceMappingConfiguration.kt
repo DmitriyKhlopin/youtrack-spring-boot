@@ -20,9 +20,13 @@ class ReactResourceMappingConfiguration : WebMvcConfigurer {
 
     override fun addResourceHandlers(registry: ResourceHandlerRegistry) {
         val resolver = ReactResourceResolver()
+
+
         registry.addResourceHandler("/**")
             .resourceChain(true)
             .addResolver(resolver)
+            //.addResourceHandler("/resources/**")
+            //.addResourceLocations("/resources/")
     }
 
     inner class ReactResourceResolver : ResourceResolver {

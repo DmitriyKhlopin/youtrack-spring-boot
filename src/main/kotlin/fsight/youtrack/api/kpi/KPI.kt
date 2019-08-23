@@ -10,19 +10,17 @@ import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 import java.sql.Timestamp
 
 @Service
-@Transactional
 class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: DSLContext) : IKPI {
+
     data class D(
         var id: String? = null,
         var firstSlaIndex: String? = null,
         var solutionSlaIndex: String? = null,
         var user: String? = null
     )
-
 
     override fun getResult(
         projects: List<String>,

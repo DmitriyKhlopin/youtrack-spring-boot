@@ -28,3 +28,4 @@ class Project(private val dslContext: DSLContext) : IProject {
         ).from(PARTNER_CUSTOMERS).fetchInto(PartnerCustomerPair::class.java)
     }
 }
+

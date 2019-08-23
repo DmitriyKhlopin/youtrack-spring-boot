@@ -3,6 +3,7 @@ package fsight.youtrack.api.issues
 import fsight.youtrack.generated.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALUES
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
 import fsight.youtrack.generated.jooq.tables.WorkItems.WORK_ITEMS
+import fsight.youtrack.splitToList
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -15,8 +16,24 @@ import java.sql.Timestamp
 
 @Service
 class Issues(private val dslContext: DSLContext, @Qualifier("tfsDataSource") private val ms: Database) : IIssues {
+    private val issues = ISSUES.`as`("i")
+    private val priority = CUSTOM_FIELD_VALUES.`as`("priority")
+    private val customer = CUSTOM_FIELD_VALUES.`as`("customer")
+    private val state = CUSTOM_FIELD_VALUES.`as`("state")
+    private val issue = CUSTOM_FIELD_VALUES.`as`("issue")
+    private val type = CUSTOM_FIELD_VALUES.`as`("type")
+    private val comment: Field<Int> = dslContext.select(WORK_ITEMS.DESCRIPTION)
+        .from(WORK_ITEMS)
+        .where(WORK_ITEMS.ISSUE_ID.eq(issues.ID))
+        .and(WORK_ITEMS.WORK_NAME.eq("Анализ сроков выполнения"))
+        .orderBy(WORK_ITEMS.WI_CREATED.desc())
+        .limit(1)
+        .asField()
+
     internal class HighPriorityIssue(
         var id: String? = null,
+        var project: String? = null,
+        var customer: String? = null,
         var summary: String? = null,
         var created: Timestamp? = null,
         var priority: String? = null,
@@ -24,7 +41,7 @@ class Issues(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pri
         var type: String? = null,
         var comment: String? = null,
         var issue: String? = null,
-        var tfsIssues: ArrayList<IssueTFSData> = arrayListOf(),
+        var tfsPlainIssues: ArrayList<IssueTFSData> = arrayListOf(),
         var tfsData: ArrayList<TFSPlainIssue> = arrayListOf(),
         var timeUser: Long? = null,
         var timeAgent: Long? = null,
@@ -40,9 +57,11 @@ class Issues(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pri
         var issueLastUpdate: String? = null,
         var issueIterationPath: String? = null,
         var defectId: Int? = null,
+        var defectState: String? = null,
         var defectReason: String? = null,
         var defectIterationPath: String? = null,
         var defectDevelopmentManager: String? = null,
+        var defectDeadline: String? = null,
         var changeRequestId: Int? = null,
         var changeRequestMergedIn: String? = null,
         var iterationPath: String? = null,
@@ -61,9 +80,11 @@ class Issues(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pri
 
     internal class TFSPlainDefect(
         var defectId: Int? = null,
+        var defectState: String? = null,
         var defectReason: String? = null,
         var iterationPath: String? = null,
         var developmentManager: String? = null,
+        var defectDeadline: String? = null,
         var changeRequests: ArrayList<TFSPlainChangeRequest> = arrayListOf()
     )
 
@@ -91,9 +112,11 @@ class Issues(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pri
         ArrayList(this.filter { defect -> defect.defectId != null && defect.issueId == issueId }.map {
             TFSPlainDefect(
                 defectId = it.defectId,
+                defectState = it.defectState,
                 defectReason = it.defectReason,
                 iterationPath = it.defectIterationPath,
                 developmentManager = it.defectDevelopmentManager,
+                defectDeadline = it.defectDeadline,
                 changeRequests = this.transformToChangeRequests(it.defectId)
             )
         }.distinctBy { it.defectId })
@@ -108,31 +131,17 @@ class Issues(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pri
             )
         }.distinctBy { it.changeRequestId })
 
-    override fun getHighPriorityIssuesWithTFSDetails(
+    override fun getHighPriorityIssuesWithDevOpsDetails(
         projectsString: String?,
         customersString: String?,
         prioritiesString: String?,
         statesString: String?
     ): Any {
-        val projectsFilter = projectsString?.removeSurrounding("[", "]")?.split(",").orEmpty()
-        val customersFilter = customersString?.removeSurrounding("[", "]")?.split(",").orEmpty()
-        val prioritiesFilter = prioritiesString?.removeSurrounding("[", "]")?.split(",").orEmpty()
-        val statesFilter = statesString?.removeSurrounding("[", "]")?.split(",").orEmpty()
+        val projectsFilter = projectsString?.splitToList().orEmpty()
+        val customersFilter = customersString?.splitToList().orEmpty()
+        val prioritiesFilter = prioritiesString?.splitToList().orEmpty()
+        val statesFilter = statesString?.splitToList().orEmpty()
 
-        val issues = ISSUES.`as`("i")
-        val priority = CUSTOM_FIELD_VALUES.`as`("priority")
-        val customer = CUSTOM_FIELD_VALUES.`as`("customer")
-        val state = CUSTOM_FIELD_VALUES.`as`("state")
-        val issue = CUSTOM_FIELD_VALUES.`as`("issue")
-        val type = CUSTOM_FIELD_VALUES.`as`("type")
-        val comment: Field<Int> = dslContext.select(WORK_ITEMS.DESCRIPTION)
-            .from(WORK_ITEMS)
-            .where(WORK_ITEMS.ISSUE_ID.eq(issues.ID))
-            .and(WORK_ITEMS.WORK_NAME.eq("Анализ сроков выполнения"))
-            .orderBy(WORK_ITEMS.WI_CREATED.desc())
-            .limit(1)
-            .asField()
-        println(statesFilter)
         val statesCondition =
             when {
                 (statesFilter.contains("Активные") && statesFilter.contains("Завершенные")) || statesFilter.isEmpty() -> {
@@ -147,6 +156,8 @@ class Issues(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pri
         val query = dslContext
             .select(
                 issues.ID.`as`("id"),
+                issues.PROJECT_SHORT_NAME.`as`("project"),
+                customer.FIELD_VALUE.`as`("customer"),
                 issues.SUMMARY.`as`("summary"),
                 issues.CREATED_DATE_TIME.`as`("created"),
                 issue.FIELD_VALUE.`as`("issue"),
@@ -168,8 +179,6 @@ class Issues(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pri
             .and(customer.FIELD_VALUE.`in`(customersFilter))
             .and(priority.FIELD_VALUE.`in`(prioritiesFilter))
             .and(statesCondition)
-        /*.and(issues.RESOLVED_DATE.isNull)*/
-        println(query.sql)
         val result = query.fetchInto(HighPriorityIssue::class.java)
         result.forEachIndexed { index, item ->
             val issueIds = item.issue?.split(",")?.joinToString("','", prefix = "'", postfix = "'")
@@ -183,10 +192,12 @@ class Issues(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pri
        issue.IterationPath                              AS issue_iteration_path,
        linked_to_issue.System_WorkItemType              AS linked_to_issue,
        defect.System_Id                                 AS defect_id,
+       defect.System_State                              AS defect_state,
        defect.IterationPath                             AS defect_iteration_path,
        defect.System_Reason                             AS defect_reason,
        defect.Prognoz_VSTS_Common_DevelopmentManager    AS defect_development_manager,
        defect.System_ChangedDate                        AS defect_last_update,
+       defect.Prognoz_VSTS_Common_Deadline              AS defect_deadline,
        linked_to_defect.System_WorkItemType             AS linked_to_defect,
        change_request.System_Id                         AS change_request_id,
        change_request.Prognoz_P7_ChangeRequest_MergedIn AS changed_request_merged_in,
@@ -205,7 +216,8 @@ FROM CurrentWorkItemView issue
                    ON link_to_change_request.TargetWorkitemSK = change_request.WorkItemSK AND
                       change_request.System_WorkItemType = 'Change request'
 WHERE issue.System_Id IN ($issueIds)
-  AND issue.System_WorkItemType = 'Issue'
+  AND issue.System_WorkItemType = 'Bug'
+  AND issue.TeamProjectCollectionSK = 37
   AND (linked_to_issue.System_WorkItemType NOT IN ('Issue', 'Task') OR linked_to_issue.System_WorkItemType IS NULL)
       """
                 transaction(ms) {
@@ -219,20 +231,21 @@ WHERE issue.System_Id IN ($issueIds)
                                 issueLastUpdate = rs.getString("issue_last_update"),
                                 issueIterationPath = rs.getString("issue_iteration_path"),
                                 defectId = rs.getString("defect_id")?.toInt(),
+                                defectState = rs.getString("defect_state"),
                                 defectReason = rs.getString("defect_reason"),
                                 defectIterationPath = rs.getString("issue_iteration_path"),
                                 defectDevelopmentManager = rs.getString("defect_development_manager"),
+                                defectDeadline = rs.getString("defect_deadline"),
                                 changeRequestId = rs.getString("change_request_id")?.toInt(),
                                 changeRequestMergedIn = rs.getString("changed_request_merged_in"),
                                 iterationPath = rs.getString("iteration_path"),
                                 changeRequestReason = rs.getString("change_request_reason")
                             )
-                            result[index].tfsIssues.add(i)
+                            result[index].tfsPlainIssues.add(i)
                         }
                     }
                 }
-                result[index].tfsData = result[index].tfsIssues.transformToIssues()
-                result[index].tfsIssues = arrayListOf()
+                result[index].tfsData = result[index].tfsPlainIssues.transformToIssues()
                 result[index].timeAgent = result[index].timeAgent?.div(3600)
                 result[index].timeUser = result[index].timeUser?.div(3600)
                 result[index].timeDeveloper = result[index].timeDeveloper?.div(3600)

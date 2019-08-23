@@ -1,8 +1,7 @@
 package fsight.youtrack.api.charts
 
 import com.google.gson.GsonBuilder
-import fsight.youtrack.AUTH
-import fsight.youtrack.NEW_ROOT_REF
+import fsight.youtrack.*
 import fsight.youtrack.generated.jooq.tables.Dynamics.DYNAMICS
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
 import fsight.youtrack.models.SigmaIntermediatePower
@@ -15,29 +14,20 @@ import org.jooq.impl.DSL.sum
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 import retrofit2.Call
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Headers
-import java.sql.Timestamp
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import kotlin.math.sqrt
 
 @Service
-/*@Transactional*/
 class ChartData(private val dslContext: DSLContext) : IChartData {
+
     data class SimpleAggregatedValue(val name: String, val value: Int)
 
     override fun getTimeLineData(projects: String, dateFrom: String, dateTo: String): List<TimeLine> {
-        val df = LocalDate.parse(dateFrom, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-        val dt = LocalDate.parse(dateTo, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-
-        val filter = projects.removeSurrounding("[", "]").split(",")
-        println(filter)
         return dslContext.select(
             DYNAMICS.W.`as`("week"),
             sum(DYNAMICS.ACTIVE).`as`("active"),
@@ -45,8 +35,10 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
             sum(DYNAMICS.RESOLVED).`as`("resolved")
         )
             .from(DYNAMICS)
-            .where(DYNAMICS.W.between(Timestamp.valueOf(df.atStartOfDay()), Timestamp.valueOf(dt.atStartOfDay())))
-            .and(DYNAMICS.SHORT_NAME.`in`(filter))
+            .where(
+                DYNAMICS.W.between(dateFrom.toStartOfWeek(), dateTo.toStartOfWeek())
+            )
+            .and(DYNAMICS.SHORT_NAME.`in`(projects.splitToList()))
             .groupBy(DYNAMICS.W)
             .fetchInto(TimeLine::class.java)
     }
@@ -64,13 +56,11 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
     }
 
     override fun getSigmaData(projects: String, dateFrom: String, dateTo: String): SigmaResult {
-        val filter = projects.removeSurrounding("[", "]").split(",")
-        println(filter)
-        val dt = LocalDate.parse(dateTo, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+        val filter = projects.splitToList()
         val items: List<Int> =
             dslContext.select(DSL.coalesce(ISSUES.TIME_AGENT, 0) + DSL.coalesce(ISSUES.TIME_DEVELOPER, 0))
                 .from(ISSUES)
-                .where(ISSUES.RESOLVED_DATE.lessOrEqual(Timestamp.valueOf(dt.atStartOfDay())))
+                .where(ISSUES.RESOLVED_DATE.lessOrEqual(dateTo.toStartOfDate()))
                 .and(ISSUES.RESOLVED_DATE.isNotNull)
                 .and(ISSUES.PROJECT_SHORT_NAME.`in`(filter))
                 .orderBy(ISSUES.CREATED_DATE.desc())
@@ -79,9 +69,8 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
         val sourceAgg =
             items.asSequence().groupBy { 1 + it / 32400 }.map { item -> SigmaItem(item.key, item.value.size) }
                 .sortedBy { it.day }.toList()
-        sourceAgg.forEach { println(it) }
         val average = items.asSequence().map { it / 32400 }.average()
-        val power = sourceAgg.map { it ->
+        val power = sourceAgg.map {
             SigmaIntermediatePower(
                 it.day,
                 it.count,
@@ -91,18 +80,16 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
         }
         val p = power.asSequence().map { it.p * it.c }.sum().toDouble()
         val c = power.asSequence().map { it.c }.sum() - 1
-        println("$p - $c")
         if (c == 0) return SigmaResult(0.0, listOf(SigmaItem(0, 0)))
         val sigma = sqrt(p / c)
         val active = dslContext.select(DSL.coalesce(ISSUES.TIME_AGENT, 0) + DSL.coalesce(ISSUES.TIME_DEVELOPER, 0))
             .from(ISSUES)
-            .where(ISSUES.CREATED_DATE.lessOrEqual(Timestamp.valueOf(dt.atStartOfDay())))
+            .where(ISSUES.CREATED_DATE.lessOrEqual(dateTo.toStartOfDate()))
             .and(ISSUES.RESOLVED_DATE.isNull)
             .and(ISSUES.PROJECT_SHORT_NAME.`in`(filter))
             .orderBy(ISSUES.CREATED_DATE.desc())
             .fetchInto(Int::class.java).asSequence().groupBy { 1 + it / 32400 }
             .map { item -> SigmaItem(item.key, item.value.size) }.sortedBy { it.day }.toList()
-        println(active)
         return SigmaResult(sigma, active)
     }
 
@@ -110,21 +97,21 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
         projects: String,
         dateFrom: String,
         dateTo: String
-    ): List<SimpleAggregatedValue>? {
-        val filter = projects.removeSurrounding("[", "]").split(",")
-        val dt = LocalDate.parse(dateTo, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-        val df = dt.minusDays(7)
+    ): List<SimpleAggregatedValue> {
+        val filter = projects.splitToList()
+        val dt = dateTo.toStartOfWeek()
+        println(dateTo.toStartOfWeek())
         return dslContext
             .select(
                 ISSUES.PROJECT_SHORT_NAME.`as`("name"),
                 DSL.count(ISSUES.PROJECT_SHORT_NAME).`as`("value")
             )
             .from(ISSUES)
-            .where(ISSUES.CREATED_DATE.between(Timestamp.valueOf(df.atStartOfDay())).and(Timestamp.valueOf(dt.atStartOfDay())))
-            .and(ISSUES.RESOLVED_DATE.isNull)
+            .where(ISSUES.CREATED_WEEK.eq(dt))
             .and(ISSUES.PROJECT_SHORT_NAME.`in`(filter))
             .groupBy(ISSUES.PROJECT_SHORT_NAME)
-            .fetchInto(SimpleAggregatedValue::class.java)
+            .fetch()
+            .map { SimpleAggregatedValue(it["name"].toString(), it["value"].toString().toInt()) }
             .sortedByDescending { it.value }
     }
 

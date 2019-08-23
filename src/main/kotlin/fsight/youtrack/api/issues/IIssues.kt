@@ -1,7 +1,7 @@
 package fsight.youtrack.api.issues
 
 interface IIssues {
-    fun getHighPriorityIssuesWithTFSDetails(
+    fun getHighPriorityIssuesWithDevOpsDetails(
         projectsString: String?,
         customersString: String?,
         prioritiesString: String?,

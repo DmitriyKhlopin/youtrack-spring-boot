@@ -49,8 +49,7 @@ const val MULTI_ENUM_ISSUE_CUSTOM_FIELD = "MultiEnumIssueCustomField"
 const val SINGLE_OWNED_ISSUE_CUSTOM_FIELD = "SingleOwnedIssueCustomField"
 const val MULTI_VERSION_ISSUE_CUSTOM_FIELD = "MultiVersionIssueCustomField"
 
-const val defaultProjects =
-    "BIP,CG,CL,FP,INNOWAY,INTER,IT,KRIT,LANIT,RS,RIO,SAPRUN,SA,BSLT,CBR,BIC,HTSTS,GKB,GPI,GN,DAN,DSU,EVR,INTELL,JET,KOMIS,KORUS,KPMG,LMN,MR,MO,PRG,PARMA,PRESALE,PDP,PI,REA,SIGMA,TN,NAVICON,FS,FSC"
+const val defaultProjects = ""
 
 const val defaultUsers =
     "iana.maltseva@fsight.ru,viktoriya.zolotaryova@fsight.ru,artem.maltsev@fsight.ru,dmitriy.khlopin@fsight.ru,andrey.zolotaryev@fsight.ru,anton.lykov@fsight.ru,andrey.nepomnyashchiy@fsight.ru,nikolai.parkhachev@fsight.ru"

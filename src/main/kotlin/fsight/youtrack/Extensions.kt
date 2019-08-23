@@ -11,6 +11,8 @@ import fsight.youtrack.models.BundleValue
 import org.jetbrains.exposed.sql.ResultRow
 import java.sql.Date
 import java.sql.Timestamp
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.util.*
 
 /*fun debugPrint(print: Boolean = false, message: String = "") {
@@ -104,3 +106,19 @@ fun Long?.toDate(toStartOfTheWeek: Boolean = false): Timestamp? {
         time.toTimestamp()
     } else null
 }
+
+fun String.toStartOfWeek(): Timestamp =
+    Timestamp.valueOf(
+        LocalDate.parse(this, DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay().minusDays(
+            LocalDate.parse(this, DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay().dayOfWeek.value.toLong() - 1
+        )
+    )
+
+fun String.toStartOfDate(): Timestamp =
+    Timestamp.valueOf(LocalDate.parse(this, DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay())
+
+fun String.toEndOfDate(): Timestamp =
+    Timestamp.valueOf(LocalDate.parse(this, DateTimeFormatter.ofPattern("yyyy-MM-dd")).atTime(23, 59))
+
+fun String.splitToList(prefix: String = "[", suffix: String = "]", delimiters: String = ",") =
+    this.removeSurrounding(prefix, suffix).split(delimiters)

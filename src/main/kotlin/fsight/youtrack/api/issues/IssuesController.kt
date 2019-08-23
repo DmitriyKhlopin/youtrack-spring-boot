@@ -1,5 +1,6 @@
 package fsight.youtrack.api.issues
 
+import fsight.youtrack.api.reports.ILicensingReport
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
@@ -8,7 +9,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @CrossOrigin
-class IssuesController(private val service: IIssues) {
+class IssuesController(private val service: IIssues, private val service2: ILicensingReport) {
     @GetMapping("/api/issues/high_priority")
     fun getHighPriorityIssuesWithTFSDetails(
         @RequestParam(
@@ -28,6 +29,13 @@ class IssuesController(private val service: IIssues) {
             required = false
         ) states: String? = null
     ): ResponseEntity<Any> {
-        return ResponseEntity.ok(service.getHighPriorityIssuesWithTFSDetails(projects, customers, priorities, states))
+        return ResponseEntity.ok(
+            service.getHighPriorityIssuesWithDevOpsDetails(
+                projects,
+                customers,
+                priorities,
+                states
+            )
+        )
     }
 }
