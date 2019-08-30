@@ -97,6 +97,13 @@ interface YouTrackAPI {
         @Body model: String
     ): Call<String>
 
+    @Headers("Accept: application/json", "Content-Type: application/json;charset=UTF-8")
+    @POST("api/commands?fields=idReadable,id")
+    fun postCommand(
+        @Header("Authorization") auth: String,
+        @Body body: String
+    ): Call<String>
+
     //TODO decide if this is necessary
     /*@Headers("Accept: application/json")
     @GET("admin/project/{projectId}/customfield")

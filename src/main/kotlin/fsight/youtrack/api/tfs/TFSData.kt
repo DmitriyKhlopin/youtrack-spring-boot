@@ -3,9 +3,13 @@ package fsight.youtrack.api.tfs
 import com.google.gson.Gson
 import com.google.gson.internal.LinkedTreeMap
 import fsight.youtrack.AUTH
+import fsight.youtrack.DEVOPS_AUTH
 import fsight.youtrack.api.YouTrackAPI
+import fsight.youtrack.api.common.ICommon
+import fsight.youtrack.etl.issues.IIssue
 import fsight.youtrack.etl.projects.IProjects
 import fsight.youtrack.generated.jooq.tables.BundleValues.BUNDLE_VALUES
+import fsight.youtrack.generated.jooq.tables.Hooks.HOOKS
 import fsight.youtrack.generated.jooq.tables.TfsLinks.TFS_LINKS
 import fsight.youtrack.generated.jooq.tables.TfsTasks.TFS_TASKS
 import fsight.youtrack.generated.jooq.tables.TfsWi.TFS_WI
@@ -21,12 +25,16 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
+import java.sql.Timestamp
+import java.time.Instant
 
 @Service
 class TFSData(
     private val dslContext: DSLContext,
     @Qualifier("tfsDataSource") private val ms: Database,
-    private val projectsService: IProjects
+    private val projectsService: IProjects,
+    private val commonService: ICommon,
+    private val issueService: IIssue
 ) : ITFSData {
     private final val types: HashMap<String, String> by lazy {
         hashMapOf<String, String>().also {
@@ -528,10 +536,6 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
             if (i["title"] != null) this.title = i["title"].toString()
             if (i["body"] != null) this.body = i["body"].toString()
         }
-        /*return ResponseEntity
-            .status(HttpStatus.OK)
-            .headers(headers())
-            .body(item.toYouTrackPostableIssue("FP"))*/
         val id2 = YouTrackAPI.create().createIssue(AUTH, Gson().toJson(item.toYouTrackPostableIssue("FP"))).execute()
         val idReadable = Gson().fromJson(id2.body(), YouTrackIssue::class.java)
         return ResponseEntity
@@ -588,5 +592,113 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
                 issue
             )
         )
+    }
+
+    override fun getHook(limit: Int): ResponseEntity<Any> {
+        val i = dslContext
+            .select(HOOKS.HOOK_BODY)
+            .from(HOOKS)
+            .orderBy(HOOKS.RECORD_DATE_TIME.desc())
+            .limit(limit)
+            .fetchInto(String::class.java)
+            .map { Gson().fromJson(it, Hook::class.java) }
+        return ResponseEntity.ok(i)
+    }
+
+    override fun getPostableHooks(limit: Int): ResponseEntity<Any> {
+        val i = dslContext
+            .select(HOOKS.HOOK_BODY)
+            .from(HOOKS)
+            .orderBy(HOOKS.RECORD_DATE_TIME.desc())
+            .limit(limit)
+            .fetchInto(String::class.java)
+            .map { Gson().fromJson(it, Hook::class.java) }
+            .filter { it.resource?.fields?.get("System.State") != null }
+            .map { it.resource?.fields?.get("System.State") }
+        return ResponseEntity.ok(i)
+    }
+
+    data class Hook(
+        var subscriptionId: String? = null,
+        var notificationId: Int? = null,
+        var id: String? = null,
+        var eventType: String? = null,
+        var publisher: String? = null,
+        var resource: HookResource? = null
+    )
+
+    data class HookResource(
+        var id: Int? = null,
+        var workItemId: Int? = null,
+        var rev: Int? = null,
+        var revisedBy: DevOpsUser? = null,
+        var fields: HashMap<String, HookFieldPair> = hashMapOf(),
+        var revision: HookRevision? = null
+    )
+
+    data class DevOpsUser(
+        var id: String? = null,
+        var name: String? = null,
+        var displayName: String? = null,
+        var uniqueName: String? = null
+    )
+
+    data class HookFieldPair(
+        var oldValue: Any? = null,
+        var newValue: Any? = null
+    )
+
+    data class HookRevision(
+        var id: Int? = null,
+        var rev: Int? = null,
+        var fields: HashMap<String, Any>
+    )
+
+    override fun postCommand(id: String?, command: String, filter: String): ResponseEntity<Any> {
+        val i = issueService.findIssueInYT(id ?: "", filter)
+        val response = if (i) {
+            val cmd =
+                Gson().toJson(YouTrackCommand(issues = arrayListOf(YouTrackIssue(idReadable = id)), query = command))
+            YouTrackAPI.create().postCommand(DEVOPS_AUTH, cmd).execute().body() ?: ""
+        } else {
+            "Issue $id doesn't exist"
+        }
+        return ResponseEntity.ok(response)
+    }
+
+    override fun postHook(body: String?): ResponseEntity<Any> {
+        return try {
+            val hookBody = Gson().fromJson(body, Hook::class.java)
+            val state = hookBody.resource?.fields?.get("System.State")
+            val ytId = hookBody.resource?.revision?.fields?.get("System.Title")
+                .toString()
+                .substringBefore(delimiter = " ")
+                .substringBefore(delimiter = ".")
+            val issueExists = commonService.findIssueInDB(ytId)
+            when {
+                state?.newValue == "Closed" && issueExists -> {
+                    println("Issue $ytId has been resolved")
+                    postCommand(ytId, "Состояние Открыта", "#{Направлена разработчику}")
+                }
+                state?.newValue == "Proposed" && issueExists -> {
+                    println("Issue $ytId requires your attention")
+                    postCommand(ytId, "Состояние Открыта", "#{Направлена разработчику}")
+                }
+                !issueExists -> {
+                    println("Seems that issue $ytId doesn't exist")
+                }
+                else -> println("Issue $ytId has no significant changes")
+            }
+
+            val i = dslContext
+                .insertInto(HOOKS)
+                .set(HOOKS.RECORD_DATE_TIME, Timestamp.from(Instant.now()))
+                .set(HOOKS.HOOK_BODY, body)
+                .returning(HOOKS.RECORD_DATE_TIME)
+                .fetchOne().recordDateTime
+            ResponseEntity.status(HttpStatus.CREATED).body(i)
+        } catch (e: Error) {
+            ResponseEntity.badRequest().body(e)
+        }
     }
 }

@@ -1,8 +1,10 @@
 package fsight.youtrack.api.tfs
 
+import fsight.youtrack.api.API
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import java.net.InetAddress
 
 @CrossOrigin
 @RestController
@@ -18,14 +20,8 @@ class TFSDataController(private val service: ITFSData) {
         @RequestParam("iteration", required = false) iteration: String? = null,
         @RequestParam("build", required = false) build: String? = null,
         @RequestParam("changeRequestId", required = false) changeRequestId: Int? = null
-        /*@RequestBody(required = false) body: String? = null*/
     ): ResponseEntity<Any> {
-        /*println(body)*/
         return when {
-            /*action == "postChangeRequest" && changeRequestId != null -> service.postChangeRequestById(
-                changeRequestId,
-                body
-            )*/
             action == "postToYT" && iteration != null -> service.postItemsToYouTrack(iteration)
             action == "postToYT" && iteration == null && offset != null && limit != null -> service.postItemsToYouTrack(
                 offset,
@@ -35,7 +31,7 @@ class TFSDataController(private val service: ITFSData) {
                 iteration,
                 build
             )
-            else -> /*service.getItems(offset, limit)*/ ResponseEntity.status(HttpStatus.OK).body("Undefined set of parameters.")
+            else -> ResponseEntity.status(HttpStatus.OK).body("Undefined set of parameters.")
         }
     }
 
@@ -76,6 +72,36 @@ class TFSDataController(private val service: ITFSData) {
             else -> service.getBuildsByIteration(iteration)
         }
 
+    @GetMapping("/api/tfs/serviceHooks")
+    fun getHook(
+        @RequestParam("limit", required = false) limit: Int? = null,
+        @RequestParam("postable", required = false) postable: Boolean? = null
+    ): ResponseEntity<Any> =
+        when (postable) {
+            true -> service.getPostableHooks(limit ?: 1)
+            else -> service.getHook(limit ?: 1)
+        }
+
+
+    @PostMapping("/api/tfs/serviceHooks")
+    fun postHook(
+        @RequestBody body: String?
+    ): ResponseEntity<Any> {
+        return if (InetAddress.getLocalHost().hostName != "hlopind") {
+            println("*** Checking server ***")
+            val status = API.create(environment = "TEST").getStatus().execute()
+            if (status.code() == 200) {
+                println("*** Redirecting ***")
+                val res = API.create(environment = "TEST").postHook(body = body).execute()
+                ResponseEntity.status(res.code()).body(res.body())
+            } else service.postHook(body)
+        } else service.postHook(body)
+    }
+
+    @GetMapping("/api/tfs/serviceHooks/post/{id}")
+    fun postCommand(@PathVariable("id") id: String? = null): ResponseEntity<Any> {
+        return service.postCommand(id, "Состояние Открыта", "#{Направлена разработчику}")
+    }
 }
 
 

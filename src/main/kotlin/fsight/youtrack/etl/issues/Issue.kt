@@ -50,7 +50,7 @@ class Issue(
         var skip = 0
         var stored = 0
         val filter = customFilter ?: getFilter()
-        println("Actual filter: $filter")
+        debugPrint("Actual filter: $filter")
 
         do {
             val request = if (filter == null)
@@ -77,7 +77,7 @@ class Issue(
             getIssueHistory(it)
             getTimeAccounting(it)
         }
-        println("Loaded $skip issues")
+        debugPrint("Loaded $skip issues")
         importLogService.saveLog(
             ImportLogModel(
                 timestamp = Timestamp(System.currentTimeMillis()),
@@ -93,7 +93,7 @@ class Issue(
 
     private fun getFilter(): String? {
         return try {
-            println("waiting for filter")
+            debugPrint("waiting for filter")
             val issuesCount = dslContext.selectCount().from(ISSUES).fetchOneInto(Int::class.java)
             val mode = if (issuesCount == 0) IssueRequestMode.ALL else IssueRequestMode.TODAY
             if (mode == 1) {
@@ -215,7 +215,7 @@ class Issue(
                 .stored()
             offset += issueActivities.body()?.activities?.size ?: 0
             hasAfter = issueActivities.body()?.hasAfter
-            println("$idReadable: stored $stored history items")
+            debugPrint("$idReadable: stored $stored history items")
         }
 
     }
@@ -235,7 +235,6 @@ class Issue(
             }
             if (index % interval == 0) print("Checked ${index * 100 / result.size}% of issues\r")
         }
-        println()
         deleteIssues(deletedItems)
     }
 
@@ -279,5 +278,19 @@ class Issue(
         } catch (e: Exception) {
             ETL.etlState = ETLState.DONE
         }
+    }
+
+    override fun findIssueInYT(id: String, filter: String): Boolean {
+        val fields =
+            listOf(
+                "idReadable",
+                "fields(\$type,projectCustomField(\$type,field(name)),value(\$type,avatarUrl,buildLink,fullName,id,isResolved,localizedName,login,minutes,name,presentation,ringId,text))"
+            ).joinToString(",")
+        val composedFilter = "#$id $filter"
+        val request =
+            YouTrackAPI.create(Converter.GSON)
+                .getIssueList(auth = AUTH, fields = fields, top = 100, skip = 0, query = composedFilter)
+        val result = request.execute().body()?.mapNotNull { it.idReadable }
+        return result?.contains(id) ?: false
     }
 }

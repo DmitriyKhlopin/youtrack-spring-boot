@@ -6,4 +6,5 @@ interface IIssue {
     fun getIssueHistory(idReadable: String)
     fun findDeletedIssues()
     fun checkPendingIssues()
+    fun findIssueInYT(id: String, filter: String): Boolean
 }

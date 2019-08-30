@@ -16,4 +16,8 @@ interface ITFSData {
     fun postItemsToYouTrack(iteration: String?): ResponseEntity<Any>
     fun toJson(id: Int): ResponseEntity<Any>
     fun initDictionaries()
+    fun getHook(limit: Int): ResponseEntity<Any>
+    fun getPostableHooks(limit: Int): ResponseEntity<Any>
+    fun postHook(body: String?): ResponseEntity<Any>
+    fun postCommand(id: String?, command: String, filter: String): ResponseEntity<Any>
 }

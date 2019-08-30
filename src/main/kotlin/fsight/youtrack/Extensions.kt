@@ -9,6 +9,7 @@ import fsight.youtrack.db.exposed.pg.TimeAccountingExtendedView
 import fsight.youtrack.generated.jooq.tables.records.BundleValuesRecord
 import fsight.youtrack.models.BundleValue
 import org.jetbrains.exposed.sql.ResultRow
+import java.net.InetAddress
 import java.sql.Date
 import java.sql.Timestamp
 import java.time.LocalDate
@@ -122,3 +123,9 @@ fun String.toEndOfDate(): Timestamp =
 
 fun String.splitToList(prefix: String = "[", suffix: String = "]", delimiters: String = ",") =
     this.removeSurrounding(prefix, suffix).split(delimiters)
+
+fun debugPrint(message: String) {
+    if (InetAddress.getLocalHost().hostName == "hlopind") {
+        println(message)
+    }
+}

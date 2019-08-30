@@ -1,5 +1,6 @@
 package fsight.youtrack.etl.timeline
 
+import fsight.youtrack.debugPrint
 import fsight.youtrack.generated.jooq.tables.IssueTimeline.ISSUE_TIMELINE
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
 import fsight.youtrack.generated.jooq.tables.IssuesTimelineView.ISSUES_TIMELINE_VIEW
@@ -46,7 +47,7 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
             .where(ISSUES.LOADED_DATE.ge(Timestamp.valueOf(LocalDateTime.now().toLocalDate().atStartOfDay())).or(ISSUES.RESOLVED_DATE_TIME.isNull))
             .and(ISSUES.PROJECT_SHORT_NAME.notIn(listOf("SD", "TC", "SPAM", "PO")))
             .fetchInto(String::class.java)
-        println("Need to calculate timelines for ${i.size} items.")
+        debugPrint("Need to calculate timelines for ${i.size} items.")
         i.asSequence().forEach { calculateForId(it) }
         /*updateIssueSpentTime()*/
     }
@@ -103,7 +104,7 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
     }
 
     override fun calculateForId(issueId: String): List<IssueTimelineItem> {
-        println("calculating timeline for $issueId")
+        debugPrint("calculating timeline for $issueId")
         dsl.deleteFrom(ISSUE_TIMELINE).where(ISSUE_TIMELINE.ISSUE_ID.eq(issueId)).execute()
         val i: List<IssueTimelineItem> = dsl
             .select(
@@ -266,7 +267,7 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
             ISSUE_TIMELINE.TIME_SPENT,
             ISSUE_TIMELINE.TRANSITION_OWNER
         ).execute().stored()
-        println("$issueId: stored $stored timeline items")
+        debugPrint("$issueId: stored $stored timeline items")
         updateIssueSpentTimeById(issueId)
         return a
     }
