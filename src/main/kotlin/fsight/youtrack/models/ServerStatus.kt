@@ -1,5 +1,5 @@
 package fsight.youtrack.models
 
 data class ServerStatus(
-    val result: Boolean
+    var result: Boolean = false
 )

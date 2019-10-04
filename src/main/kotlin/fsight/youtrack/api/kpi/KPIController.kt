@@ -26,14 +26,17 @@ class KPIController(private val service: IKPI, private val dictionaries: IDictio
         ) emails: String,
         @RequestParam("dateFrom", required = false, defaultValue = "2019-01-01") dateFrom: String,
         @RequestParam("dateTo", required = false, defaultValue = "2019-06-30") dateTo: String,
-        @RequestParam("mode", required = false, defaultValue = "default") mode: String
-    ): List<Any> {
+        @RequestParam("mode", required = false, defaultValue = "default") mode: String,
+        @RequestParam("withDetails", required = false, defaultValue = "false") withDetails: Boolean
+    ): Any {
         val df = dateFrom.toStartOfDate()
         val dt = dateTo.toEndOfDate()
         val p = projects?.splitToList() ?: dictionaries.commercialProjects
         val u = emails.splitToList()
         return when (mode) {
             "total" -> service.getTotal(p, u, df, dt)
+            "result2" -> service.getResult2(p, u, df, dt, withDetails)
+            "total2" -> service.getTotal2(p, u, df, dt)
             "violations" -> service.getViolations(p, u, df, dt)
             "postponement" -> service.getPostponements(p, u, df, dt)
             "suggestions" -> service.getSuggestedSolutions(p, u, df, dt)

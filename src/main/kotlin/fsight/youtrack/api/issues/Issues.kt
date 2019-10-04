@@ -19,10 +19,19 @@ class Issues(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pri
     private val issues = ISSUES.`as`("i")
     private val priority = CUSTOM_FIELD_VALUES.`as`("priority")
     private val customer = CUSTOM_FIELD_VALUES.`as`("customer")
+    private val responsible = CUSTOM_FIELD_VALUES.`as`("responsible")
     private val state = CUSTOM_FIELD_VALUES.`as`("state")
     private val issue = CUSTOM_FIELD_VALUES.`as`("issue")
     private val type = CUSTOM_FIELD_VALUES.`as`("type")
     private val comment: Field<Int> = dslContext.select(WORK_ITEMS.DESCRIPTION)
+        .from(WORK_ITEMS)
+        .where(WORK_ITEMS.ISSUE_ID.eq(issues.ID))
+        .and(WORK_ITEMS.WORK_NAME.eq("Анализ сроков выполнения"))
+        .orderBy(WORK_ITEMS.WI_CREATED.desc())
+        .limit(1)
+        .asField()
+
+    private val commentAuthor: Field<Int> = dslContext.select(WORK_ITEMS.AUTHOR_LOGIN)
         .from(WORK_ITEMS)
         .where(WORK_ITEMS.ISSUE_ID.eq(issues.ID))
         .and(WORK_ITEMS.WORK_NAME.eq("Анализ сроков выполнения"))
@@ -39,7 +48,9 @@ class Issues(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pri
         var priority: String? = null,
         var state: String? = null,
         var type: String? = null,
+        var assignee: String? = null,
         var comment: String? = null,
+        var commentAuthor: String? = null,
         var issue: String? = null,
         var tfsPlainIssues: ArrayList<IssueTFSData> = arrayListOf(),
         var tfsData: ArrayList<TFSPlainIssue> = arrayListOf(),
@@ -163,8 +174,10 @@ class Issues(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pri
                 issue.FIELD_VALUE.`as`("issue"),
                 state.FIELD_VALUE.`as`("state"),
                 comment.`as`("comment"),
+                commentAuthor.`as`("commentAuthor"),
                 priority.FIELD_VALUE.`as`("priority"),
                 issues.ISSUE_TYPE.`as`("type"),
+                responsible.FIELD_VALUE.`as`("assignee"),
                 issues.TIME_USER.`as`("timeUser"),
                 issues.TIME_AGENT.`as`("timeAgent"),
                 issues.TIME_DEVELOPER.`as`("timeDeveloper")
@@ -172,6 +185,7 @@ class Issues(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pri
             .from(issues)
             .leftJoin(priority).on(issues.ID.eq(priority.ISSUE_ID)).and(priority.FIELD_NAME.eq("Priority"))
             .leftJoin(customer).on(issues.ID.eq(customer.ISSUE_ID)).and(customer.FIELD_NAME.eq("Заказчик"))
+            .leftJoin(responsible).on(issues.ID.eq(responsible.ISSUE_ID)).and(responsible.FIELD_NAME.eq("Assignee"))
             .leftJoin(issue).on(issues.ID.eq(issue.ISSUE_ID)).and(issue.FIELD_NAME.eq("Issue"))
             .leftJoin(type).on(issues.ID.eq(type.ISSUE_ID)).and(type.FIELD_NAME.eq("Type"))
             .leftJoin(state).on(issues.ID.eq(state.ISSUE_ID)).and(state.FIELD_NAME.eq("State"))

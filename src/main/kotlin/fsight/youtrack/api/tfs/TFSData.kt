@@ -666,11 +666,12 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
         return ResponseEntity.ok(response)
     }
 
-    override fun postHook(body: String?): ResponseEntity<Any> {
+    override fun postHook(body: Hook?): ResponseEntity<Any> {
         return try {
-            val hookBody = Gson().fromJson(body, Hook::class.java)
-            val state = hookBody.resource?.fields?.get("System.State")
-            val ytId = hookBody.resource?.revision?.fields?.get("System.Title")
+            /*println(body)*/
+            val hookBody = body/*Gson().fromJson(body, Hook::class.java)*/
+            val state = hookBody?.resource?.fields?.get("System.State")
+            val ytId = hookBody?.resource?.revision?.fields?.get("System.Title")
                 .toString()
                 .substringBefore(delimiter = " ")
                 .substringBefore(delimiter = ".")
@@ -693,7 +694,7 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
             val i = dslContext
                 .insertInto(HOOKS)
                 .set(HOOKS.RECORD_DATE_TIME, Timestamp.from(Instant.now()))
-                .set(HOOKS.HOOK_BODY, body)
+                .set(HOOKS.HOOK_BODY, body.toString())
                 .returning(HOOKS.RECORD_DATE_TIME)
                 .fetchOne().recordDateTime
             ResponseEntity.status(HttpStatus.CREATED).body(i)

@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class Status {
-
     @GetMapping("/api/status")
     fun getStatus(): ResponseEntity<Any> = ResponseEntity.ok().body(Gson().toJson(ServerStatus(result = true)))
 }

@@ -18,6 +18,6 @@ interface ITFSData {
     fun initDictionaries()
     fun getHook(limit: Int): ResponseEntity<Any>
     fun getPostableHooks(limit: Int): ResponseEntity<Any>
-    fun postHook(body: String?): ResponseEntity<Any>
+    fun postHook(body: TFSData.Hook?): ResponseEntity<Any>
     fun postCommand(id: String?, command: String, filter: String): ResponseEntity<Any>
 }
