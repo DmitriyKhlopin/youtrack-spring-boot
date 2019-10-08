@@ -89,16 +89,21 @@ class TFSDataController(private val service: ITFSData) {
     fun postHook(
         @RequestBody body: String?
     ): ResponseEntity<Any> {
-        val jsonBody = Gson().fromJson(body, TFSData.Hook::class.java)
-        return if (InetAddress.getLocalHost().hostName != "hlopind") {
-            println("*** Checking server ***")
-            val status = API.create(environment = "TEST", converter = Converter.GSON).getStatus().execute()
-            if (status.code() == 200) {
-                println("*** Redirecting ***")
-                val res = API.create(environment = "TEST", converter = Converter.GSON).postHook(body = jsonBody).execute()
-                ResponseEntity.status(res.code()).body(res.body())
+        return try {
+            val jsonBody = Gson().fromJson(body, TFSData.Hook::class.java)
+            if (InetAddress.getLocalHost().hostName != "hlopind") {
+                println("*** Checking server ***")
+                val status = API.create(environment = "TEST", converter = Converter.GSON).getStatus().execute()
+                if (status.code() == 200) {
+                    println("*** Redirecting ***")
+                    val res = API.create(environment = "TEST", converter = Converter.GSON).postHook(body = jsonBody).execute()
+                    ResponseEntity.status(res.code()).body(res.body())
+                } else service.postHook(jsonBody)
             } else service.postHook(jsonBody)
-        } else service.postHook(jsonBody)
+        } catch (e: Exception) {
+            println(e.message)
+            ResponseEntity.status(HttpStatus.OK).body(e.message)
+        }
     }
 
     @GetMapping("/api/tfs/serviceHooks/post/{id}")
