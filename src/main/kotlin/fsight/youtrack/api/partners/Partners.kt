@@ -1,28 +1,12 @@
 package fsight.youtrack.api.partners
 
 import fsight.youtrack.generated.jooq.tables.PartnerDetails.PARTNER_DETAILS
+import fsight.youtrack.models.Partner
 import org.jooq.DSLContext
 import org.springframework.stereotype.Service
-import java.sql.Timestamp
 
 @Service
 class Partners(private val dsl: DSLContext) : IPartners {
-    data class Partner(
-        var partnerName: String? = null,
-        var projectId: String? = null,
-        var customerName: String? = null,
-        var issuesCount: Int? = null,
-        var productVersions: String? = null,
-        var databaseVersions: String? = null,
-        var etsProject: String? = null,
-        var iteration: String? = null,
-        var dateTo: Timestamp? = null,
-        var isCommercial: Boolean? = null,
-        var isDesktop: Boolean? = null,
-        var isWeb: Boolean? = null,
-        var isMobile: Boolean? = null,
-        var isDemo: Boolean? = null
-    )
 
     override fun getPartners(): Any {
         return dsl.select(
@@ -39,7 +23,8 @@ class Partners(private val dsl: DSLContext) : IPartners {
             PARTNER_DETAILS.IS_DESKTOP_APP.`as`("isDesktop"),
             PARTNER_DETAILS.IS_WEB_APP.`as`("isWeb"),
             PARTNER_DETAILS.IS_MOBILE_APP.`as`("isMobile"),
-            PARTNER_DETAILS.IS_DEMO.`as`("isDemo")
+            PARTNER_DETAILS.IS_DEMO.`as`("isDemo"),
+            PARTNER_DETAILS.IS_IMPORTANT.`as`("isImportant")
         ).from(PARTNER_DETAILS)
             .fetchInto(Partner::class.java)
     }
