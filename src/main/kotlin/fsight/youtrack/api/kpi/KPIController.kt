@@ -15,19 +15,19 @@ class KPIController(private val service: IKPI, private val dictionaries: IDictio
 
     @GetMapping("/api/kpi")
     fun getResult(
-        @RequestParam(
-            "projects",
-            required = false
-        ) projects: String?,
-        @RequestParam(
-            "emails",
-            required = false,
-            defaultValue = defaultUsers
-        ) emails: String,
-        @RequestParam("dateFrom", required = false, defaultValue = "2019-01-01") dateFrom: String,
-        @RequestParam("dateTo", required = false, defaultValue = "2019-06-30") dateTo: String,
-        @RequestParam("mode", required = false, defaultValue = "default") mode: String,
-        @RequestParam("withDetails", required = false, defaultValue = "false") withDetails: Boolean
+            @RequestParam(
+                    "projects",
+                    required = false
+            ) projects: String?,
+            @RequestParam(
+                    "emails",
+                    required = false,
+                    defaultValue = defaultUsers
+            ) emails: String,
+            @RequestParam("dateFrom", required = false, defaultValue = "2019-01-01") dateFrom: String,
+            @RequestParam("dateTo", required = false, defaultValue = "2019-06-30") dateTo: String,
+            @RequestParam("mode", required = false, defaultValue = "default") mode: String,
+            @RequestParam("withDetails", required = false, defaultValue = "false") withDetails: Boolean
     ): Any {
         val df = dateFrom.toStartOfDate()
         val dt = dateTo.toEndOfDate()
@@ -41,6 +41,7 @@ class KPIController(private val service: IKPI, private val dictionaries: IDictio
             "postponement" -> service.getPostponements(p, u, df, dt)
             "suggestions" -> service.getSuggestedSolutions(p, u, df, dt)
             "clarifications" -> service.getRequestedClarifications(p, u, df, dt)
+            "overall" -> service.getOverallResult(p, u, df, dt)
             else -> service.getResult(p, u, df, dt)
         }
     }

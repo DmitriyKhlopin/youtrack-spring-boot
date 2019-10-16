@@ -51,5 +51,7 @@ const val MULTI_VERSION_ISSUE_CUSTOM_FIELD = "MultiVersionIssueCustomField"
 
 const val defaultProjects = ""
 
+const val defaultUsersWithLeads =
+        "iana.maltseva@fsight.ru,viktoriya.zolotaryova@fsight.ru,artem.maltsev@fsight.ru,dmitriy.khlopin@fsight.ru,andrey.zolotaryev@fsight.ru,anton.lykov@fsight.ru,andrey.nepomnyashchiy@fsight.ru,nikolai.parkhachev@fsight.ru"
 const val defaultUsers =
-    "iana.maltseva@fsight.ru,viktoriya.zolotaryova@fsight.ru,artem.maltsev@fsight.ru,dmitriy.khlopin@fsight.ru,andrey.zolotaryev@fsight.ru,anton.lykov@fsight.ru,andrey.nepomnyashchiy@fsight.ru,nikolai.parkhachev@fsight.ru"
+        "iana.maltseva@fsight.ru,viktoriya.zolotaryova@fsight.ru,dmitriy.khlopin@fsight.ru,andrey.zolotaryev@fsight.ru,anton.lykov@fsight.ru,nikolai.parkhachev@fsight.ru"
