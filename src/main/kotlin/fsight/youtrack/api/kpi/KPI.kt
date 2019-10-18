@@ -15,7 +15,9 @@ import org.jooq.impl.DSL
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import java.sql.Timestamp
-import java.lang.Integer
+import java.sql.Date
+import java.time.LocalDate
+import java.time.temporal.ChronoField
 
 
 @Service
@@ -514,8 +516,33 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
         return ii.aggregate(withDetails)
     }
 
+    fun generateDateRanges(dateTo: Timestamp): List<Pair<Timestamp, Timestamp>> {
+        val month = Date(dateTo.time).toLocalDate().monthValue
+        val i = Date(dateTo.time).toLocalDate().plusMonths((3 - if (month % 3 == 0) 3 else month % 3).toLong()).with(ChronoField.DAY_OF_MONTH, 1)
+        return (0..3).mapIndexed { index, _ -> Pair(i.minusMonths(3L * (index + 1) - 1).toTimestamp(), i.minusMonths(3L * index - 1).minusDays(1).toTimestamp()) }
+    }
+
+    fun LocalDate.toTimestamp(): Timestamp = Timestamp.valueOf(this.atStartOfDay())
+
     override fun getOverallResult(projects: List<String>, emails: List<String>, dateFrom: Timestamp, dateTo: Timestamp): Any {
-        return dsl.select(
+        val dynamics = generateDateRanges(dateTo).reversed().map {
+            val r = dsl.select(
+                    DSL.count(KPI_OVERALL_VIEW.ID).`as`("total"),
+                    (DSL.count(KPI_OVERALL_VIEW.ID) - DSL.sum(KPI_OVERALL_VIEW.VIOLATED)).`as`("notViolated"),
+                    DSL.sum(KPI_OVERALL_VIEW.SATISFIED).`as`("satisfied"),
+                    DSL.sum(KPI_OVERALL_VIEW.SELF_SOLVED).`as`("selfSolved"),
+                    DSL.sum(KPI_OVERALL_VIEW.SINGLE_SOLUTION).`as`("singleSolution")
+            )
+                    .from(KPI_OVERALL_VIEW)
+                    .leftJoin(ISSUES).on(KPI_OVERALL_VIEW.ID.eq(ISSUES.ID))
+                    .where(ISSUES.PROJECT_SHORT_NAME.`in`(projects))
+                    .and(ISSUES.RESOLVED_DATE.between(it.first).and(it.second))
+                    .fetchOneInto(KPIOverallResult::class.java)
+            Pair(it, r)
+        }
+        println(dynamics)
+
+        val result = dsl.select(
                 DSL.count(KPI_OVERALL_VIEW.ID).`as`("total"),
                 (DSL.count(KPI_OVERALL_VIEW.ID) - DSL.sum(KPI_OVERALL_VIEW.VIOLATED)).`as`("notViolated"),
                 DSL.sum(KPI_OVERALL_VIEW.SATISFIED).`as`("satisfied"),
@@ -527,6 +554,8 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
                 .where(ISSUES.PROJECT_SHORT_NAME.`in`(projects))
                 .and(ISSUES.RESOLVED_DATE.between(dateFrom).and(dateTo))
                 .fetchOneInto(KPIOverallResult::class.java)
+        result.dynamics = dynamics
+        return result
     }
 
     data class KPIOverallResult(
@@ -534,7 +563,8 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
             var notViolated: Int?,
             var satisfied: Int?,
             var selfSolved: Int?,
-            var singleSolution: Int?
+            var singleSolution: Int?,
+            var dynamics: List<Any>?
     )
 
     data class SLAViolation(
@@ -566,12 +596,9 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
     )
 
     fun KPIResultByIssue.toKPIScore(agent: String): KPIScore {
-        val percentage =
-                (this.agentTime.firstOrNull { it.agent == agent }?.value?.toFloat()
-                        ?: 0f) / this.agentTime.sumBy { it.value }
+        val percentage = (this.agentTime.firstOrNull { it.agent == agent }?.value?.toFloat() ?: 0f) / this.agentTime.sumBy { it.value }
         val issueTypeScore = issueTypesMap[this.type] ?: 0f
         val priorityScore = prioritiesMap[this.priority] ?: 0f
-        /*val levelScore = if (this.devOpsIssue == "null" || this.devOpsIssue.isEmpty()) 1.4f else 0.6f*/
 
         val levelScore = when {
             this.type == "Консультация" -> 0f
@@ -579,8 +606,6 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
             this.devOpsIssue == "null" || this.devOpsIssue.isEmpty() -> 1.4f
             else -> 0.6f
         }
-
-        /*println("${this.issueId} = $levelScore")*/
 
         val solutionScore = when {
             solutionAttemptsBy?.none { it.agent == agent } ?: true -> 0f

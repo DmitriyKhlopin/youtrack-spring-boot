@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
-@Transactional
 class WorkHoursRepo(@Qualifier("msDataSource") private val db: Database) {
     fun getWorkHours(): List<WorkHoursModel> {
         return transaction(db) { WorkHoursTable.selectAll().limit(100).map(ResultRow::toWorkHoursModel) }

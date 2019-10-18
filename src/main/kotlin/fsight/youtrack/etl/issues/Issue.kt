@@ -20,45 +20,43 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Service
-/*@Transactional*/
 class Issue(
-    private val dslContext: DSLContext,
-    private val importLogService: IImportLog,
-    private val timelineService: ITimeline
+        private val dslContext: DSLContext,
+        private val importLogService: IImportLog,
+        private val timelineService: ITimeline
 ) : IIssue {
     override fun getIssues(customFilter: String?): Int {
         val issueIds = arrayListOf<String?>()
-        println("Loading issues")
+
         val fields =
-            listOf(
-                "idReadable",
-                "reporter(login,name)",
-                "updater(login,name)",
-                "summary",
-                "description",
-                "project(shortName)",
-                "created",
-                "updated",
-                "resolved",
-                "votes",
-                "comments(id,author(login,fullName),text,created,updated,deleted)",
-                "fields(\$type,projectCustomField(\$type,field(name)),value(\$type,avatarUrl,buildLink,fullName,id,isResolved,localizedName,login,minutes,name,presentation,ringId,text))",
-                "visibility(permittedGroups(name),permittedUsers(name,login))",
-                "deleted"
-            ).joinToString(",")
+                listOf(
+                        "idReadable",
+                        "reporter(login,name)",
+                        "updater(login,name)",
+                        "summary",
+                        "description",
+                        "project(shortName)",
+                        "created",
+                        "updated",
+                        "resolved",
+                        "votes",
+                        "comments(id,author(login,fullName),text,created,updated,deleted)",
+                        "fields(\$type,projectCustomField(\$type,field(name)),value(\$type,avatarUrl,buildLink,fullName,id,isResolved,localizedName,login,minutes,name,presentation,ringId,text))",
+                        "visibility(permittedGroups(name),permittedUsers(name,login))",
+                        "deleted"
+                ).joinToString(",")
         val top = 40
         var skip = 0
         var stored = 0
         val filter = customFilter ?: getFilter()
-        debugPrint("Actual filter: $filter")
+        /*debugPrint("Actual filter: $filter")*/
+        print("Loading issues with actual filter: $filter\r")
 
         do {
             val request = if (filter == null)
-                YouTrackAPI.create(Converter.GSON)
-                    .getIssueList(auth = AUTH, fields = fields, top = top, skip = skip)
+                YouTrackAPI.create(Converter.GSON).getIssueList(auth = AUTH, fields = fields, top = top, skip = skip)
             else
-                YouTrackAPI.create(Converter.GSON)
-                    .getIssueList(auth = AUTH, fields = fields, top = top, skip = skip, query = filter)
+                YouTrackAPI.create(Converter.GSON).getIssueList(auth = AUTH, fields = fields, top = top, skip = skip, query = filter)
 
             val result = request.execute().body()
             issueIds.addAll(result?.mapNotNull { it.idReadable } ?: listOf())
@@ -77,14 +75,14 @@ class Issue(
             getIssueHistory(it)
             getTimeAccounting(it)
         }
-        debugPrint("Loaded $skip issues")
+        print("Loaded $skip issues\r")
         importLogService.saveLog(
-            ImportLogModel(
-                timestamp = Timestamp(System.currentTimeMillis()),
-                source = "issues (filtered by '$customFilter')",
-                table = "issues",
-                items = skip
-            )
+                ImportLogModel(
+                        timestamp = Timestamp(System.currentTimeMillis()),
+                        source = "issues (filtered by '$customFilter')",
+                        table = "issues",
+                        items = skip
+                )
         )
         issueIds.filterNot { it in listOf("SIGMA-17") }.filterNotNull().forEach { timelineService.calculateForId(it) }
         return skip
@@ -98,15 +96,15 @@ class Issue(
             val mode = if (issuesCount == 0) IssueRequestMode.ALL else IssueRequestMode.TODAY
             if (mode == 1) {
                 val maxUpdateDate =
-                    dslContext.select(DSL.max(ISSUES.UPDATED_DATE)).from(ISSUES).fetchOneInto(Timestamp::class.java)
+                        dslContext.select(DSL.max(ISSUES.UPDATED_DATE)).from(ISSUES).fetchOneInto(Timestamp::class.java)
                 val dateFrom =
-                    "${maxUpdateDate.toLocalDateTime().year}-${if (maxUpdateDate.toLocalDateTime().monthValue < 10) "0" else ""}${maxUpdateDate.toLocalDateTime().monthValue}-${if (maxUpdateDate.toLocalDateTime().dayOfMonth < 10) "0" else ""}${maxUpdateDate.toLocalDateTime().dayOfMonth}"
+                        "${maxUpdateDate.toLocalDateTime().year}-${if (maxUpdateDate.toLocalDateTime().monthValue < 10) "0" else ""}${maxUpdateDate.toLocalDateTime().monthValue}-${if (maxUpdateDate.toLocalDateTime().dayOfMonth < 10) "0" else ""}${maxUpdateDate.toLocalDateTime().dayOfMonth}"
                 val dateTo =
-                    "${LocalDate.now().plusDays(1).year}-${if (LocalDate.now().plusDays(1).monthValue < 10) "0" else ""}${LocalDate.now().plusDays(
-                        1
-                    ).monthValue}-${if (LocalDate.now().plusDays(1).dayOfMonth < 10) "0" else ""}${LocalDate.now().plusDays(
-                        1
-                    ).dayOfMonth}"
+                        "${LocalDate.now().plusDays(1).year}-${if (LocalDate.now().plusDays(1).monthValue < 10) "0" else ""}${LocalDate.now().plusDays(
+                                1
+                        ).monthValue}-${if (LocalDate.now().plusDays(1).dayOfMonth < 10) "0" else ""}${LocalDate.now().plusDays(
+                                1
+                        ).dayOfMonth}"
                 "updated: $dateFrom .. $dateTo"
             } else null
         } catch (e: Exception) {
@@ -121,11 +119,11 @@ class Issue(
         fields?.forEach { field ->
             try {
                 dslContext
-                    .insertInto(CUSTOM_FIELD_VALUES)
-                    .set(CUSTOM_FIELD_VALUES.ISSUE_ID, idReadable)
-                    .set(CUSTOM_FIELD_VALUES.FIELD_NAME, field.projectCustomField?.field?.name)
-                    .set(CUSTOM_FIELD_VALUES.FIELD_VALUE, field.unwrapValue())
-                    .execute()
+                        .insertInto(CUSTOM_FIELD_VALUES)
+                        .set(CUSTOM_FIELD_VALUES.ISSUE_ID, idReadable)
+                        .set(CUSTOM_FIELD_VALUES.FIELD_NAME, field.projectCustomField?.field?.name)
+                        .set(CUSTOM_FIELD_VALUES.FIELD_VALUE, field.unwrapValue())
+                        .execute()
             } catch (e: Exception) {
                 ETL.etlState = ETLState.DONE
                 writeError(field.toString(), e.message ?: "")
@@ -139,16 +137,16 @@ class Issue(
         //TODO аменить на loadInto
         this.comments?.forEach { comment ->
             dslContext
-                .insertInto(ISSUE_COMMENTS)
-                .set(ISSUE_COMMENTS.ID, comment.id)
-                .set(ISSUE_COMMENTS.ISSUE_ID, this.idReadable)
-                .set(ISSUE_COMMENTS.DELETED, comment.deleted)
-                .set(ISSUE_COMMENTS.AUTHOR, comment.author?.login)
-                .set(ISSUE_COMMENTS.AUTHOR_FULL_NAME, comment.author?.fullName)
-                .set(ISSUE_COMMENTS.COMMENT_TEXT, comment.text)
-                .set(ISSUE_COMMENTS.CREATED, comment.created?.toTimestamp())
-                .set(ISSUE_COMMENTS.UPDATED, comment.updated?.toTimestamp())
-                .execute()
+                    .insertInto(ISSUE_COMMENTS)
+                    .set(ISSUE_COMMENTS.ID, comment.id)
+                    .set(ISSUE_COMMENTS.ISSUE_ID, this.idReadable)
+                    .set(ISSUE_COMMENTS.DELETED, comment.deleted)
+                    .set(ISSUE_COMMENTS.AUTHOR, comment.author?.login)
+                    .set(ISSUE_COMMENTS.AUTHOR_FULL_NAME, comment.author?.fullName)
+                    .set(ISSUE_COMMENTS.COMMENT_TEXT, comment.text)
+                    .set(ISSUE_COMMENTS.CREATED, comment.created?.toTimestamp())
+                    .set(ISSUE_COMMENTS.UPDATED, comment.updated?.toTimestamp())
+                    .execute()
             try {
 
             } catch (e: Exception) {
@@ -159,23 +157,24 @@ class Issue(
     }
 
     private fun getTimeAccounting(idReadable: String) {
+        print("Loading time units of $idReadable\r")
         dslContext.deleteFrom(WORK_ITEMS).where(WORK_ITEMS.ISSUE_ID.eq(idReadable)).execute()
         //TODO заменить на loadInto
         YouTrackAPI.create(Converter.GSON).getWorkItems(AUTH, idReadable).execute().body()?.forEach {
             dslContext
-                .insertInto(WORK_ITEMS)
-                .set(WORK_ITEMS.ISSUE_ID, idReadable)
-                .set(WORK_ITEMS.WI_ID, it.id)
-                .set(WORK_ITEMS.WI_DATE, it.date?.toDate())
-                .set(WORK_ITEMS.WI_CREATED, it.created?.toTimestamp())
-                .set(WORK_ITEMS.WI_UPDATED, it.updated?.toTimestamp())
-                .set(WORK_ITEMS.WI_DURATION, it.duration?.minutes)
-                .set(WORK_ITEMS.AUTHOR_LOGIN, it.author?.login)
-                .set(WORK_ITEMS.WORK_NAME, it.type?.name)
-                .set(WORK_ITEMS.WORK_TYPE_ID, it.type?.id)
-                .set(WORK_ITEMS.WORK_TYPE_AUTO_ATTACHED, it.type?.autoAttached)
-                .set(WORK_ITEMS.DESCRIPTION, it.text)
-                .execute()
+                    .insertInto(WORK_ITEMS)
+                    .set(WORK_ITEMS.ISSUE_ID, idReadable)
+                    .set(WORK_ITEMS.WI_ID, it.id)
+                    .set(WORK_ITEMS.WI_DATE, it.date?.toDate())
+                    .set(WORK_ITEMS.WI_CREATED, it.created?.toTimestamp())
+                    .set(WORK_ITEMS.WI_UPDATED, it.updated?.toTimestamp())
+                    .set(WORK_ITEMS.WI_DURATION, it.duration?.minutes)
+                    .set(WORK_ITEMS.AUTHOR_LOGIN, it.author?.login)
+                    .set(WORK_ITEMS.WORK_NAME, it.type?.name)
+                    .set(WORK_ITEMS.WORK_TYPE_ID, it.type?.id)
+                    .set(WORK_ITEMS.WORK_TYPE_AUTO_ATTACHED, it.type?.autoAttached)
+                    .set(WORK_ITEMS.DESCRIPTION, it.text)
+                    .execute()
             try {
             } catch (e: java.lang.Exception) {
                 ETL.etlState = ETLState.DONE
@@ -185,37 +184,38 @@ class Issue(
     }
 
     override fun getIssueHistory(idReadable: String) {
+        print("Loading history of $idReadable\r")
         var hasAfter: Boolean? = true
         dslContext.deleteFrom(ISSUE_HISTORY).where(ISSUE_HISTORY.ISSUE_ID.eq(idReadable)).execute()
         var offset = 100
         while (hasAfter == true) {
             val issueActivities =
-                YouTrackAPI.create(Converter.GSON)
-                    .getCustomFieldsHistory(auth = AUTH, issueId = idReadable, top = offset)
-                    .execute()
+                    YouTrackAPI.create(Converter.GSON)
+                            .getCustomFieldsHistory(auth = AUTH, issueId = idReadable, top = offset)
+                            .execute()
             val items = issueActivities.body()?.activities?.map { it.toIssueHistoryRecord(idReadable) }
             val stored = dslContext.loadInto(ISSUE_HISTORY)
-                .onDuplicateKeyUpdate()
-                .loadRecords(items)
-                .fields(
-                    ISSUE_HISTORY.ISSUE_ID,
-                    ISSUE_HISTORY.AUTHOR,
-                    ISSUE_HISTORY.UPDATE_DATE_TIME,
-                    ISSUE_HISTORY.FIELD_NAME,
-                    ISSUE_HISTORY.VALUE_TYPE,
-                    ISSUE_HISTORY.OLD_VALUE_INT,
-                    ISSUE_HISTORY.NEW_VALUE_INT,
-                    ISSUE_HISTORY.OLD_VALUE_STRING,
-                    ISSUE_HISTORY.NEW_VALUE_STRING,
-                    ISSUE_HISTORY.OLD_VALUE_DATE_TIME,
-                    ISSUE_HISTORY.NEW_VALUE_DATE_TIME,
-                    ISSUE_HISTORY.UPDATE_WEEK
-                )
-                .execute()
-                .stored()
+                    .onDuplicateKeyUpdate()
+                    .loadRecords(items)
+                    .fields(
+                            ISSUE_HISTORY.ISSUE_ID,
+                            ISSUE_HISTORY.AUTHOR,
+                            ISSUE_HISTORY.UPDATE_DATE_TIME,
+                            ISSUE_HISTORY.FIELD_NAME,
+                            ISSUE_HISTORY.VALUE_TYPE,
+                            ISSUE_HISTORY.OLD_VALUE_INT,
+                            ISSUE_HISTORY.NEW_VALUE_INT,
+                            ISSUE_HISTORY.OLD_VALUE_STRING,
+                            ISSUE_HISTORY.NEW_VALUE_STRING,
+                            ISSUE_HISTORY.OLD_VALUE_DATE_TIME,
+                            ISSUE_HISTORY.NEW_VALUE_DATE_TIME,
+                            ISSUE_HISTORY.UPDATE_WEEK
+                    )
+                    .execute()
+                    .stored()
             offset += issueActivities.body()?.activities?.size ?: 0
             hasAfter = issueActivities.body()?.hasAfter
-            debugPrint("$idReadable: stored $stored history items")
+            println("$idReadable: stored $stored history items\r")
         }
 
     }
@@ -235,6 +235,7 @@ class Issue(
             }
             if (index % interval == 0) print("Checked ${index * 100 / result.size}% of issues\r")
         }
+        println("Found ${deletedItems.size} deleted issues")
         deleteIssues(deletedItems)
     }
 
@@ -254,13 +255,14 @@ class Issue(
     override fun checkPendingIssues() {
         try {
             val i = dslContext
-                .select(ISSUES.ID)
-                .from(ISSUES)
-                .leftJoin(CUSTOM_FIELD_VALUES)
-                .on(ISSUES.ID.eq(CUSTOM_FIELD_VALUES.ISSUE_ID).and(CUSTOM_FIELD_VALUES.FIELD_NAME.eq("State")))
-                .where(CUSTOM_FIELD_VALUES.FIELD_VALUE.`in`(listOf("Ожидает ответа", "Ожидает подтверждения")))
-                /*.and(ISSUES.PROJECT_SHORT_NAME.notIn(listOf("TC")))*/
-                .fetchInto(String::class.java)
+                    .select(ISSUES.ID)
+                    .from(ISSUES)
+                    .leftJoin(CUSTOM_FIELD_VALUES)
+                    .on(ISSUES.ID.eq(CUSTOM_FIELD_VALUES.ISSUE_ID).and(CUSTOM_FIELD_VALUES.FIELD_NAME.eq("State")))
+                    .where(CUSTOM_FIELD_VALUES.FIELD_VALUE.`in`(listOf("Ожидает ответа", "Ожидает подтверждения")))
+                    /*.and(ISSUES.PROJECT_SHORT_NAME.notIn(listOf("TC")))*/
+                    .fetchInto(String::class.java)
+            println("Found ${i.size} pending issues")
             i.forEach { getIssues(it) }
         } catch (e: Exception) {
             println(e)
@@ -270,11 +272,11 @@ class Issue(
     private fun writeError(item: String, message: String) {
         try {
             dslContext
-                .insertInto(ERROR_LOG)
-                .set(ERROR_LOG.DATE, Timestamp.valueOf(LocalDateTime.now()))
-                .set(ERROR_LOG.ITEM, item)
-                .set(ERROR_LOG.ERROR, message)
-                .execute()
+                    .insertInto(ERROR_LOG)
+                    .set(ERROR_LOG.DATE, Timestamp.valueOf(LocalDateTime.now()))
+                    .set(ERROR_LOG.ITEM, item)
+                    .set(ERROR_LOG.ERROR, message)
+                    .execute()
         } catch (e: Exception) {
             ETL.etlState = ETLState.DONE
         }
@@ -282,14 +284,12 @@ class Issue(
 
     override fun findIssueInYT(id: String, filter: String): Boolean {
         val fields =
-            listOf(
-                "idReadable",
-                "fields(\$type,projectCustomField(\$type,field(name)),value(\$type,avatarUrl,buildLink,fullName,id,isResolved,localizedName,login,minutes,name,presentation,ringId,text))"
-            ).joinToString(",")
+                listOf(
+                        "idReadable",
+                        "fields(\$type,projectCustomField(\$type,field(name)),value(\$type,avatarUrl,buildLink,fullName,id,isResolved,localizedName,login,minutes,name,presentation,ringId,text))"
+                ).joinToString(",")
         val composedFilter = "#$id $filter"
-        val request =
-            YouTrackAPI.create(Converter.GSON)
-                .getIssueList(auth = AUTH, fields = fields, top = 100, skip = 0, query = composedFilter)
+        val request = YouTrackAPI.create(Converter.GSON).getIssueList(auth = AUTH, fields = fields, top = 100, skip = 0, query = composedFilter)
         val result = request.execute().body()?.mapNotNull { it.idReadable }
         return result?.contains(id) ?: false
     }

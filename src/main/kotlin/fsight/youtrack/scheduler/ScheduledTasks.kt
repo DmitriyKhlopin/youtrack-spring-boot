@@ -14,10 +14,12 @@ class ScheduledTasks(private val service: IETL) : CommandLineRunner {
     fun loadData() {
         if (InetAddress.getLocalHost().hostName != "hlopind") {
             println("*** Scheduled task started ***")
-            service.loadDataFromYT(false, null)
+            val result = service.loadDataFromYT(false, null)
+            println("*** Scheduled task finished. Processed ${result?.issues} issues***")
         }
     }
 
     override fun run(vararg args: String?) {
         if (runOnStartup) service.loadDataFromYT(false, null)
-    }}
+    }
+}

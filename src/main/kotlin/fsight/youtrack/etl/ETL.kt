@@ -38,6 +38,7 @@ class ETL(
                 /*etlState = ETLState.RUNNING*/
                 val m = GregorianCalendar.getInstance().also { it.time = Date() }.get(Calendar.MINUTE)
                 var issuesCount = 0
+
                 if (m == 30 && !manual) {
                     issuesCount = issue.getIssues(customFilter)
                     projects.saveProjects()
@@ -50,7 +51,7 @@ class ETL(
                     if (!manual) issuesCount = issue.getIssues(customFilter)
                 }
                 if (manual && p.contains("issues")) {
-                    println("Loading issues")
+                    println("Loading issues only")
                     issuesCount = issue.getIssues(customFilter)
                 }
                 if (manual && p.contains("bundles")) {

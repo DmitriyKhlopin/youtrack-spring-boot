@@ -22,31 +22,31 @@ import java.util.*
 class Timeline(private val dsl: DSLContext) : ITimeline {
     private val schedule = Schedule("Стандартный", 1, 5, 11, 19)
     private val userStates = listOf(
-        "На проверке", "Исправлена", "Решена", "Дубликат", "Не удается воспроизвести",
-        "Проверена", "Подлежит проверке", "Требуется уточнение", "Готово", "Неполная", "Не существует",
-        "Ожидает подтверждения", "Ожидает ответа", "Без подтверждения", "Подтверждена"
+            "На проверке", "Исправлена", "Решена", "Дубликат", "Не удается воспроизвести",
+            "Проверена", "Подлежит проверке", "Требуется уточнение", "Готово", "Неполная", "Не существует",
+            "Ожидает подтверждения", "Ожидает ответа", "Без подтверждения", "Подтверждена"
     )
     private val agentStates = listOf("Открыта", "backlog", "В обработке", "Зарегистрирована", "Создана")
     private val developerStates = listOf("Направлена разработчику", "Исследуется в JetBrains")
 
     private val holidays = listOf<LocalDate>(
-        LocalDate.parse("2018-11-05", DateTimeFormatter.ISO_DATE),
-        LocalDate.parse("2019-01-01", DateTimeFormatter.ISO_DATE),
-        LocalDate.parse("2019-01-02", DateTimeFormatter.ISO_DATE),
-        LocalDate.parse("2019-01-03", DateTimeFormatter.ISO_DATE),
-        LocalDate.parse("2019-01-04", DateTimeFormatter.ISO_DATE),
-        LocalDate.parse("2019-01-07", DateTimeFormatter.ISO_DATE),
-        LocalDate.parse("2019-01-08", DateTimeFormatter.ISO_DATE),
-        LocalDate.parse("2019-03-08", DateTimeFormatter.ISO_DATE)
+            LocalDate.parse("2018-11-05", DateTimeFormatter.ISO_DATE),
+            LocalDate.parse("2019-01-01", DateTimeFormatter.ISO_DATE),
+            LocalDate.parse("2019-01-02", DateTimeFormatter.ISO_DATE),
+            LocalDate.parse("2019-01-03", DateTimeFormatter.ISO_DATE),
+            LocalDate.parse("2019-01-04", DateTimeFormatter.ISO_DATE),
+            LocalDate.parse("2019-01-07", DateTimeFormatter.ISO_DATE),
+            LocalDate.parse("2019-01-08", DateTimeFormatter.ISO_DATE),
+            LocalDate.parse("2019-03-08", DateTimeFormatter.ISO_DATE)
     )
 
     override fun launchCalculation() {
         val i: List<String> = dsl
-            .select(ISSUES.ID)
-            .from(ISSUES)
-            .where(ISSUES.LOADED_DATE.ge(Timestamp.valueOf(LocalDateTime.now().toLocalDate().atStartOfDay())).or(ISSUES.RESOLVED_DATE_TIME.isNull))
-            .and(ISSUES.PROJECT_SHORT_NAME.notIn(listOf("SD", "TC", "SPAM", "PO")))
-            .fetchInto(String::class.java)
+                .select(ISSUES.ID)
+                .from(ISSUES)
+                .where(ISSUES.LOADED_DATE.ge(Timestamp.valueOf(LocalDateTime.now().toLocalDate().atStartOfDay())).or(ISSUES.RESOLVED_DATE_TIME.isNull))
+                .and(ISSUES.PROJECT_SHORT_NAME.notIn(listOf("SD", "TC", "SPAM", "PO")))
+                .fetchInto(String::class.java)
         debugPrint("Need to calculate timelines for ${i.size} items.")
         i.asSequence().forEach { calculateForId(it) }
         /*updateIssueSpentTime()*/
@@ -54,71 +54,71 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
 
     fun updateIssueSpentTime() {
         dsl.update(ISSUES)
-            .set(
-                ISSUES.TIME_USER,
-                DSL.select(DSL.sum(ISSUE_TIMELINE.TIME_SPENT)).from(ISSUE_TIMELINE).where(
-                    ISSUE_TIMELINE.TRANSITION_OWNER.eq("YouTrackUser").and(ISSUE_TIMELINE.ISSUE_ID.eq(ISSUES.ID))
-                ).asField<Long>()
-            )
-            .set(
-                ISSUES.TIME_AGENT,
-                DSL.select(DSL.sum(ISSUE_TIMELINE.TIME_SPENT)).from(ISSUE_TIMELINE).where(
-                    ISSUE_TIMELINE.TRANSITION_OWNER.`in`(listOf("Agent", "Undefined")).and(
-                        ISSUE_TIMELINE.ISSUE_ID.eq(ISSUES.ID)
-                    )
-                ).asField<Long>()
-            )
-            .set(
-                ISSUES.TIME_DEVELOPER,
-                DSL.select(DSL.sum(ISSUE_TIMELINE.TIME_SPENT)).from(ISSUE_TIMELINE).where(
-                    ISSUE_TIMELINE.TRANSITION_OWNER.eq("Developer").and(ISSUE_TIMELINE.ISSUE_ID.eq(ISSUES.ID))
-                ).asField<Long>()
-            )
-            .execute()
+                .set(
+                        ISSUES.TIME_USER,
+                        DSL.select(DSL.sum(ISSUE_TIMELINE.TIME_SPENT)).from(ISSUE_TIMELINE).where(
+                                ISSUE_TIMELINE.TRANSITION_OWNER.eq("YouTrackUser").and(ISSUE_TIMELINE.ISSUE_ID.eq(ISSUES.ID))
+                        ).asField<Long>()
+                )
+                .set(
+                        ISSUES.TIME_AGENT,
+                        DSL.select(DSL.sum(ISSUE_TIMELINE.TIME_SPENT)).from(ISSUE_TIMELINE).where(
+                                ISSUE_TIMELINE.TRANSITION_OWNER.`in`(listOf("Agent", "Undefined")).and(
+                                        ISSUE_TIMELINE.ISSUE_ID.eq(ISSUES.ID)
+                                )
+                        ).asField<Long>()
+                )
+                .set(
+                        ISSUES.TIME_DEVELOPER,
+                        DSL.select(DSL.sum(ISSUE_TIMELINE.TIME_SPENT)).from(ISSUE_TIMELINE).where(
+                                ISSUE_TIMELINE.TRANSITION_OWNER.eq("Developer").and(ISSUE_TIMELINE.ISSUE_ID.eq(ISSUES.ID))
+                        ).asField<Long>()
+                )
+                .execute()
     }
 
     fun updateIssueSpentTimeById(issueId: String) {
         dsl.update(ISSUES)
-            .set(
-                ISSUES.TIME_USER,
-                DSL.select(DSL.sum(ISSUE_TIMELINE.TIME_SPENT)).from(ISSUE_TIMELINE).where(
-                    ISSUE_TIMELINE.TRANSITION_OWNER.eq("YouTrackUser").and(ISSUE_TIMELINE.ISSUE_ID.eq(ISSUES.ID))
-                ).asField<Long>()
-            )
-            .set(
-                ISSUES.TIME_AGENT,
-                DSL.select(DSL.sum(ISSUE_TIMELINE.TIME_SPENT)).from(ISSUE_TIMELINE).where(
-                    ISSUE_TIMELINE.TRANSITION_OWNER.`in`(listOf("Agent", "Undefined")).and(
-                        ISSUE_TIMELINE.ISSUE_ID.eq(ISSUES.ID)
-                    )
-                ).asField<Long>()
-            )
-            .set(
-                ISSUES.TIME_DEVELOPER,
-                DSL.select(DSL.sum(ISSUE_TIMELINE.TIME_SPENT)).from(ISSUE_TIMELINE).where(
-                    ISSUE_TIMELINE.TRANSITION_OWNER.eq("Developer").and(ISSUE_TIMELINE.ISSUE_ID.eq(ISSUES.ID))
-                ).asField<Long>()
-            )
-            .where(ISSUES.ID.eq(issueId))
-            .execute()
+                .set(
+                        ISSUES.TIME_USER,
+                        DSL.select(DSL.sum(ISSUE_TIMELINE.TIME_SPENT)).from(ISSUE_TIMELINE).where(
+                                ISSUE_TIMELINE.TRANSITION_OWNER.eq("YouTrackUser").and(ISSUE_TIMELINE.ISSUE_ID.eq(ISSUES.ID))
+                        ).asField<Long>()
+                )
+                .set(
+                        ISSUES.TIME_AGENT,
+                        DSL.select(DSL.sum(ISSUE_TIMELINE.TIME_SPENT)).from(ISSUE_TIMELINE).where(
+                                ISSUE_TIMELINE.TRANSITION_OWNER.`in`(listOf("Agent", "Undefined")).and(
+                                        ISSUE_TIMELINE.ISSUE_ID.eq(ISSUES.ID)
+                                )
+                        ).asField<Long>()
+                )
+                .set(
+                        ISSUES.TIME_DEVELOPER,
+                        DSL.select(DSL.sum(ISSUE_TIMELINE.TIME_SPENT)).from(ISSUE_TIMELINE).where(
+                                ISSUE_TIMELINE.TRANSITION_OWNER.eq("Developer").and(ISSUE_TIMELINE.ISSUE_ID.eq(ISSUES.ID))
+                        ).asField<Long>()
+                )
+                .where(ISSUES.ID.eq(issueId))
+                .execute()
     }
 
     override fun calculateForId(issueId: String): List<IssueTimelineItem> {
         debugPrint("calculating timeline for $issueId")
         dsl.deleteFrom(ISSUE_TIMELINE).where(ISSUE_TIMELINE.ISSUE_ID.eq(issueId)).execute()
         val i: List<IssueTimelineItem> = dsl
-            .select(
-                ISSUES_TIMELINE_VIEW.ISSUE_ID.`as`("id"),
-                ISSUES_TIMELINE_VIEW.UPDATE_DATE_TIME.`as`("dateFrom"),
-                ISSUES_TIMELINE_VIEW.UPDATE_DATE_TIME.`as`("dateTo"),
-                ISSUES_TIMELINE_VIEW.OLD_VALUE_STRING.`as`("stateOld"),
-                ISSUES_TIMELINE_VIEW.NEW_VALUE_STRING.`as`("stateNew"),
-                ISSUES_TIMELINE_VIEW.TIME_SPENT.`as`("timeSpent"),
-                DSL.nullif(true, true).`as`("stateOwner")
-            )
-            .from(ISSUES_TIMELINE_VIEW)
-            .where(ISSUES_TIMELINE_VIEW.ISSUE_ID.eq(issueId))
-            .fetchInto(IssueTimelineItem::class.java)
+                .select(
+                        ISSUES_TIMELINE_VIEW.ISSUE_ID.`as`("id"),
+                        ISSUES_TIMELINE_VIEW.UPDATE_DATE_TIME.`as`("dateFrom"),
+                        ISSUES_TIMELINE_VIEW.UPDATE_DATE_TIME.`as`("dateTo"),
+                        ISSUES_TIMELINE_VIEW.OLD_VALUE_STRING.`as`("stateOld"),
+                        ISSUES_TIMELINE_VIEW.NEW_VALUE_STRING.`as`("stateNew"),
+                        ISSUES_TIMELINE_VIEW.TIME_SPENT.`as`("timeSpent"),
+                        DSL.nullif(true, true).`as`("stateOwner")
+                )
+                .from(ISSUES_TIMELINE_VIEW)
+                .where(ISSUES_TIMELINE_VIEW.ISSUE_ID.eq(issueId))
+                .fetchInto(IssueTimelineItem::class.java)
 
         val a = arrayListOf<IssueTimelineItem>()
         i.forEachIndexed { index, issueTimelineItem ->
@@ -134,12 +134,12 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
                 val pref = issueTimelineItem.copy()
                 val prefDateTo = Calendar.getInstance()
                 prefDateTo.set(
-                    pref.dateFrom.toLocalDateTime().year,
-                    pref.dateFrom.toLocalDateTime().monthValue - 1,
-                    pref.dateFrom.toLocalDateTime().dayOfMonth,
-                    0,
-                    0,
-                    0
+                        pref.dateFrom.toLocalDateTime().year,
+                        pref.dateFrom.toLocalDateTime().monthValue - 1,
+                        pref.dateFrom.toLocalDateTime().dayOfMonth,
+                        0,
+                        0,
+                        0
                 )
                 prefDateTo.add(Calendar.DATE, 1)
                 prefDateTo.set(Calendar.MILLISECOND, 0)
@@ -152,38 +152,38 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
 
                 val dateFrom = Calendar.getInstance()
                 dateFrom.set(
-                    issueTimelineItem.dateFrom.toLocalDateTime().year,
-                    issueTimelineItem.dateFrom.toLocalDateTime().monthValue - 1,
-                    issueTimelineItem.dateFrom.toLocalDateTime().dayOfMonth, 0, 0, 0
+                        issueTimelineItem.dateFrom.toLocalDateTime().year,
+                        issueTimelineItem.dateFrom.toLocalDateTime().monthValue - 1,
+                        issueTimelineItem.dateFrom.toLocalDateTime().dayOfMonth, 0, 0, 0
                 )
 
                 val dateTo = Calendar.getInstance()
                 dateTo.set(
-                    issueTimelineItem.dateTo.toLocalDateTime().year,
-                    issueTimelineItem.dateTo.toLocalDateTime().monthValue - 1,
-                    issueTimelineItem.dateTo.toLocalDateTime().dayOfMonth, 0, 0, 0
+                        issueTimelineItem.dateTo.toLocalDateTime().year,
+                        issueTimelineItem.dateTo.toLocalDateTime().monthValue - 1,
+                        issueTimelineItem.dateTo.toLocalDateTime().dayOfMonth, 0, 0, 0
                 )
 
                 val j = Duration.between(
-                    dateFrom.timeInMillis.toTimestamp().toLocalDateTime(),
-                    dateTo.timeInMillis.toTimestamp().toLocalDateTime()
+                        dateFrom.timeInMillis.toTimestamp().toLocalDateTime(),
+                        dateTo.timeInMillis.toTimestamp().toLocalDateTime()
                 ).toDays() - 1
                 for (n in 1..j) {
                     val k = issueTimelineItem.copy()
                     val startOfDay = Calendar.getInstance()
                     startOfDay.set(
-                        issueTimelineItem.dateFrom.toLocalDateTime().year,
-                        issueTimelineItem.dateFrom.toLocalDateTime().monthValue - 1,
-                        issueTimelineItem.dateFrom.toLocalDateTime().dayOfMonth, 0, 0, 0
+                            issueTimelineItem.dateFrom.toLocalDateTime().year,
+                            issueTimelineItem.dateFrom.toLocalDateTime().monthValue - 1,
+                            issueTimelineItem.dateFrom.toLocalDateTime().dayOfMonth, 0, 0, 0
                     )
                     startOfDay.set(Calendar.MILLISECOND, 0)
                     startOfDay.add(Calendar.DATE, n.toInt())
 
                     val endOfDay = Calendar.getInstance()
                     endOfDay.set(
-                        issueTimelineItem.dateFrom.toLocalDateTime().year,
-                        issueTimelineItem.dateFrom.toLocalDateTime().monthValue - 1,
-                        issueTimelineItem.dateFrom.toLocalDateTime().dayOfMonth, 0, 0, 0
+                            issueTimelineItem.dateFrom.toLocalDateTime().year,
+                            issueTimelineItem.dateFrom.toLocalDateTime().monthValue - 1,
+                            issueTimelineItem.dateFrom.toLocalDateTime().dayOfMonth, 0, 0, 0
                     )
                     endOfDay.set(Calendar.MILLISECOND, 0)
                     endOfDay.add(Calendar.MILLISECOND, -1)
@@ -199,12 +199,12 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
                 val post = issueTimelineItem.copy()
                 val postDateFrom = Calendar.getInstance()
                 postDateFrom.set(
-                    post.dateTo.toLocalDateTime().year,
-                    post.dateTo.toLocalDateTime().monthValue - 1,
-                    post.dateTo.toLocalDateTime().dayOfMonth,
-                    0,
-                    0,
-                    0
+                        post.dateTo.toLocalDateTime().year,
+                        post.dateTo.toLocalDateTime().monthValue - 1,
+                        post.dateTo.toLocalDateTime().dayOfMonth,
+                        0,
+                        0,
+                        0
                 )
                 postDateFrom.set(Calendar.MILLISECOND, 0)
                 post.dateFrom = postDateFrom.timeInMillis.toTimestamp()
@@ -259,13 +259,13 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
             a[index].timeSpent = result
         }
         val stored = dsl.loadInto(ISSUE_TIMELINE).loadRecords(a.map(IssueTimelineItem::toIssueTimelineRecord)).fields(
-            ISSUE_TIMELINE.ISSUE_ID,
-            ISSUE_TIMELINE.STATE_FROM,
-            ISSUE_TIMELINE.STATE_TO,
-            ISSUE_TIMELINE.STATE_FROM_DATE,
-            ISSUE_TIMELINE.STATE_TO_DATE,
-            ISSUE_TIMELINE.TIME_SPENT,
-            ISSUE_TIMELINE.TRANSITION_OWNER
+                ISSUE_TIMELINE.ISSUE_ID,
+                ISSUE_TIMELINE.STATE_FROM,
+                ISSUE_TIMELINE.STATE_TO,
+                ISSUE_TIMELINE.STATE_FROM_DATE,
+                ISSUE_TIMELINE.STATE_TO_DATE,
+                ISSUE_TIMELINE.TIME_SPENT,
+                ISSUE_TIMELINE.TRANSITION_OWNER
         ).execute().stored()
         debugPrint("$issueId: stored $stored timeline items")
         updateIssueSpentTimeById(issueId)
