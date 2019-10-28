@@ -7,6 +7,7 @@ import fsight.youtrack.generated.jooq.tables.IssuesTimelineView.ISSUES_TIMELINE_
 import fsight.youtrack.models.IssueTimelineItem
 import fsight.youtrack.models.Schedule
 import fsight.youtrack.models.toIssueTimelineRecord
+import fsight.youtrack.printInLine
 import fsight.youtrack.toTimestamp
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
@@ -47,9 +48,8 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
                 .where(ISSUES.LOADED_DATE.ge(Timestamp.valueOf(LocalDateTime.now().toLocalDate().atStartOfDay())).or(ISSUES.RESOLVED_DATE_TIME.isNull))
                 .and(ISSUES.PROJECT_SHORT_NAME.notIn(listOf("SD", "TC", "SPAM", "PO")))
                 .fetchInto(String::class.java)
-        debugPrint("Need to calculate timelines for ${i.size} items.")
+        println("Need to calculate timelines for ${i.size} items.")
         i.asSequence().forEach { calculateForId(it) }
-        /*updateIssueSpentTime()*/
     }
 
     fun updateIssueSpentTime() {
@@ -78,33 +78,37 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
     }
 
     fun updateIssueSpentTimeById(issueId: String) {
-        dsl.update(ISSUES)
-                .set(
-                        ISSUES.TIME_USER,
-                        DSL.select(DSL.sum(ISSUE_TIMELINE.TIME_SPENT)).from(ISSUE_TIMELINE).where(
-                                ISSUE_TIMELINE.TRANSITION_OWNER.eq("YouTrackUser").and(ISSUE_TIMELINE.ISSUE_ID.eq(ISSUES.ID))
-                        ).asField<Long>()
-                )
-                .set(
-                        ISSUES.TIME_AGENT,
-                        DSL.select(DSL.sum(ISSUE_TIMELINE.TIME_SPENT)).from(ISSUE_TIMELINE).where(
-                                ISSUE_TIMELINE.TRANSITION_OWNER.`in`(listOf("Agent", "Undefined")).and(
-                                        ISSUE_TIMELINE.ISSUE_ID.eq(ISSUES.ID)
-                                )
-                        ).asField<Long>()
-                )
-                .set(
-                        ISSUES.TIME_DEVELOPER,
-                        DSL.select(DSL.sum(ISSUE_TIMELINE.TIME_SPENT)).from(ISSUE_TIMELINE).where(
-                                ISSUE_TIMELINE.TRANSITION_OWNER.eq("Developer").and(ISSUE_TIMELINE.ISSUE_ID.eq(ISSUES.ID))
-                        ).asField<Long>()
-                )
-                .where(ISSUES.ID.eq(issueId))
-                .execute()
+        try {
+            dsl.update(ISSUES)
+                    .set(
+                            ISSUES.TIME_USER,
+                            DSL.select(DSL.sum(ISSUE_TIMELINE.TIME_SPENT)).from(ISSUE_TIMELINE).where(
+                                    ISSUE_TIMELINE.TRANSITION_OWNER.eq("YouTrackUser").and(ISSUE_TIMELINE.ISSUE_ID.eq(ISSUES.ID))
+                            ).asField<Long>()
+                    )
+                    .set(
+                            ISSUES.TIME_AGENT,
+                            DSL.select(DSL.sum(ISSUE_TIMELINE.TIME_SPENT)).from(ISSUE_TIMELINE).where(
+                                    ISSUE_TIMELINE.TRANSITION_OWNER.`in`(listOf("Agent", "Undefined")).and(
+                                            ISSUE_TIMELINE.ISSUE_ID.eq(ISSUES.ID)
+                                    )
+                            ).asField<Long>()
+                    )
+                    .set(
+                            ISSUES.TIME_DEVELOPER,
+                            DSL.select(DSL.sum(ISSUE_TIMELINE.TIME_SPENT)).from(ISSUE_TIMELINE).where(
+                                    ISSUE_TIMELINE.TRANSITION_OWNER.eq("Developer").and(ISSUE_TIMELINE.ISSUE_ID.eq(ISSUES.ID))
+                            ).asField<Long>()
+                    )
+                    .where(ISSUES.ID.eq(issueId))
+                    .execute()
+        } catch (e: Exception) {
+            println(e.message)
+        }
     }
 
     override fun calculateForId(issueId: String): List<IssueTimelineItem> {
-        debugPrint("calculating timeline for $issueId")
+        println("calculating timeline for $issueId")
         dsl.deleteFrom(ISSUE_TIMELINE).where(ISSUE_TIMELINE.ISSUE_ID.eq(issueId)).execute()
         val i: List<IssueTimelineItem> = dsl
                 .select(
@@ -122,7 +126,6 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
 
         val a = arrayListOf<IssueTimelineItem>()
         i.forEachIndexed { index, issueTimelineItem ->
-            /*println(index)*/
             issueTimelineItem.dateFrom = if (index - 1 >= 0) i[index - 1].dateTo else issueTimelineItem.dateTo
             val start = issueTimelineItem.dateFrom.toLocalDateTime()
             val end = issueTimelineItem.dateTo.toLocalDateTime()
@@ -253,6 +256,7 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
                     Duration.between(start, end).toDays() * (schedule.lastHour - schedule.firstHour + 1) * 3600
                 else -> {
                     println("Unhandled case ${a[index].id} $start // $end")
+                    println()
                     0L
                 }
             }
@@ -267,7 +271,7 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
                 ISSUE_TIMELINE.TIME_SPENT,
                 ISSUE_TIMELINE.TRANSITION_OWNER
         ).execute().stored()
-        debugPrint("$issueId: stored $stored timeline items")
+        print(": stored $stored timeline items")
         updateIssueSpentTimeById(issueId)
         return a
     }

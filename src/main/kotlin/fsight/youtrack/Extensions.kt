@@ -22,41 +22,41 @@ import java.util.*
 
 fun ResultRow.toWorkHoursModel(): WorkHoursModel {
     return WorkHoursModel(
-        id = this[WorkHoursTable.id],
-        user = this[WorkHoursTable.user],
-        dateIn = this[WorkHoursTable.dateIn].millis,
-        dateOut = this[WorkHoursTable.dateOut].millis,
-        timeSourceId = this[WorkHoursTable.timeSourceId],
-        cityId = this[WorkHoursTable.cityId]
+            id = this[WorkHoursTable.id],
+            user = this[WorkHoursTable.user],
+            dateIn = this[WorkHoursTable.dateIn].millis,
+            dateOut = this[WorkHoursTable.dateOut].millis,
+            timeSourceId = this[WorkHoursTable.timeSourceId],
+            cityId = this[WorkHoursTable.cityId]
     )
 }
 
 fun ResultRow.toTimeAccountingExtendedModel() = TimeAccountingExtendedModel(
-    this[TimeAccountingExtendedView.createDate].millis,
-    this[TimeAccountingExtendedView.units],
-    this[TimeAccountingExtendedView.agent],
-    this[TimeAccountingExtendedView.changedDate].millis,
-    this[TimeAccountingExtendedView.server],
-    this[TimeAccountingExtendedView.projects],
-    this[TimeAccountingExtendedView.teamProject],
-    this[TimeAccountingExtendedView.id],
-    this[TimeAccountingExtendedView.discipline],
-    this[TimeAccountingExtendedView.person],
-    this[TimeAccountingExtendedView.wit],
-    this[TimeAccountingExtendedView.title],
-    this[TimeAccountingExtendedView.iterationPath],
-    this[TimeAccountingExtendedView.role],
-    this[TimeAccountingExtendedView.projectType]
+        this[TimeAccountingExtendedView.createDate].millis,
+        this[TimeAccountingExtendedView.units],
+        this[TimeAccountingExtendedView.agent],
+        this[TimeAccountingExtendedView.changedDate].millis,
+        this[TimeAccountingExtendedView.server],
+        this[TimeAccountingExtendedView.projects],
+        this[TimeAccountingExtendedView.teamProject],
+        this[TimeAccountingExtendedView.id],
+        this[TimeAccountingExtendedView.discipline],
+        this[TimeAccountingExtendedView.person],
+        this[TimeAccountingExtendedView.wit],
+        this[TimeAccountingExtendedView.title],
+        this[TimeAccountingExtendedView.iterationPath],
+        this[TimeAccountingExtendedView.role],
+        this[TimeAccountingExtendedView.projectType]
 )
 
 fun ResultRow.toScheduleTimeIntervalModel(): ScheduleTimeIntervalModel {
     return ScheduleTimeIntervalModel(
-        id = this[ScheduleTimeIntervalTable.id],
-        userSchedule = this[ScheduleTimeIntervalTable.userSchedule],
-        week = this[ScheduleTimeIntervalTable.week],
-        day = this[ScheduleTimeIntervalTable.day],
-        dateBegin = this[ScheduleTimeIntervalTable.dateBegin],
-        dateEnd = this[ScheduleTimeIntervalTable.dateEnd]
+            id = this[ScheduleTimeIntervalTable.id],
+            userSchedule = this[ScheduleTimeIntervalTable.userSchedule],
+            week = this[ScheduleTimeIntervalTable.week],
+            day = this[ScheduleTimeIntervalTable.day],
+            dateBegin = this[ScheduleTimeIntervalTable.dateBegin],
+            dateEnd = this[ScheduleTimeIntervalTable.dateEnd]
     )
 }
 
@@ -72,14 +72,14 @@ fun Int?.toWorkTime(): String {
 }
 
 fun BundleValue.toDatabaseRecord(): BundleValuesRecord =
-    BundleValuesRecord()
-        .setId(this.id)
-        .setName(this.name)
-        .setProjectId(this.projectId)
-        .setProjectName(this.projectName)
-        .setFieldId(this.fieldId)
-        .setFieldName(this.fieldName)
-        .setType(this.`$type`)
+        BundleValuesRecord()
+                .setId(this.id)
+                .setName(this.name)
+                .setProjectId(this.projectId)
+                .setProjectName(this.projectName)
+                .setFieldId(this.fieldId)
+                .setFieldName(this.fieldName)
+                .setType(this.`$type`)
 
 fun Boolean.invert() = !this
 
@@ -100,8 +100,8 @@ fun Long?.toDate(toStartOfTheWeek: Boolean = false): Timestamp? {
         cal.set(Calendar.SECOND, 0)
         cal.set(Calendar.MILLISECOND, 0)
         if (toStartOfTheWeek) cal.set(
-            Calendar.DAY_OF_MONTH,
-            cal.get(Calendar.DAY_OF_MONTH) - cal.get(Calendar.DAY_OF_WEEK) + cal.firstDayOfWeek
+                Calendar.DAY_OF_MONTH,
+                cal.get(Calendar.DAY_OF_MONTH) - cal.get(Calendar.DAY_OF_WEEK) + cal.firstDayOfWeek
         )
         val time = cal.timeInMillis
         time.toTimestamp()
@@ -109,23 +109,32 @@ fun Long?.toDate(toStartOfTheWeek: Boolean = false): Timestamp? {
 }
 
 fun String.toStartOfWeek(): Timestamp =
-    Timestamp.valueOf(
-        LocalDate.parse(this, DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay().minusDays(
-            LocalDate.parse(this, DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay().dayOfWeek.value.toLong() - 1
+        Timestamp.valueOf(
+                LocalDate.parse(this, DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay().minusDays(
+                        LocalDate.parse(this, DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay().dayOfWeek.value.toLong() - 1
+                )
         )
-    )
 
 fun String.toStartOfDate(): Timestamp =
-    Timestamp.valueOf(LocalDate.parse(this, DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay())
+        Timestamp.valueOf(LocalDate.parse(this, DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay())
 
 fun String.toEndOfDate(): Timestamp =
-    Timestamp.valueOf(LocalDate.parse(this, DateTimeFormatter.ofPattern("yyyy-MM-dd")).atTime(23, 59))
+        Timestamp.valueOf(LocalDate.parse(this, DateTimeFormatter.ofPattern("yyyy-MM-dd")).atTime(23, 59))
 
 fun String.splitToList(prefix: String = "[", suffix: String = "]", delimiters: String = ",") =
-    this.removeSurrounding(prefix, suffix).split(delimiters)
+        this.removeSurrounding(prefix, suffix).split(delimiters)
 
 fun debugPrint(message: String) {
     if (InetAddress.getLocalHost().hostName == "hlopind") {
         println(message)
     }
+}
+
+fun printlnIf(condition: Boolean, message: String?) {
+    println(message)
+}
+
+fun printInLine(message: String) {
+    print("${" ".repeat(200)}\r")
+    print(message)
 }

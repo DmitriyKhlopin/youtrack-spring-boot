@@ -49,8 +49,7 @@ class Issue(
         var skip = 0
         var stored = 0
         val filter = customFilter ?: getFilter()
-        /*debugPrint("Actual filter: $filter")*/
-        print("Loading issues with actual filter: $filter\r")
+        println("Loading issues with actual filter: $filter")
 
         do {
             val request = if (filter == null)
@@ -67,7 +66,7 @@ class Issue(
                 it.saveComments()
                 it.saveCustomFields()
             }
-            print("Loaded ${issueIds.size} issues, stored $stored\r")
+            println("Loaded ${issueIds.size} issues, stored $stored\r")
         } while (result?.size ?: 0 > 0)
 
         //TODO оптимизировать импорт истории для проблемных запросов
@@ -75,7 +74,7 @@ class Issue(
             getIssueHistory(it)
             getTimeAccounting(it)
         }
-        print("Loaded $skip issues\r")
+        println("Loaded $skip issues\r")
         importLogService.saveLog(
                 ImportLogModel(
                         timestamp = Timestamp(System.currentTimeMillis()),
@@ -157,7 +156,7 @@ class Issue(
     }
 
     private fun getTimeAccounting(idReadable: String) {
-        print("Loading time units of $idReadable\r")
+        println("Loading time units of $idReadable")
         dslContext.deleteFrom(WORK_ITEMS).where(WORK_ITEMS.ISSUE_ID.eq(idReadable)).execute()
         //TODO заменить на loadInto
         YouTrackAPI.create(Converter.GSON).getWorkItems(AUTH, idReadable).execute().body()?.forEach {
@@ -184,7 +183,7 @@ class Issue(
     }
 
     override fun getIssueHistory(idReadable: String) {
-        print("Loading history of $idReadable\r")
+        println("Loading history of $idReadable")
         var hasAfter: Boolean? = true
         dslContext.deleteFrom(ISSUE_HISTORY).where(ISSUE_HISTORY.ISSUE_ID.eq(idReadable)).execute()
         var offset = 100
@@ -215,7 +214,7 @@ class Issue(
                     .stored()
             offset += issueActivities.body()?.activities?.size ?: 0
             hasAfter = issueActivities.body()?.hasAfter
-            println("$idReadable: stored $stored history items\r")
+            println("$idReadable: stored $stored history items")
         }
 
     }

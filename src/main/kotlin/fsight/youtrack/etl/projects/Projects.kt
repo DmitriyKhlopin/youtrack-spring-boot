@@ -12,17 +12,16 @@ import org.springframework.transaction.annotation.Transactional
 import java.net.SocketTimeoutException
 
 @Service
-@Transactional
 class Projects(private val dslContext: DSLContext) : IProjects {
     override fun getProjects(): List<YouTrackProject> {
         return dslContext.select(
-            PROJECTS.NAME.`as`("name"),
-            PROJECTS.SHORT_NAME.`as`("shortName"),
-            PROJECTS.SHORT_NAME.`as`("description"),
-            PROJECTS.ID.`as`("id")
+                PROJECTS.NAME.`as`("name"),
+                PROJECTS.SHORT_NAME.`as`("shortName"),
+                PROJECTS.SHORT_NAME.`as`("description"),
+                PROJECTS.ID.`as`("id")
         )
-            .from(PROJECTS)
-            .fetchInto(YouTrackProject::class.java)
+                .from(PROJECTS)
+                .fetchInto(YouTrackProject::class.java)
     }
 
     override fun saveProjects(): Int {
@@ -32,17 +31,17 @@ class Projects(private val dslContext: DSLContext) : IProjects {
             YouTrackAPI.create(Converter.GSON).getProjects(AUTH).execute().body()?.forEach {
                 println(it)
                 result = dslContext
-                    .insertInto(PROJECTS)
-                    .set(PROJECTS.NAME, it.name)
-                    .set(PROJECTS.SHORT_NAME, it.shortName)
-                    .set(PROJECTS.DESCRIPTION, it.description)
-                    .set(PROJECTS.ID, it.id)
-                    .onDuplicateKeyIgnore()
-                    /*.set(PROJECTS.NAME, it.name)
-                    .set(PROJECTS.SHORT_NAME, it.shortName)
-                    .set(PROJECTS.DESCRIPTION, it.description)
-                    .set(PROJECTS.ID, it.id)*/
-                    .execute()
+                        .insertInto(PROJECTS)
+                        .set(PROJECTS.NAME, it.name)
+                        .set(PROJECTS.SHORT_NAME, it.shortName)
+                        .set(PROJECTS.DESCRIPTION, it.description)
+                        .set(PROJECTS.ID, it.id)
+                        .onDuplicateKeyIgnore()
+                        /*.set(PROJECTS.NAME, it.name)
+                        .set(PROJECTS.SHORT_NAME, it.shortName)
+                        .set(PROJECTS.DESCRIPTION, it.description)
+                        .set(PROJECTS.ID, it.id)*/
+                        .execute()
                 saveProjectCustomFields(it.shortName!!)
             }
         } catch (e: SocketTimeoutException) {

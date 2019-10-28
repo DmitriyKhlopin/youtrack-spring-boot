@@ -6,6 +6,7 @@ import fsight.youtrack.api.YouTrackAPI
 import fsight.youtrack.generated.jooq.tables.BundleValues.BUNDLE_VALUES
 import fsight.youtrack.generated.jooq.tables.records.BundleValuesRecord
 import fsight.youtrack.models.FieldInstance
+import fsight.youtrack.printInLine
 import fsight.youtrack.toDatabaseRecord
 import org.jooq.DSLContext
 import org.springframework.stereotype.Service
@@ -32,18 +33,19 @@ class Bundle(private val dslContext: DSLContext) : IBundle {
                     value.toDatabaseRecord()
                 }.orEmpty())
             }
-            print("Transforming ${index + 1} of ${ids.size}\r")
+            printInLine("Transforming ${index + 1} of ${ids.size}\r")
+            print("${" ".repeat(100)}\r")
         }
         println("Saving to database")
         dslContext.deleteFrom(BUNDLE_VALUES).execute()
         val stored = dslContext.loadInto(BUNDLE_VALUES).loadRecords(arr).fields(
-            BUNDLE_VALUES.ID,
-            BUNDLE_VALUES.NAME,
-            BUNDLE_VALUES.PROJECT_ID,
-            BUNDLE_VALUES.PROJECT_NAME,
-            BUNDLE_VALUES.FIELD_ID,
-            BUNDLE_VALUES.FIELD_NAME,
-            BUNDLE_VALUES.TYPE
+                BUNDLE_VALUES.ID,
+                BUNDLE_VALUES.NAME,
+                BUNDLE_VALUES.PROJECT_ID,
+                BUNDLE_VALUES.PROJECT_NAME,
+                BUNDLE_VALUES.FIELD_ID,
+                BUNDLE_VALUES.FIELD_NAME,
+                BUNDLE_VALUES.TYPE
         ).execute().stored()
         println("Saved ${if (arr.size == stored) "all($stored)" else "$stored of ${arr.size}"} bundle values")
     }
