@@ -1,5 +1,6 @@
 package fsight.youtrack
 
+import com.google.gson.GsonBuilder
 import fsight.youtrack.db.exposed.ms.schedule.fact.WorkHoursModel
 import fsight.youtrack.db.exposed.ms.schedule.fact.WorkHoursTable
 import fsight.youtrack.db.exposed.ms.schedule.plan.ScheduleTimeIntervalModel
@@ -8,13 +9,17 @@ import fsight.youtrack.db.exposed.pg.TimeAccountingExtendedModel
 import fsight.youtrack.db.exposed.pg.TimeAccountingExtendedView
 import fsight.youtrack.generated.jooq.tables.records.BundleValuesRecord
 import fsight.youtrack.models.BundleValue
+import okhttp3.OkHttpClient
 import org.jetbrains.exposed.sql.ResultRow
+import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.converter.scalars.ScalarsConverterFactory
 import java.net.InetAddress
 import java.sql.Date
 import java.sql.Timestamp
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 /*fun debugPrint(print: Boolean = false, message: String = "") {
     if (print) println(message)
@@ -137,4 +142,20 @@ fun printlnIf(condition: Boolean, message: String?) {
 fun printInLine(message: String) {
     print("${" ".repeat(200)}\r")
     print(message)
+}
+
+fun getOkhttpClient(timeout: Long = 30) = OkHttpClient().newBuilder()
+        .connectTimeout(timeout, TimeUnit.SECONDS)
+        .readTimeout(timeout, TimeUnit.SECONDS)
+        .writeTimeout(timeout, TimeUnit.SECONDS)
+        .build()
+
+fun getConverterFactory(converter: Converter = Converter.SCALAR) = when (converter) {
+    Converter.SCALAR -> {
+        ScalarsConverterFactory.create()
+    }
+    else -> {
+        val gson = GsonBuilder().setLenient().create()
+        GsonConverterFactory.create(gson)
+    }
 }

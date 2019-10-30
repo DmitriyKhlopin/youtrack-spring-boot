@@ -1,16 +1,13 @@
 package fsight.youtrack.api
 
-import com.google.gson.GsonBuilder
 import fsight.youtrack.Converter
 import fsight.youtrack.NEW_ROOT_REF
+import fsight.youtrack.getConverterFactory
+import fsight.youtrack.getOkhttpClient
 import fsight.youtrack.models.*
-import okhttp3.OkHttpClient
 import retrofit2.Call
 import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.converter.scalars.ScalarsConverterFactory
 import retrofit2.http.*
-import java.util.concurrent.TimeUnit
 
 interface YouTrackAPI {
     @Headers("Accept: application/json")
@@ -121,29 +118,13 @@ interface YouTrackAPI {
     )
 
     companion object Factory {
-        fun create(converter: Converter = Converter.SCALAR): YouTrackAPI {
-            val okhttpClient = OkHttpClient().newBuilder()
-                    .connectTimeout(30, TimeUnit.SECONDS)
-                    .readTimeout(30, TimeUnit.SECONDS)
-                    .writeTimeout(30, TimeUnit.SECONDS)
-                    .build()
-
-            val converterFactory = when (converter) {
-                Converter.SCALAR -> {
-                    ScalarsConverterFactory.create()
-                }
-                else -> {
-                    val gson = GsonBuilder().setLenient().create()
-                    GsonConverterFactory.create(gson)
-                }
-            }
-            return Retrofit
-                    .Builder()
-                    .baseUrl(NEW_ROOT_REF)
-                    .client(okhttpClient)
-                    .addConverterFactory(converterFactory)
-                    .build()
-                    .create(YouTrackAPI::class.java)
-        }
+        fun create(converter: Converter = Converter.SCALAR): YouTrackAPI =
+                Retrofit
+                        .Builder()
+                        .baseUrl(NEW_ROOT_REF)
+                        .client(getOkhttpClient())
+                        .addConverterFactory(getConverterFactory(converter))
+                        .build()
+                        .create(YouTrackAPI::class.java)
     }
 }
