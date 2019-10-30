@@ -4,6 +4,7 @@ buildscript {
         springBootVersion = '2.1.9.RELEASE'
         jooqVersion = '3.12.1'
         retrofitVersion = '2.6.2'
+        okhttpVersion = '4.2.1'
     }
     repositories {
         mavenCentral()
@@ -75,6 +76,7 @@ dependencies {
     compile group: 'com.squareup.retrofit2', name: 'converter-simplexml', version: retrofitVersion
     compile group: 'com.squareup.retrofit2', name: 'converter-gson', version: retrofitVersion
     compile group: 'com.squareup.retrofit2', name: 'converter-scalars', version: retrofitVersion
+    compile group: 'com.squareup.okhttp3', name: 'okhttp', version: okhttpVersion
 
     compile group: 'org.jooq', name: 'jooq', version: jooqVersion
     compile group: 'org.jooq', name: 'jooq-meta', version: jooqVersion
