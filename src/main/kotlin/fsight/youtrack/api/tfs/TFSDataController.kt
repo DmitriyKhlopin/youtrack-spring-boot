@@ -16,22 +16,22 @@ class TFSDataController(private val service: ITFSData) {
 
     @GetMapping("/api/tfs")
     fun getItems(
-        @RequestParam("offset", required = false) offset: Int? = null,
-        @RequestParam("limit", required = false) limit: Int? = null,
-        @RequestParam("action", required = false) action: String? = null,
-        @RequestParam("iteration", required = false) iteration: String? = null,
-        @RequestParam("build", required = false) build: String? = null,
-        @RequestParam("changeRequestId", required = false) changeRequestId: Int? = null
+            @RequestParam("offset", required = false) offset: Int? = null,
+            @RequestParam("limit", required = false) limit: Int? = null,
+            @RequestParam("action", required = false) action: String? = null,
+            @RequestParam("iteration", required = false) iteration: String? = null,
+            @RequestParam("build", required = false) build: String? = null,
+            @RequestParam("changeRequestId", required = false) changeRequestId: Int? = null
     ): ResponseEntity<Any> {
         return when {
             action == "postToYT" && iteration != null -> service.postItemsToYouTrack(iteration)
             action == "postToYT" && iteration == null && offset != null && limit != null -> service.postItemsToYouTrack(
-                offset,
-                limit
+                    offset,
+                    limit
             )
             action == "fixed" && iteration != null && build != null -> service.getDefectsByFixedBuildId(
-                iteration,
-                build
+                    iteration,
+                    build
             )
             else -> ResponseEntity.status(HttpStatus.OK).body("Undefined set of parameters.")
         }
@@ -39,15 +39,15 @@ class TFSDataController(private val service: ITFSData) {
 
     @PostMapping("/api/tfs")
     fun postChangeRequest(
-        @RequestParam("action", required = false) action: String? = null,
-        @RequestParam("changeRequestId", required = false) changeRequestId: Int? = null,
-        @RequestBody(required = false) body: String? = null
+            @RequestParam("action", required = false) action: String? = null,
+            @RequestParam("changeRequestId", required = false) changeRequestId: Int? = null,
+            @RequestBody(required = false) body: String? = null
     ): ResponseEntity<Any> {
         println(body)
         return when {
             action == "postChangeRequest" && changeRequestId != null -> service.postChangeRequestById(
-                changeRequestId,
-                body
+                    changeRequestId,
+                    body
             )
             else -> /*service.getItems(offset, limit)*/ ResponseEntity.status(HttpStatus.OK).body("Undefined set of parameters.")
         }
@@ -55,8 +55,8 @@ class TFSDataController(private val service: ITFSData) {
 
     @GetMapping("/api/tfs/{id}")
     fun postItemToYouTrack(
-        @PathVariable("id") id: Int,
-        @RequestParam("action", required = false) action: String? = null
+            @PathVariable("id") id: Int,
+            @RequestParam("action", required = false) action: String? = null
     ): ResponseEntity<Any> = when (action) {
         "postToYT" -> service.postItemToYouTrack(id)
         "toJSON" -> service.toJson(id)
@@ -69,25 +69,25 @@ class TFSDataController(private val service: ITFSData) {
 
     @GetMapping("/api/tfs/builds")
     fun getBuildsByIteration(@RequestParam("iteration") iteration: String? = null): ResponseEntity<Any> =
-        when (iteration) {
-            null -> service.getBuildsByIteration("\\P7\\PP9\\9.0\\1.0\\Update 1")
-            else -> service.getBuildsByIteration(iteration)
-        }
+            when (iteration) {
+                null -> service.getBuildsByIteration("\\P7\\PP9\\9.0\\1.0\\Update 1")
+                else -> service.getBuildsByIteration(iteration)
+            }
 
     @GetMapping("/api/tfs/serviceHooks")
     fun getHook(
-        @RequestParam("limit", required = false) limit: Int? = null,
-        @RequestParam("postable", required = false) postable: Boolean? = null
+            @RequestParam("limit", required = false) limit: Int? = null,
+            @RequestParam("postable", required = false) postable: Boolean? = null
     ): ResponseEntity<Any> =
-        when (postable) {
-            true -> service.getPostableHooks(limit ?: 1)
-            else -> service.getHook(limit ?: 1)
-        }
+            when (postable) {
+                true -> service.getPostableHooks(limit ?: 1)
+                else -> service.getHook(limit ?: 1)
+            }
 
 
     @PostMapping("/api/tfs/serviceHooks")
     fun postHook(
-        @RequestBody body: String?
+            @RequestBody body: String?
     ): ResponseEntity<Any> {
         return try {
             val jsonBody = Gson().fromJson(body, TFSData.Hook::class.java)
