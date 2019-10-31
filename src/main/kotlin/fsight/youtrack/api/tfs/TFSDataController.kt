@@ -1,12 +1,9 @@
 package fsight.youtrack.api.tfs
 
 import com.google.gson.Gson
-import fsight.youtrack.Converter
-import fsight.youtrack.api.API
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-import java.net.InetAddress
 
 @CrossOrigin
 @RestController
@@ -91,7 +88,8 @@ class TFSDataController(private val service: ITFSData) {
     ): ResponseEntity<Any> {
         return try {
             val jsonBody = Gson().fromJson(body, TFSData.Hook::class.java)
-            if (InetAddress.getLocalHost().hostName != "hlopind") {
+            service.postHook(jsonBody)
+            /*if (InetAddress.getLocalHost().hostName != "hlopind") {
                 println("*** Checking server ***")
                 val status = API.create(environment = "TEST", converter = Converter.GSON).getStatus().execute()
                 if (status.code() == 200) {
@@ -99,7 +97,7 @@ class TFSDataController(private val service: ITFSData) {
                     val res = API.create(environment = "TEST", converter = Converter.GSON).postHook(body = jsonBody).execute()
                     ResponseEntity.status(res.code()).body(res.body())
                 } else service.postHook(jsonBody)
-            } else service.postHook(jsonBody)
+            } else service.postHook(jsonBody)*/
         } catch (e: Exception) {
             println(e.message)
             ResponseEntity.status(HttpStatus.OK).body(e.message)

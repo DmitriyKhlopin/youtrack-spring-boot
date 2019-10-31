@@ -30,30 +30,30 @@ class YouTrackApplication : SpringBootServletInitializer() {
     @Bean
     fun msDataSource(): Database {
         return Database.connect(
-            url = MS_URL,
-            driver = MS_DRIVER,
-            user = MS_USER,
-            password = MS_PASSWORD
+                url = MS_URL,
+                driver = MS_DRIVER,
+                user = MS_USER,
+                password = MS_PASSWORD
         )
     }
 
     @Bean
     fun pgDataSource(): Database {
         return Database.connect(
-            url = PG_URL,
-            driver = PG_DRIVER,
-            user = PG_USER,
-            password = PG_PASSWORD
+                url = PG_URL,
+                driver = PG_DRIVER,
+                user = PG_USER,
+                password = PG_PASSWORD
         )
     }
 
     @Bean
     fun tfsDataSource(): Database {
         return Database.connect(
-            url = TFS_URL,
-            driver = TFS_DRIVER,
-            user = TFS_USER,
-            password = TFS_PASSWORD
+                url = TFS_URL,
+                driver = TFS_DRIVER,
+                user = TFS_USER,
+                password = TFS_PASSWORD
         )
     }
 
@@ -63,13 +63,14 @@ class YouTrackApplication : SpringBootServletInitializer() {
             override fun addCorsMappings(registry: CorsRegistry) {
                 super.addCorsMappings(registry)
                 registry.addMapping("/**")
-                    .allowedOrigins(
-                        "http://localhost:3000",
-                        "http://10.9.172.12:3000",
-                        "http://10.9.172.76:3000",
-                        "http://localhost:8080",
-                        "http://10.30.207.22:8080"
-                    )
+                        .allowedOrigins(
+                                "http://localhost:3000",
+                                "chrome-extension://omalebghpgejjiaoknljcfmglgbpocdp",
+                                "http://10.9.172.12:3000",
+                                "http://10.9.172.76:3000",
+                                "http://localhost:8080",
+                                "http://10.30.207.22:8080"
+                        )
             }
         }
     }

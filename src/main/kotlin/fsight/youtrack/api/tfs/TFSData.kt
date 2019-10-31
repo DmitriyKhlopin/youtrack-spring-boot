@@ -667,33 +667,19 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
 
     override fun postHook(body: Hook?): ResponseEntity<Any> {
         return try {
-            /*println(body)*/
-            val hookBody = body/*Gson().fromJson(body, Hook::class.java)*/
-            val state = hookBody?.resource?.fields?.get("System.State")
-            val ytId = hookBody?.resource?.revision?.fields?.get("System.Title")
-                    .toString()
-                    .substringBefore(delimiter = " ")
-                    .substringBefore(delimiter = ".")
+            val state = body?.resource?.fields?.get("System.State")
+            val ytId = body?.resource?.revision?.fields?.get("System.Title").toString().substringBefore(delimiter = " ").substringBefore(delimiter = ".")
             val issueExists = commonService.findIssueInDB(ytId)
-            when {
-                state?.newValue == "Closed" && issueExists -> {
-                    println("Issue $ytId has been resolved")
-                    postCommand(ytId, "Состояние Открыта", "#{Направлена разработчику}")
-                }
-                state?.newValue == "Proposed" && issueExists -> {
-                    println("Issue $ytId requires your attention")
-                    postCommand(ytId, "Состояние Открыта", "#{Направлена разработчику}")
-                }
-                !issueExists -> {
-                    println("Seems that issue $ytId doesn't exist")
-                }
-                else -> println("Issue $ytId has no significant changes")
-            }
-
+            var fieldState: String? = null
+            var fieldDetailedState: String? = null
+            if (state?.newValue in arrayOf("Closed", "Proposed") && issueExists) fieldState = postCommand(ytId, "Состояние Открыта", "#{Направлена разработчику}").body.toString()
+            if (issueExists && state != null) fieldDetailedState = postCommand(ytId, "Детализированное состояние ${state?.newValue}", "").body.toString()
             val i = dslContext
                     .insertInto(HOOKS)
                     .set(HOOKS.RECORD_DATE_TIME, Timestamp.from(Instant.now()))
-                    .set(HOOKS.HOOK_BODY, body.toString())
+                    .set(HOOKS.HOOK_BODY, Gson().toJson(body).toString())
+                    .set(HOOKS.FIELD_STATE, fieldState)
+                    .set(HOOKS.FIELD_DETAILED_STATE, fieldDetailedState)
                     .returning(HOOKS.RECORD_DATE_TIME)
                     .fetchOne().recordDateTime
             ResponseEntity.status(HttpStatus.CREATED).body(i)

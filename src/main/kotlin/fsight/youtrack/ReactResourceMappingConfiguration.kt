@@ -23,10 +23,10 @@ class ReactResourceMappingConfiguration : WebMvcConfigurer {
 
 
         registry.addResourceHandler("/**")
-            .resourceChain(true)
-            .addResolver(resolver)
-            //.addResourceHandler("/resources/**")
-            //.addResourceLocations("/resources/")
+                .resourceChain(true)
+                .addResolver(resolver)
+        //.addResourceHandler("/resources/**")
+        //.addResourceLocations("/resources/")
     }
 
     inner class ReactResourceResolver : ResourceResolver {
@@ -34,15 +34,16 @@ class ReactResourceMappingConfiguration : WebMvcConfigurer {
         private val rootStaticFiles = listOf("favicon.io", "asset-manifest.json", "manifest.json", "service-worker.js")
 
         override fun resolveResource(
-            request: HttpServletRequest?, requestPath: String, locations: List<Resource>, chain: ResourceResolverChain
+                request: HttpServletRequest?, requestPath: String, locations: List<Resource>, chain: ResourceResolverChain
         ): Resource? {
+            println(requestPath)
             return resolve(requestPath)
         }
 
         override fun resolveUrlPath(
-            resourcePath: String,
-            locations: List<Resource>,
-            chain: ResourceResolverChain
+                resourcePath: String,
+                locations: List<Resource>,
+                chain: ResourceResolverChain
         ): String? {
             val resolvedResource = resolve(resourcePath) ?: return null
             return try {
