@@ -48,6 +48,16 @@ class YouTrackApplication : SpringBootServletInitializer() {
     }
 
     @Bean
+    fun gkbDataSource(): Database {
+        return Database.connect(
+                url = GKB_URL,
+                driver = PG_DRIVER,
+                user = GKB_USER,
+                password = GKB_PASSWORD
+        )
+    }
+
+    @Bean
     fun tfsDataSource(): Database {
         return Database.connect(
                 url = TFS_URL,
@@ -79,6 +89,7 @@ class YouTrackApplication : SpringBootServletInitializer() {
     fun initProjects(service: IDictionary) = CommandLineRunner {
         service.preloadCommercialProjects()
         service.preloadInnerProjects()
+        service.preloadDevOpsStates()
     }
 
     /*@Bean

@@ -92,8 +92,8 @@ dependencies {
     compile 'org.jsoup:jsoup:1.11.3'
 
     //exposed
-    compile 'org.jetbrains.exposed:exposed:0.11.2'
-    compile 'org.jetbrains.exposed:spring-transaction:0.11.2'
+    compile 'org.jetbrains.exposed:exposed:0.17.6'
+    compile 'org.jetbrains.exposed:spring-transaction:0.17.6'
 
     //db drivers
     compile "com.microsoft.sqlserver:mssql-jdbc:6.4.0.jre7"

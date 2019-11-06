@@ -15,6 +15,7 @@ import fsight.youtrack.models.*
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.springframework.stereotype.Service
+import java.net.URLEncoder
 import java.sql.Timestamp
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -284,10 +285,10 @@ class Issue(
     override fun findIssueInYT(id: String, filter: String): Boolean {
         val fields =
                 listOf(
-                        "idReadable",
-                        "fields(\$type,projectCustomField(\$type,field(name)),value(\$type,avatarUrl,buildLink,fullName,id,isResolved,localizedName,login,minutes,name,presentation,ringId,text))"
+                        "idReadable"
+                        /*"fields(\$type,projectCustomField(\$type,field(name)),value(\$type,avatarUrl,buildLink,fullName,id,isResolved,localizedName,login,minutes,name,presentation,ringId,text))"*/
                 ).joinToString(",")
-        val composedFilter = "#$id $filter"
+        val composedFilter = "$id $filter"
         val request = YouTrackAPI.create(Converter.GSON).getIssueList(auth = AUTH, fields = fields, top = 100, skip = 0, query = composedFilter)
         val result = request.execute().body()?.mapNotNull { it.idReadable }
         return result?.contains(id) ?: false

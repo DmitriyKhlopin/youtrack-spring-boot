@@ -10,11 +10,21 @@ import fsight.youtrack.db.exposed.pg.TimeAccountingExtendedView
 import fsight.youtrack.generated.jooq.tables.records.BundleValuesRecord
 import fsight.youtrack.models.BundleValue
 import okhttp3.OkHttpClient
+import org.jetbrains.exposed.sql.ColumnType
+import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.sql.Transaction
+import org.jetbrains.exposed.sql.statements.Statement
+import org.jetbrains.exposed.sql.statements.StatementType
+import org.jetbrains.exposed.sql.transactions.TransactionManager
+import org.jetbrains.exposed.sql.transactions.transaction
+
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.converter.scalars.ScalarsConverterFactory
 import java.net.InetAddress
 import java.sql.Date
+import java.sql.PreparedStatement
+import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -158,4 +168,55 @@ fun getConverterFactory(converter: Converter = Converter.SCALAR) = when (convert
         val gson = GsonBuilder().setLenient().create()
         GsonConverterFactory.create(gson)
     }
+}
+
+class ExposedTransformations {
+    val toList: (ResultSet) -> List<String> = { rs ->
+        val list = arrayListOf<String>()
+        while (rs.next()) {
+            val s = (1..rs.metaData.columnCount).joinToString { index -> rs.getString(index) ?: "null" }
+            list.add(s)
+        }
+        list
+
+    }
+    val getSingleProperty: (ResultSet, String) -> String = { rs, prop -> rs.getString(prop) }
+    val getPair: (ResultSet, String, String) -> Pair<Int, String> = { rs, prop1, prop2 -> Pair(first = rs.getString(prop1).toInt(), second = rs.getString(prop2)) }
+}
+
+
+fun <T : Any> String.execAndMap(db: Database?, transform: (ResultSet) -> T): List<T> {
+    val result = arrayListOf<T>()
+    val statement = this
+    transaction(db) {
+        TransactionManager.current().execCTE(statement) { rs ->
+            while (rs.next()) {
+                result += transform(rs)
+            }
+        }
+    }
+    return result
+}
+
+fun <T : Any> Transaction.execCTE(stmt: String, transform: (ResultSet) -> T): T? {
+    if (stmt.isEmpty()) return null
+
+    val type = StatementType.SELECT
+
+    return exec(object : Statement<T>(type, emptyList()) {
+        override fun PreparedStatement.executeInternal(transaction: Transaction): T? {
+            executeQuery()
+            return resultSet?.let {
+                try {
+                    transform(it)
+                } finally {
+                    it.close()
+                }
+            }
+        }
+
+        override fun prepareSQL(transaction: Transaction): String = stmt
+
+        override fun arguments(): Iterable<Iterable<Pair<ColumnType, Any?>>> = emptyList()
+    })
 }

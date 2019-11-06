@@ -2,20 +2,21 @@ package fsight.youtrack.api.tfs
 
 import com.google.gson.Gson
 import com.google.gson.internal.LinkedTreeMap
-import fsight.youtrack.AUTH
-import fsight.youtrack.DEVOPS_AUTH
+import fsight.youtrack.*
 import fsight.youtrack.api.YouTrackAPI
 import fsight.youtrack.api.common.ICommon
+import fsight.youtrack.api.dictionaries.IDictionary
 import fsight.youtrack.etl.issues.IIssue
 import fsight.youtrack.etl.projects.IProjects
 import fsight.youtrack.generated.jooq.tables.BundleValues.BUNDLE_VALUES
+import fsight.youtrack.generated.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALUES
 import fsight.youtrack.generated.jooq.tables.Hooks.HOOKS
 import fsight.youtrack.generated.jooq.tables.TfsLinks.TFS_LINKS
 import fsight.youtrack.generated.jooq.tables.TfsTasks.TFS_TASKS
 import fsight.youtrack.generated.jooq.tables.TfsWi.TFS_WI
 import fsight.youtrack.generated.jooq.tables.Users.USERS
-import fsight.youtrack.headers
 import fsight.youtrack.models.*
+import kotlinx.serialization.json.json
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -25,6 +26,7 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
+import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.Instant
 
@@ -34,7 +36,8 @@ class TFSData(
         @Qualifier("tfsDataSource") private val ms: Database,
         private val projectsService: IProjects,
         private val commonService: ICommon,
-        private val issueService: IIssue
+        private val issueService: IIssue,
+        private val dictionariesService: IDictionary
 ) : ITFSData {
     private final val types: HashMap<String, String> by lazy {
         hashMapOf<String, String>().also {
@@ -656,6 +659,7 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
 
     override fun postCommand(id: String?, command: String, filter: String): ResponseEntity<Any> {
         val i = issueService.findIssueInYT(id ?: "", filter)
+        println(i)
         val response = if (i) {
             val cmd = Gson().toJson(YouTrackCommand(issues = arrayListOf(YouTrackIssue(idReadable = id)), query = command))
             YouTrackAPI.create().postCommand(DEVOPS_AUTH, cmd).execute().body() ?: ""
@@ -672,7 +676,9 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
             val issueExists = commonService.findIssueInDB(ytId)
             var fieldState: String? = null
             var fieldDetailedState: String? = null
-            if (state?.newValue in arrayOf("Closed", "Proposed") && issueExists) fieldState = postCommand(ytId, "Состояние Открыта", "#{Направлена разработчику}").body.toString()
+            if (state?.newValue in arrayOf("Closed", "Proposed") && issueExists) fieldState = postCommand(ytId, "Состояние Открыта", "Состояние: {Направлена разработчику}").body.toString()
+            val bugIds = getAssociatedBugsState(ytId)
+            println(bugIds)
             if (issueExists && state != null) fieldDetailedState = postCommand(ytId, "Детализированное состояние ${state?.newValue}", "").body.toString()
             val i = dslContext
                     .insertInto(HOOKS)
@@ -687,4 +693,26 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
             ResponseEntity.badRequest().body(e)
         }
     }
+
+    override fun getAssociatedBugsState(id: String): String {
+        val issues = dslContext.select(CUSTOM_FIELD_VALUES.FIELD_VALUE)
+                .from(CUSTOM_FIELD_VALUES)
+                .where(CUSTOM_FIELD_VALUES.ISSUE_ID.eq(id))
+                .and(CUSTOM_FIELD_VALUES.FIELD_NAME.eq("Issue"))
+                .fetchOneInto(String::class.java)
+
+        val statement = """select System_Id, System_State from CurrentWorkItemView where System_Id in (${issues}) and TeamProjectCollectionSK = 37"""
+        val i = statement.execAndMap(ms) { ExposedTransformations().getPair(it, "System_Id", "System_State") }
+                .map {
+                    json {
+                        "id" to it.first
+                        "state" to it.second
+                        "order" to dictionariesService.devOpsStates.filter { k -> k.state == it.second }.firstOrNull()?.order
+                    }
+
+                }
+        val j = i.minBy { it["order"].toString().toInt() }!!
+        return j.toString()
+    }
 }
+

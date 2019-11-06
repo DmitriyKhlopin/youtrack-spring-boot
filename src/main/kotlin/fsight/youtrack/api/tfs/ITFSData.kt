@@ -20,4 +20,5 @@ interface ITFSData {
     fun getPostableHooks(limit: Int): ResponseEntity<Any>
     fun postHook(body: TFSData.Hook?): ResponseEntity<Any>
     fun postCommand(id: String?, command: String, filter: String): ResponseEntity<Any>
+    fun getAssociatedBugsState(id: String): String
 }
