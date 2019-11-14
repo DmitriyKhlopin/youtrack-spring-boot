@@ -1,6 +1,8 @@
 package fsight.youtrack.api.tfs
 
 import com.google.gson.Gson
+import com.google.gson.JsonObject
+
 import com.google.gson.internal.LinkedTreeMap
 import fsight.youtrack.*
 import fsight.youtrack.api.YouTrackAPI
@@ -16,7 +18,6 @@ import fsight.youtrack.generated.jooq.tables.TfsTasks.TFS_TASKS
 import fsight.youtrack.generated.jooq.tables.TfsWi.TFS_WI
 import fsight.youtrack.generated.jooq.tables.Users.USERS
 import fsight.youtrack.models.*
-import kotlinx.serialization.json.json
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -26,7 +27,6 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
-import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.Instant
 
@@ -659,12 +659,12 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
 
     override fun postCommand(id: String?, command: String, filter: String): ResponseEntity<Any> {
         val i = issueService.findIssueInYT(id ?: "", filter)
-        println(i)
         val response = if (i) {
             val cmd = Gson().toJson(YouTrackCommand(issues = arrayListOf(YouTrackIssue(idReadable = id)), query = command))
-            YouTrackAPI.create().postCommand(DEVOPS_AUTH, cmd).execute().body() ?: ""
+            val response = YouTrackAPI.create().postCommand(DEVOPS_AUTH, cmd).execute()
+            "Issue: $id returned response code ${response.code()} on command: $command"
         } else {
-            "Issue $id doesn't exist"
+            "Issue $id doesn't exist with condition: $filter"
         }
         return ResponseEntity.ok(response)
     }
@@ -678,8 +678,11 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
             var fieldDetailedState: String? = null
             if (state?.newValue in arrayOf("Closed", "Proposed") && issueExists) fieldState = postCommand(ytId, "Состояние Открыта", "Состояние: {Направлена разработчику}").body.toString()
             val bugIds = getAssociatedBugsState(ytId)
-            println(bugIds)
-            if (issueExists && state != null) fieldDetailedState = postCommand(ytId, "Детализированное состояние ${state?.newValue}", "").body.toString()
+            when {
+                issueExists && bugIds?.get("System_State")?.asString == "Closed" -> fieldDetailedState = "All bugs are closed"
+                issueExists && bugIds?.get("IterationPath")?.asString == "\\AP\\Backlog" -> fieldDetailedState = postCommand(ytId, "Детализированное состояние Backlog", "").body.toString()
+                issueExists && state != null -> fieldDetailedState = postCommand(ytId, "Детализированное состояние ${state?.newValue}", "").body.toString()
+            }
             val i = dslContext
                     .insertInto(HOOKS)
                     .set(HOOKS.RECORD_DATE_TIME, Timestamp.from(Instant.now()))
@@ -694,25 +697,21 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
         }
     }
 
-    override fun getAssociatedBugsState(id: String): String {
+    override fun getAssociatedBugsState(id: String): JsonObject? {
         val issues = dslContext.select(CUSTOM_FIELD_VALUES.FIELD_VALUE)
                 .from(CUSTOM_FIELD_VALUES)
                 .where(CUSTOM_FIELD_VALUES.ISSUE_ID.eq(id))
                 .and(CUSTOM_FIELD_VALUES.FIELD_NAME.eq("Issue"))
                 .fetchOneInto(String::class.java)
 
-        val statement = """select System_Id, System_State from CurrentWorkItemView where System_Id in (${issues}) and TeamProjectCollectionSK = 37"""
-        val i = statement.execAndMap(ms) { ExposedTransformations().getPair(it, "System_Id", "System_State") }
-                .map {
-                    json {
-                        "id" to it.first
-                        "state" to it.second
-                        "order" to dictionariesService.devOpsStates.filter { k -> k.state == it.second }.firstOrNull()?.order
-                    }
-
+        val statement = """select System_Id, System_State, IterationPath from CurrentWorkItemView where System_Id in (${issues}) and TeamProjectCollectionSK = 37"""
+        val all = statement.execAndMap(ms) { ExposedTransformations().toJsonObject(it, listOf("System_Id", "System_State", "IterationPath")) }
+                .map { e ->
+                    e.addProperty("order", dictionariesService.devOpsStates.firstOrNull { k -> k.state == e["System_State"].asString }?.order)
+                    e
                 }
-        val j = i.minBy { it["order"].toString().toInt() }!!
-        return j.toString()
+        val filtered = all.filter { it["IterationPath"].asString != "Backlog" && it["System_State"].asString != "Closed" && it["System_State"].asString != "Resolved" }
+        return if (filtered.isEmpty()) all.minBy { it["order"].toString().toInt() } else filtered.minBy { it["order"].toString().toInt() }
     }
 }
 

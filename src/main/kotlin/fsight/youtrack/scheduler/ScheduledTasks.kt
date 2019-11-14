@@ -29,6 +29,10 @@ class ScheduledTasks(private val service: IETL) : CommandLineRunner {
     }
 
     override fun run(vararg args: String?) {
-        if (runOnStartup) service.loadDataFromYT(false, null)
+        if (runOnStartup) {
+            service.state = ETLState.RUNNING
+            service.loadDataFromYT(false, null)
+            service.state = ETLState.IDLE
+        }
     }
 }

@@ -1,6 +1,8 @@
 package fsight.youtrack.api.tfs
 
+import com.google.gson.JsonObject
 import fsight.youtrack.models.TFSRequirement
+
 import org.springframework.http.ResponseEntity
 
 interface ITFSData {
@@ -20,5 +22,5 @@ interface ITFSData {
     fun getPostableHooks(limit: Int): ResponseEntity<Any>
     fun postHook(body: TFSData.Hook?): ResponseEntity<Any>
     fun postCommand(id: String?, command: String, filter: String): ResponseEntity<Any>
-    fun getAssociatedBugsState(id: String): String
+    fun getAssociatedBugsState(id: String): JsonObject?
 }

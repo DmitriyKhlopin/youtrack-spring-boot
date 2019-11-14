@@ -15,7 +15,6 @@ import fsight.youtrack.models.*
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.springframework.stereotype.Service
-import java.net.URLEncoder
 import java.sql.Timestamp
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -58,7 +57,14 @@ class Issue(
             else
                 YouTrackAPI.create(Converter.GSON).getIssueList(auth = AUTH, fields = fields, top = top, skip = skip, query = filter)
 
-            val result = request.execute().body()
+            var result: List<YouTrackIssue>?
+            try {
+                val t = request.execute()
+                result = t.body()
+            } catch (e: Exception) {
+                writeError("Access error", e.localizedMessage)
+                break
+            }
             issueIds.addAll(result?.mapNotNull { it.idReadable } ?: listOf())
             skip += result?.size ?: 0
             stored += result?.map { it.toIssueRecord() }?.loadToDatabase(dslContext) ?: 0

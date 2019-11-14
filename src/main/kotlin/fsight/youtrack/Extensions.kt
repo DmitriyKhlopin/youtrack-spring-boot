@@ -1,6 +1,7 @@
 package fsight.youtrack
 
 import com.google.gson.GsonBuilder
+import com.google.gson.JsonObject
 import fsight.youtrack.db.exposed.ms.schedule.fact.WorkHoursModel
 import fsight.youtrack.db.exposed.ms.schedule.fact.WorkHoursTable
 import fsight.youtrack.db.exposed.ms.schedule.plan.ScheduleTimeIntervalModel
@@ -9,6 +10,7 @@ import fsight.youtrack.db.exposed.pg.TimeAccountingExtendedModel
 import fsight.youtrack.db.exposed.pg.TimeAccountingExtendedView
 import fsight.youtrack.generated.jooq.tables.records.BundleValuesRecord
 import fsight.youtrack.models.BundleValue
+
 import okhttp3.OkHttpClient
 import org.jetbrains.exposed.sql.ColumnType
 import org.jetbrains.exposed.sql.Database
@@ -182,6 +184,15 @@ class ExposedTransformations {
     }
     val getSingleProperty: (ResultSet, String) -> String = { rs, prop -> rs.getString(prop) }
     val getPair: (ResultSet, String, String) -> Pair<Int, String> = { rs, prop1, prop2 -> Pair(first = rs.getString(prop1).toInt(), second = rs.getString(prop2)) }
+    val toJsonObject: (ResultSet, List<String>) -> JsonObject = { rs, props ->
+        val j = JsonObject()
+        props.forEach { i ->
+            run {
+                j.addProperty(i, rs.getString(i))
+            }
+        }
+        j
+    }
 }
 
 

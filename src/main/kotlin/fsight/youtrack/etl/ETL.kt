@@ -73,7 +73,6 @@ class ETL(
             issue.checkPendingIssues()
         }
 
-
         return lastResult
     }
 
