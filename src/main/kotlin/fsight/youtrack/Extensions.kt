@@ -30,6 +30,7 @@ import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoField
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -148,7 +149,7 @@ fun debugPrint(message: String) {
 }
 
 fun printlnIf(condition: Boolean, message: String?) {
-    println(message)
+    if (condition) println(message)
 }
 
 fun printInLine(message: String) {
@@ -233,3 +234,10 @@ fun <T : Any> Transaction.execCTE(stmt: String, transform: (ResultSet) -> T): T?
 }
 
 fun LocalDate.toTimestamp(): Timestamp = Timestamp.valueOf(this.atStartOfDay())
+
+fun Timestamp.toDateRanges(rangesCount: Int, rangeLength: Int): List<Pair<Timestamp, Timestamp>> {
+    if (rangeLength < 0) return listOf()
+    val month = Date(this.time).toLocalDate().monthValue
+    val i = Date(this.time).toLocalDate().plusMonths((rangeLength - if (month % rangeLength == 0) rangeLength else month % rangeLength).toLong()).with(ChronoField.DAY_OF_MONTH, 1)
+    return (0 until rangesCount).mapIndexed { index, _ -> Pair(i.minusMonths(rangeLength.toLong() * (index + 1) - 1).toTimestamp(), i.minusMonths(rangeLength.toLong() * index - 1).minusDays(1).toTimestamp()) }
+}

@@ -1,23 +1,22 @@
 package fsight.youtrack.api.kpi
 
 
-import fsight.youtrack.generated.jooq.Tables.CUSTOM_FIELD_VALUES
-import fsight.youtrack.generated.jooq.Tables.ISSUE_HISTORY
+import fsight.youtrack.generated.jooq.Tables.*
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
 import fsight.youtrack.generated.jooq.tables.KpiOverallView.KPI_OVERALL_VIEW
 import fsight.youtrack.generated.jooq.tables.SlaViolationsResponsible.SLA_VIOLATIONS_RESPONSIBLE
 import fsight.youtrack.generated.jooq.tables.Users.USERS
 import fsight.youtrack.generated.jooq.tables.WorkItems.WORK_ITEMS
+import fsight.youtrack.models.api.KPIAggregatedScore
+import fsight.youtrack.models.api.KPIScore
 import fsight.youtrack.models.sql.Issue
+import fsight.youtrack.toDateRanges
 import org.jetbrains.exposed.sql.Database
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import java.sql.Timestamp
-import java.sql.Date
-import java.time.LocalDate
-import java.time.temporal.ChronoField
 
 
 @Service
@@ -180,14 +179,14 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
                 .groupBy(USERS.FULL_NAME, ISSUES.ID)
 
         println(q.sql)
-        val r = q.fetchInto(T2::class.java)
+        val r = q.fetchInto(BasicKPIIndicatorRecord::class.java)
         return r.groupBy { it.issueId }
-                .map<String?, List<T2>, T2?> { it.value.maxBy<T2?, Int> { j -> j?.total ?: 0 } }
+                .map<String?, List<BasicKPIIndicatorRecord>, BasicKPIIndicatorRecord?> { it.value.maxBy<BasicKPIIndicatorRecord?, Int> { j -> j?.total ?: 0 } }
                 .groupingBy { it?.user ?: "" }
                 .eachCount()
     }
 
-    data class T2(var user: String? = null, var issueId: String? = null, var total: Int? = null)
+    data class BasicKPIIndicatorRecord(var user: String? = null, var issueId: String? = null, var total: Int? = null)
 
     override fun getViolations(
             projects: List<String>,
@@ -395,7 +394,8 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
                 .and(USERS.EMAIL.`in`(emails))
                 .and((WORK_ITEMS.WORK_NAME.notEqual("Анализ сроков выполнения")).or(WORK_ITEMS.WORK_NAME.isNull))
                 .groupBy(USERS.FULL_NAME, ISSUES.ID)
-        val issueParticipants = issueParticipantsQuery.fetchInto(T2::class.java)
+        val issueParticipants = issueParticipantsQuery.fetchInto(BasicKPIIndicatorRecord::class.java)
+        println(issueParticipants)
         val priorityTable = CUSTOM_FIELD_VALUES.`as`("priority")
         val productTable = CUSTOM_FIELD_VALUES.`as`("product")
         val typeTable = CUSTOM_FIELD_VALUES.`as`("type")
@@ -425,8 +425,6 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
         val issueStats = issueCustomFieldsValuesQuery.fetchInto(Issue::class.java)
                 .map { it.id to it }.toMap()
 
-        /*issueStats.forEach { println(it.value) }*/
-
         val solutionAttempts = dsl.select(
                 ISSUES.ID.`as`("issueId"),
                 USERS.FULL_NAME.`as`("user"),
@@ -441,7 +439,7 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
                 .and(ISSUE_HISTORY.OLD_VALUE_STRING.eq("In Progress"))
                 .and(ISSUE_HISTORY.NEW_VALUE_STRING.eq("Ожидает подтверждения"))
                 .groupBy(ISSUES.ID, USERS.FULL_NAME)
-                .fetchInto(T2::class.java)
+                .fetchInto(BasicKPIIndicatorRecord::class.java)
                 .groupBy { it.issueId }.toMap()
 
         val clarifications = dsl.select(
@@ -458,22 +456,20 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
                 .and(ISSUE_HISTORY.OLD_VALUE_STRING.eq("In Progress"))
                 .and(ISSUE_HISTORY.NEW_VALUE_STRING.eq("Ожидает ответа"))
                 .groupBy(ISSUES.ID, USERS.FULL_NAME)
-                .fetchInto(T2::class.java)
+                .fetchInto(BasicKPIIndicatorRecord::class.java)
                 .groupBy { it.issueId }.toMap()
 
         val postponements = dsl.select(
-                ISSUES.ID.`as`("issueId"),
-                USERS.FULL_NAME.`as`("user"),
-                DSL.count().`as`("total")
+                RESPONSIBLE_FOR_PLANNED_DATE_SHIFTS.ISSUE_ID.`as`("issueId"),
+                RESPONSIBLE_FOR_PLANNED_DATE_SHIFTS.ASSIGNEE.`as`("user"),
+                RESPONSIBLE_FOR_PLANNED_DATE_SHIFTS.AMMOUNT.`as`("total")
         )
-                .from(ISSUE_HISTORY)
-                .leftJoin(ISSUES).on(ISSUE_HISTORY.ISSUE_ID.eq(ISSUES.ID))
-                .leftJoin(USERS).on(ISSUE_HISTORY.AUTHOR.eq(USERS.EMAIL))
+                .from(RESPONSIBLE_FOR_PLANNED_DATE_SHIFTS)
+                .leftJoin(ISSUES).on(RESPONSIBLE_FOR_PLANNED_DATE_SHIFTS.ISSUE_ID.eq(ISSUES.ID))
+                .leftJoin(USERS).on(RESPONSIBLE_FOR_PLANNED_DATE_SHIFTS.ASSIGNEE.eq(USERS.FULL_NAME))
                 .where(ISSUES.RESOLVED_DATE.between(dateFrom).and(dateTo))
                 .and(ISSUES.PROJECT_SHORT_NAME.`in`(projects))
-                .and(ISSUE_HISTORY.FIELD_NAME.eq("Плановая дата предоставления ответа"))
-                .groupBy(ISSUES.ID, USERS.FULL_NAME)
-                .fetchInto(T2::class.java)
+                .fetchInto(BasicKPIIndicatorRecord::class.java)
                 .groupBy { it.issueId }.toMap()
 
         val violations = dsl.select(
@@ -506,40 +502,30 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
                             slaViolation = violations[it.key]
                     )
                 }
-
-        val agents = intermediate.map { it.agentTime.map { k -> k.agent }.toList() }
-                .toList().flatten().distinct()
-                .map { it to intermediate.filter { i -> i.agentTime.any { j -> j.agent == it } } }
-
-
-        val ii = agents.map { it.first to it.second.map { i -> i.toKPIScore(it.first) } }
-        return ii.aggregate(withDetails)
+        val agents = intermediate.map { it.agentTime.map { k -> k.agent }.toList() }.toList().flatten().distinct()
+        return agents.map { it to intermediate.filter { i -> i.agentTime.any { j -> j.agent == it } }.map { i -> i.toKPIScore(it) } }.aggregate(withDetails)
     }
 
-    fun generateDateRanges(dateTo: Timestamp): List<Pair<Timestamp, Timestamp>> {
-        val month = Date(dateTo.time).toLocalDate().monthValue
-        val i = Date(dateTo.time).toLocalDate().plusMonths((3 - if (month % 3 == 0) 3 else month % 3).toLong()).with(ChronoField.DAY_OF_MONTH, 1)
-        return (0..3).mapIndexed { index, _ -> Pair(i.minusMonths(3L * (index + 1) - 1).toTimestamp(), i.minusMonths(3L * index - 1).minusDays(1).toTimestamp()) }
-    }
-
-    fun LocalDate.toTimestamp(): Timestamp = Timestamp.valueOf(this.atStartOfDay())
 
     override fun getOverallResult(projects: List<String>, emails: List<String>, dateFrom: Timestamp, dateTo: Timestamp): Any {
-        val dynamics = generateDateRanges(dateTo).reversed().map {
-            val r = dsl.select(
-                    DSL.count(KPI_OVERALL_VIEW.ID).`as`("total"),
-                    (DSL.count(KPI_OVERALL_VIEW.ID) - DSL.sum(KPI_OVERALL_VIEW.VIOLATED)).`as`("notViolated"),
-                    DSL.sum(KPI_OVERALL_VIEW.SATISFIED).`as`("satisfied"),
-                    DSL.sum(KPI_OVERALL_VIEW.SELF_SOLVED).`as`("selfSolved"),
-                    DSL.sum(KPI_OVERALL_VIEW.SINGLE_SOLUTION).`as`("singleSolution")
-            )
-                    .from(KPI_OVERALL_VIEW)
-                    .leftJoin(ISSUES).on(KPI_OVERALL_VIEW.ID.eq(ISSUES.ID))
-                    .where(ISSUES.PROJECT_SHORT_NAME.`in`(projects))
-                    .and(ISSUES.RESOLVED_DATE.between(it.first).and(it.second))
-                    .fetchOneInto(KPIOverallResult::class.java)
-            Pair(it, r)
-        }
+        val dynamics = dateTo
+                .toDateRanges(12, 1)
+                .reversed()
+                .map {
+                    val r = dsl.select(
+                            DSL.count(KPI_OVERALL_VIEW.ID).`as`("total"),
+                            (DSL.count(KPI_OVERALL_VIEW.ID) - DSL.sum(KPI_OVERALL_VIEW.VIOLATED)).`as`("notViolated"),
+                            DSL.sum(KPI_OVERALL_VIEW.SATISFIED).`as`("satisfied"),
+                            DSL.sum(KPI_OVERALL_VIEW.SELF_SOLVED).`as`("selfSolved"),
+                            DSL.sum(KPI_OVERALL_VIEW.SINGLE_SOLUTION).`as`("singleSolution")
+                    )
+                            .from(KPI_OVERALL_VIEW)
+                            .leftJoin(ISSUES).on(KPI_OVERALL_VIEW.ID.eq(ISSUES.ID))
+                            .where(ISSUES.PROJECT_SHORT_NAME.`in`(projects))
+                            .and(ISSUES.RESOLVED_DATE.between(it.first).and(it.second))
+                            .fetchOneInto(KPIOverallResult::class.java)
+                    Pair(it, r)
+                }
         println(dynamics)
 
         val result = dsl.select(
@@ -574,7 +560,7 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
 
     )
 
-    fun T2.toAgentPair() = AgentPair(agent = this.user ?: "", value = this.total ?: 0)
+    fun BasicKPIIndicatorRecord.toAgentPair() = AgentPair(agent = this.user ?: "", value = this.total ?: 0)
 
     data class AgentPair(var agent: String, var value: Int)
 
@@ -596,7 +582,8 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
     )
 
     fun KPIResultByIssue.toKPIScore(agent: String): KPIScore {
-        val percentage = (this.agentTime.firstOrNull { it.agent == agent }?.value?.toFloat() ?: 0f) / this.agentTime.sumBy { it.value }
+        val percentage = (this.agentTime.firstOrNull { it.agent == agent }?.value?.toFloat()
+                ?: 0f) / this.agentTime.sumBy { it.value }
         val issueTypeScore = issueTypesMap[this.type] ?: 0f
         val priorityScore = prioritiesMap[this.priority] ?: 0f
 
@@ -614,7 +601,7 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
             else -> 0f
         }
         val slaScore = when {
-            this.slaViolation?.any { it.agent == agent } ?: false -> 1f
+            this.slaViolation?.any { it.agent == agent } ?: false -> 0f
             else -> 1f
         }
         val evaluationsScore = evaluationsMap[this.evaluation] ?: 0.8f
@@ -723,53 +710,4 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
             )
         }.sortedByDescending { it.totalAvg }
     }
-
-    data class KPIScore(
-            val issueId: String,
-            val agent: String,
-            val percentage: Float,
-            val total: Float,
-            val issueType: Float,
-            val priority: Float,
-            val level: Float,
-            val solution: Float,
-            val sla: Float,
-            val evaluation: Float,
-            val postponements: Float,
-            val clarifications: Float,
-            val violations: Int
-    )
-
-    data class KPIAggregatedScore(
-            val agent: String,
-            val total: Float,
-            val totalAvg: Float,
-            val totalWithViolations: Float,
-            val issueTypeSum: Float,
-            val prioritySum: Float,
-            val levelSum: Float,
-            val solutionSum: Float,
-            val slaSum: Float,
-            val evaluationSum: Float,
-            val postponementSum: Float,
-            val clarificationSum: Float,
-            val issueTypeAvg: Float,
-            val priorityAvg: Float,
-            val levelAvg: Float,
-            val solutionAvg: Float,
-            val slaAvg: Float,
-            val evaluationAvg: Float,
-            val postponementAvg: Float,
-            val clarificationAvg: Float,
-            val issueTypeCount: Int,
-            val priorityCount: Int,
-            val levelCount: Int,
-            val solutionCount: Int,
-            val slaCount: Int,
-            val evaluationCount: Int,
-            val postponementCount: Int,
-            val clarificationCount: Int,
-            val violations: Int,
-            val details: List<KPIScore>
-    )
 }
