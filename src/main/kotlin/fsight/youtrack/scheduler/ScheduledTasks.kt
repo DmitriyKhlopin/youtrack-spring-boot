@@ -14,7 +14,7 @@ class ScheduledTasks(private val service: IETL) : CommandLineRunner {
     @Scheduled(cron = "0 0/10 * * * *")
     fun loadData() {
         when {
-            InetAddress.getLocalHost().hostName != "hlopind" && service.state == ETLState.IDLE -> {
+            InetAddress.getLocalHost().hostName != "spb-fsight05" && service.state != ETLState.RUNNING  -> {
                 println("*** Scheduled task started ***")
                 service.state = ETLState.RUNNING
                 val result = service.loadDataFromYT(false, null)
