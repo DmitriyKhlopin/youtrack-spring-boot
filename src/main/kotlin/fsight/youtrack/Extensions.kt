@@ -231,3 +231,5 @@ fun <T : Any> Transaction.execCTE(stmt: String, transform: (ResultSet) -> T): T?
         override fun arguments(): Iterable<Iterable<Pair<ColumnType, Any?>>> = emptyList()
     })
 }
+
+fun LocalDate.toTimestamp(): Timestamp = Timestamp.valueOf(this.atStartOfDay())

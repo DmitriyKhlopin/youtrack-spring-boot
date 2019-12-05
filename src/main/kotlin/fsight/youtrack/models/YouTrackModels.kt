@@ -11,6 +11,8 @@ import java.sql.Timestamp
 import java.time.LocalDateTime
 import kotlin.math.roundToInt
 
+//TODO https://www.jetbrains.com/help/youtrack/standalone/operations-api-issues.html
+@Deprecated("fields was replaced with customFields")
 data class YouTrackIssue(
     var fields: List<YouTrackField>? = null,
     var description: String? = null,

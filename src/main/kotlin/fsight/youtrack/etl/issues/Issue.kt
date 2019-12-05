@@ -299,4 +299,8 @@ class Issue(
         val result = request.execute().body()?.mapNotNull { it.idReadable }
         return result?.contains(id) ?: false
     }
+
+    override fun getIssueById(id: String): YouTrackIssue {
+        return YouTrackIssue()
+    }
 }

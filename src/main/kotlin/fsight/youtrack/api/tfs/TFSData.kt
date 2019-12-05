@@ -536,8 +536,8 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
         }
         val item = result.first().apply {
             val i = Gson().fromJson(body, LinkedTreeMap::class.java)
-            if (i["title"] != null) this.title = i["title"].toString()
-            if (i["body"] != null) this.body = i["body"].toString()
+            /*if (i["title"] != null) this.title = i["title"].toString()
+            if (i["body"] != null) this.body = i["body"].toString()*/
         }
         val id2 = YouTrackAPI.create().createIssue(AUTH, Gson().toJson(item.toYouTrackPostableIssue("FP"))).execute()
         val idReadable = Gson().fromJson(id2.body(), YouTrackIssue::class.java)
@@ -672,7 +672,7 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
     override fun postHook(body: Hook?): ResponseEntity<Any> {
         return try {
             val state = body?.resource?.fields?.get("System.State")
-            val ytId = body?.resource?.revision?.fields?.get("System.Title").toString().substringBefore(delimiter = " ").substringBefore(delimiter = ".")
+            val ytId = body?.resource?.revision?.fields?.get("System.Title").toString().trimStart().substringBefore(delimiter = " ").substringBefore(delimiter = ".")
             val issueExists = commonService.findIssueInDB(ytId)
             var fieldState: String? = null
             var fieldDetailedState: String? = null
@@ -681,7 +681,7 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
             when {
                 issueExists && bugIds?.get("System_State")?.asString == "Closed" -> fieldDetailedState = "All bugs are closed"
                 issueExists && bugIds?.get("IterationPath")?.asString == "\\AP\\Backlog" -> fieldDetailedState = postCommand(ytId, "Детализированное состояние Backlog", "").body.toString()
-                issueExists && state != null -> fieldDetailedState = postCommand(ytId, "Детализированное состояние ${state?.newValue}", "").body.toString()
+                issueExists && state != null -> fieldDetailedState = postCommand(ytId, "Детализированное состояние ${state?.newValue}", "Состояние: -{Ожидает подтверждения} ").body.toString()
             }
             val i = dslContext
                     .insertInto(HOOKS)
@@ -693,7 +693,7 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
                     .fetchOne().recordDateTime
             ResponseEntity.status(HttpStatus.CREATED).body(i)
         } catch (e: Error) {
-            ResponseEntity.badRequest().body(e)
+            ResponseEntity.status(HttpStatus.CREATED).body(e)
         }
     }
 

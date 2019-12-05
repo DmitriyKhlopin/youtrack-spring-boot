@@ -32,47 +32,31 @@ class ETL(
     override fun loadDataFromYT(manual: Boolean, customFilter: String?, parameters: String): ETLResult? {
         printlnIf(customFilter != null, "Custom filter: $customFilter")
         val p = parameters.split(delimiters = *arrayOf(","))
-        var issuesCount = 0
-        if (GregorianCalendar.getInstance().also { it.time = Date() }.get(Calendar.MINUTE) == 30 && !manual) {
-            issuesCount = issue.getIssues(customFilter)
+        val time = GregorianCalendar.getInstance().also { it.time = Date() }
+        if (time.get(Calendar.MINUTE) == 30 && time.get(Calendar.HOUR) == 0 && !manual) {
             projects.saveProjects()
             bundle.getBundles()
             users.getUsers()
             issue.findDeletedIssues()
             issue.checkPendingIssues()
             timeline.launchCalculation()
-        } else {
-            if (!manual) issuesCount = issue.getIssues(customFilter)
         }
-        if (manual && p.contains("issues")) {
-            println("Loading issues only")
-            issuesCount = issue.getIssues(customFilter)
+        val issuesCount = when {
+            !manual -> issue.getIssues(customFilter)
+            manual && p.contains("issues") -> issue.getIssues(customFilter)
+            else -> 0
         }
-        if (manual && p.contains("bundles")) {
-            println("Loading bundles")
-            bundle.getBundles()
+        if (manual) p.forEach {
+            when (it) {
+                "bundles" -> bundle.getBundles()
+                "users" -> users.getUsers()
+                "timeline" -> timeline.launchCalculation()
+                "check" -> issue.findDeletedIssues()
+                "projects" -> projects.saveProjects()
+                "pending" -> issue.checkPendingIssues()
+            }
         }
-        if (manual && p.contains("users")) {
-            println("Loading users")
-            users.getUsers()
-        }
-        if (manual && p.contains("timeline")) {
-            println("Calculating timelines")
-            timeline.launchCalculation()
-        }
-        if (manual && p.contains("check")) {
-            println("Checking issues")
-            issue.findDeletedIssues()
-        }
-        if (manual && p.contains("projects")) {
-            println("Loading projects")
-            projects.saveProjects()
-        }
-        if (manual && p.contains("pending")) {
-            println("Checking pending issues")
-            issue.checkPendingIssues()
-        }
-
+        lastResult = ETLResult(state = ETLState.DONE, issues = issuesCount, timeUnit = 0)
         return lastResult
     }
 
