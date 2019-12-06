@@ -3,7 +3,7 @@ package fsight.youtrack.api.kpi
 import java.sql.Timestamp
 
 interface IKPI {
-    fun getResult(projects: List<String>, emails: List<String>, dateFrom: Timestamp, dateTo: Timestamp): List<KPI.R1>
+    /*fun getResult(projects: List<String>, emails: List<String>, dateFrom: Timestamp, dateTo: Timestamp): List<KPI.R1>
     fun getTotal(projects: List<String>, emails: List<String>, dateFrom: Timestamp, dateTo: Timestamp): List<KPI.T1>
     fun getTotal2(
             projects: List<String>,
@@ -73,9 +73,9 @@ interface IKPI {
             emails: List<String>,
             dateFrom: Timestamp,
             dateTo: Timestamp
-    ): List<KPI.T1>
+    ): List<KPI.T1>*/
 
-    fun getResult2(
+    fun getResult(
             projects: List<String>,
             emails: List<String>,
             dateFrom: Timestamp,
@@ -85,7 +85,6 @@ interface IKPI {
 
     fun getOverallResult(
             projects: List<String>,
-            emails: List<String>,
             dateFrom: Timestamp,
             dateTo: Timestamp
     ): Any
