@@ -21,13 +21,6 @@ class ETL(
         private val timeline: ITimeline,
         private val bundle: Bundle
 ) : IETL {
-    private var etlState: ETLState = ETLState.IDLE
-
-    override var state: ETLState
-        get() = etlState
-        set(value) {
-            etlState = value
-        }
 
     override fun loadDataFromYT(manual: Boolean, customFilter: String?, parameters: String): ETLResult? {
         printlnIf(customFilter != null, "Custom filter: $customFilter")
@@ -77,7 +70,6 @@ class ETL(
     }
 
     companion object {
-        var etlState = ETLState.IDLE
         var lastResult: ETLResult? = null
     }
 

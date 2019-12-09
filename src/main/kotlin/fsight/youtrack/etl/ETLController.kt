@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.*
 
 @CrossOrigin
 @RestController
-class ETLController(private val service: IETL) {
+class ETLController(private val service: IETL, private val etlStateService: IETLState) {
     @GetMapping("/api/etl")
     fun loadData(
             @RequestParam("dateFrom", required = false) dateFrom: String? = "",
@@ -21,7 +21,7 @@ class ETLController(private val service: IETL) {
                 service.loadDataFromYT(manual = true, parameters = parameters)
 
     @GetMapping("/api/etl/state")
-    fun getCurrentState() = ETL.etlState
+    fun getCurrentState() = etlStateService.state
 
     @GetMapping("/api/etl/bundle")
     fun getBundles() = service.getBundles()

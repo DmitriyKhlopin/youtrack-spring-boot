@@ -2,7 +2,7 @@ package fsight.youtrack.etl.issues
 
 import fsight.youtrack.*
 import fsight.youtrack.api.YouTrackAPI
-import fsight.youtrack.etl.ETL
+import fsight.youtrack.etl.IETLState
 import fsight.youtrack.etl.logs.IImportLog
 import fsight.youtrack.etl.timeline.ITimeline
 import fsight.youtrack.generated.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALUES
@@ -23,7 +23,8 @@ import java.time.LocalDateTime
 class Issue(
         private val dslContext: DSLContext,
         private val importLogService: IImportLog,
-        private val timelineService: ITimeline
+        private val timelineService: ITimeline,
+        private val etlStateService: IETLState
 ) : IIssue {
     override fun getIssues(customFilter: String?): Int {
         val issueIds = arrayListOf<String?>()
@@ -114,7 +115,7 @@ class Issue(
                 "updated: $dateFrom .. $dateTo"
             } else null
         } catch (e: Exception) {
-            ETL.etlState = ETLState.DONE
+            etlStateService.state = ETLState.DONE
             null
         }
     }
@@ -131,7 +132,7 @@ class Issue(
                         .set(CUSTOM_FIELD_VALUES.FIELD_VALUE, field.unwrapValue())
                         .execute()
             } catch (e: Exception) {
-                ETL.etlState = ETLState.DONE
+                etlStateService.state = ETLState.DONE
                 writeError(field.toString(), e.message ?: "")
             }
         }
@@ -156,7 +157,7 @@ class Issue(
             try {
 
             } catch (e: Exception) {
-                ETL.etlState = ETLState.DONE
+                etlStateService.state = ETLState.DONE
                 writeError(comment.toString(), e.message ?: "")
             }
         }
@@ -183,7 +184,7 @@ class Issue(
                     .execute()
             try {
             } catch (e: java.lang.Exception) {
-                ETL.etlState = ETLState.DONE
+                etlStateService.state = ETLState.DONE
                 writeError(it.toString(), e.message ?: "")
             }
         }
@@ -253,7 +254,7 @@ class Issue(
             dslContext.deleteFrom(WORK_ITEMS).where(WORK_ITEMS.ISSUE_ID.`in`(issues)).execute()
             dslContext.deleteFrom(ISSUE_HISTORY).where(ISSUE_HISTORY.ISSUE_ID.`in`(issues)).execute()
         } catch (e: java.lang.Exception) {
-            ETL.etlState = ETLState.DONE
+            etlStateService.state = ETLState.DONE
         }
         return 0
     }
@@ -284,7 +285,7 @@ class Issue(
                     .set(ERROR_LOG.ERROR, message)
                     .execute()
         } catch (e: Exception) {
-            ETL.etlState = ETLState.DONE
+            etlStateService.state = ETLState.DONE
         }
     }
 
