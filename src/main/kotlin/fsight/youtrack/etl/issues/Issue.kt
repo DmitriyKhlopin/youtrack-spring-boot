@@ -304,4 +304,11 @@ class Issue(
     override fun getIssueById(id: String): YouTrackIssue {
         return YouTrackIssue()
     }
+
+    override fun search(filter: String, fields: List<String>): List<YouTrackIssue> {
+        val fieldsString = (if (fields.isEmpty()) listOf("idReadable", "customFields(name,value)") else fields).joinToString(",")
+        println(fieldsString)
+        val request = YouTrackAPI.create(Converter.GSON).getIssueList(auth = AUTH, fields = fieldsString, top = 100, skip = 0, query = filter)
+        return request.execute().body().orEmpty()
+    }
 }

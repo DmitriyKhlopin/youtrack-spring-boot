@@ -56,6 +56,16 @@ interface YouTrackAPI {
     ): Call<List<YouTrackIssue>>
 
     @Headers("Accept: application/json")
+    @GET("api/issues")
+    fun search(
+            @Header("Authorization") auth: String,
+            @Query("fields") fields: String,
+            @Query("\$top") top: Int,
+            @Query("\$skip") skip: Int,
+            @Query("query") query: String
+    ): Call<List<YouTrackIssue>>
+
+    @Headers("Accept: application/json")
     @GET("api/issues/{issueId}/timeTracking/workItems?\$top=-1&fields=created,date,duration(minutes),updated,author(login,email),creator,id,type(id,name,autoAttached),text")
     fun getWorkItems(
             @Header("Authorization") auth: String,

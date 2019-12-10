@@ -673,28 +673,50 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
         return try {
             val state = body?.resource?.fields?.get("System.State")
             val ytId = body?.resource?.revision?.fields?.get("System.Title").toString().trimStart().substringBefore(delimiter = " ").substringBefore(delimiter = ".")
-            val issueExists = commonService.findIssueInDB(ytId)
+            val actualIssueState = issueService.search(ytId, listOf("idReadable", "fields(name,value(name))")).firstOrNull()
+                    ?: return ResponseEntity
+                            .status(HttpStatus.CREATED)
+                            .body(saveHookToDatabase(body, null, null, "Issue with id $ytId not found in YouTrack"))
+
+            val linkedBugs: String = actualIssueState.fields?.firstOrNull { it.name == "Issue" }?.value.toString()
+            println(linkedBugs)
             var fieldState: String? = null
             var fieldDetailedState: String? = null
-            if (state?.newValue in arrayOf("Closed", "Proposed") && issueExists) fieldState = postCommand(ytId, "Состояние Открыта", "Состояние: {Направлена разработчику}").body.toString()
+            if (state?.newValue in arrayOf("Closed", "Proposed")) fieldState = postCommand(ytId, "Состояние Открыта", "Состояние: {Направлена разработчику}").body.toString()
             val bugIds = getAssociatedBugsState(ytId)
             when {
-                issueExists && bugIds?.get("System_State")?.asString == "Closed" -> fieldDetailedState = "All bugs are closed"
-                issueExists && bugIds?.get("IterationPath")?.asString == "\\AP\\Backlog" -> fieldDetailedState = postCommand(ytId, "Детализированное состояние Backlog", "").body.toString()
-                issueExists && state != null -> fieldDetailedState = postCommand(ytId, "Детализированное состояние ${state?.newValue}", "Состояние: -{Ожидает подтверждения} ").body.toString()
+                bugIds?.get("System_State")?.asString == "Closed" -> fieldDetailedState = "All bugs are closed"
+                bugIds?.get("IterationPath")?.asString == "\\AP\\Backlog" -> fieldDetailedState = postCommand(ytId, "Детализированное состояние Backlog", "").body.toString()
+                state != null -> fieldDetailedState = postCommand(ytId, "Детализированное состояние ${state.newValue}", "Состояние: -{Ожидает подтверждения} ").body.toString()
             }
-            val i = dslContext
-                    .insertInto(HOOKS)
-                    .set(HOOKS.RECORD_DATE_TIME, Timestamp.from(Instant.now()))
-                    .set(HOOKS.HOOK_BODY, Gson().toJson(body).toString())
-                    .set(HOOKS.FIELD_STATE, fieldState)
-                    .set(HOOKS.FIELD_DETAILED_STATE, fieldDetailedState)
-                    .returning(HOOKS.RECORD_DATE_TIME)
-                    .fetchOne().recordDateTime
-            ResponseEntity.status(HttpStatus.CREATED).body(i)
+            ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, fieldState, fieldDetailedState, null))
         } catch (e: Error) {
             ResponseEntity.status(HttpStatus.CREATED).body(e)
         }
+    }
+
+    fun Hook?.isFieldChanged(fieldName: String): Boolean {
+        return this?.resource?.fields?.get(fieldName) != null
+    }
+
+    fun Hook?.oldFieldValue(fieldName: String): Any? {
+        return this?.resource?.fields?.get(fieldName)?.oldValue
+    }
+
+    fun Hook?.newFieldValue(fieldName: String): Any? {
+        return this?.resource?.fields?.get(fieldName)?.newValue
+    }
+
+    override fun saveHookToDatabase(body: Hook?, fieldState: String?, fieldDetailedState: String?, errorMessage: String?): Timestamp {
+        return dslContext
+                .insertInto(HOOKS)
+                .set(HOOKS.RECORD_DATE_TIME, Timestamp.from(Instant.now()))
+                .set(HOOKS.HOOK_BODY, Gson().toJson(body).toString())
+                .set(HOOKS.FIELD_STATE, fieldState)
+                .set(HOOKS.FIELD_DETAILED_STATE, fieldDetailedState)
+                .set(HOOKS.ERROR_MESSAGE, errorMessage)
+                .returning(HOOKS.RECORD_DATE_TIME)
+                .fetchOne().recordDateTime
     }
 
     override fun getAssociatedBugsState(id: String): JsonObject? {

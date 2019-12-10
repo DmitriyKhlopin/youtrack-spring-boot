@@ -10,4 +10,5 @@ interface IIssue {
     fun checkPendingIssues()
     fun findIssueInYT(id: String, filter: String): Boolean
     fun getIssueById(id: String): YouTrackIssue
+    fun search(filter: String, fields: List<String>): List<YouTrackIssue>
 }
