@@ -146,29 +146,35 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
 
 
     fun KPIResultByIssue.toKPIScore(agent: String): KPIScore {
+        /**Вычисление % трудозатрат, внесенных агентом*/
         val percentage = (this.agentTime.firstOrNull { it.agent == agent }?.value?.toFloat()
                 ?: 0f) / this.agentTime.sumBy { it.value }
+        /**Вычисление баллов, полученных на основании типа задачи*/
         val issueTypeScore = issueTypesMap[this.type] ?: 0f
+        /**Вычисление баллов, полученных на основании приоритета задачи*/
         val priorityScore = prioritiesMap[this.priority] ?: 0f
-
+        /**Вычисление баллов, полученных на основании уровня решения и типа задачи*/
         val levelScore = when {
             this.type == "Консультация" -> 0f
             this.issueId.startsWith("PP_Lic") || this.issueId.startsWith("FMP_LIC") -> 0f
             this.devOpsIssue == "null" || this.devOpsIssue.isEmpty() -> 1.4f
             else -> 0.6f
         }
-
+        /**Вычисление баллов, полученных на основании количества попыток решить задачу*/
         val solutionScore = when {
             solutionAttemptsBy?.none { it.agent == agent } ?: true -> 0f
             levelScore == 1.4f && solutionAttemptsBy?.firstOrNull { it.agent == agent }?.value == 1 -> 1.8f
             solutionAttemptsBy?.firstOrNull { it.agent == agent }?.value ?: 0 in 1..2 -> 1.4f
             else -> 0f
         }
+        /**Вычисление баллов, полученных на основании наличия нарушения SLA*/
         val slaScore = when {
             this.slaViolation?.any { it.agent == agent } ?: false -> 0f
             else -> 1f
         }
+        /**Вычисление баллов, полученных на основании оценки*/
         val evaluationsScore = evaluationsMap[this.evaluation] ?: 0.8f
+        /**Вычисление баллов, полученных на основании количества переносов сроков ответа*/
         val postponementsScore = when {
             postponementsBy?.firstOrNull { it.agent == agent }?.value == 0 -> 1f
             postponementsBy?.firstOrNull { it.agent == agent }?.value ?: 0 in 1..2 -> 1f
@@ -176,6 +182,7 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
             postponementsBy?.firstOrNull { it.agent == agent }?.value ?: 0 > 4 -> 0.2f
             else -> 1f
         }
+        /**Вычисление баллов, полученных на основании количества запросов уточнения*/
         val clarificationsScore = when {
             clarificationsBy?.firstOrNull { it.agent == agent }?.value == 0 -> 1f
             clarificationsBy?.firstOrNull { it.agent == agent }?.value ?: 0 in 1..2 -> 1f
@@ -183,6 +190,7 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
             clarificationsBy?.firstOrNull { it.agent == agent }?.value ?: 0 > 4 -> 0.2f
             else -> 1f
         }
+        /**Итоговый счёт агента в рамках заявки*/
         return KPIScore(
                 issueId = this.issueId,
                 agent = agent,
@@ -282,6 +290,7 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
             dateTo: Timestamp,
             withDetails: Boolean
     ): Any {
+        /**Получаем список сотрудников с номерами задач и трудозатратами сотрудников в рамках этих задач*/
         val issueParticipantsQuery = dsl.select(
                 USERS.FULL_NAME.`as`("user"),
                 ISSUES.ID.`as`("issueId"),
@@ -303,6 +312,7 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
         val devOpsIssueTable = CUSTOM_FIELD_VALUES.`as`("devOpsIssue")
         val evaluation = CUSTOM_FIELD_VALUES.`as`("evaluation")
 
+        /**Получаем приоритет, тип, список багов и оценки из задач в YT*/
         val issueCustomFieldsValuesQuery = dsl.select(
                 ISSUES.ID.`as`("id"),
                 priorityTable.FIELD_VALUE.`as`("priority"),
@@ -326,6 +336,7 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
         val issueStats = issueCustomFieldsValuesQuery.fetchInto(Issue::class.java)
                 .map { it.id to it }.toMap()
 
+        /**Получаем список задач с количеством попыток закрыть задачу для каждого сотрудника*/
         val solutionAttempts = dsl.select(
                 ISSUES.ID.`as`("issueId"),
                 USERS.FULL_NAME.`as`("user"),
@@ -342,7 +353,7 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
                 .groupBy(ISSUES.ID, USERS.FULL_NAME)
                 .fetchInto(BasicKPIIndicatorRecord::class.java)
                 .groupBy { it.issueId }.toMap()
-
+        /**Получаем список задач с количеством запросов уточнений для каждого сотрудника*/
         val clarifications = dsl.select(
                 ISSUES.ID.`as`("issueId"),
                 USERS.FULL_NAME.`as`("user"),
@@ -360,6 +371,7 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
                 .fetchInto(BasicKPIIndicatorRecord::class.java)
                 .groupBy { it.issueId }.toMap()
 
+        /**Получаем список задач с количеством переносов сроков решения для каждого сотрудника*/
         val postponements = dsl.select(
                 RESPONSIBLE_FOR_PLANNED_DATE_SHIFTS.ISSUE_ID.`as`("issueId"),
                 RESPONSIBLE_FOR_PLANNED_DATE_SHIFTS.ASSIGNEE.`as`("user"),
@@ -373,6 +385,7 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
                 .fetchInto(BasicKPIIndicatorRecord::class.java)
                 .groupBy { it.issueId }.toMap()
 
+        /**Получаем список задач с количеством переносов сроков решения для каждого сотрудника*/
         val violations = dsl.select(
                 SLA_VIOLATIONS_RESPONSIBLE.ID.`as`("issueId"),
                 SLA_VIOLATIONS_RESPONSIBLE.TYPE.`as`("type"),
@@ -384,6 +397,25 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
                 .fetchInto(SLAViolation::class.java)
                 .groupBy { it.issueId }.toMap()
 
+        /**Сливаем все данные по каждой заявке в одну запись
+         * Для каждой задачи формируется объект вида
+         *  {
+         *      "issueId": "EXRP-7",
+         *      "agentTime": [{"agent": "Николай Пархачев", "value": 15}, {"agent": "Яна Мальцева", "value": 35}],
+         *      "totalTime": 50,
+         *      "priority": "Normal",
+         *      "type": "Feature",
+         *      "devOpsIssue": "null",
+         *      "evaluation": "Не оценена",
+         *      "solutionAttempts": 1,
+         *      "solutionAttemptsBy": [{"agent": "Сагалов Михаил", "value": 1}],
+         *      "clarifications": null,
+         *      "clarificationsBy": null,
+         *      "postponements": 1,
+         *      "postponementsBy": [{"agent": "Сагалов Михаил", "value": 1}],
+         *      "slaViolation": [{"issueId": "EXRP-7", "type": "solution", "agent": "Николай Пархачев"}]
+         * }
+         * */
         val intermediate = issueParticipants.groupBy { it.issueId }
                 .map {
                     KPIResultByIssue(
@@ -403,7 +435,10 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
                             slaViolation = violations[it.key]
                     )
                 }
+        /**Из всех объектов с предыдущего шага берутся уникальные исполнители*/
         val agents = intermediate.map { it.agentTime.map { k -> k.agent }.toList() }.toList().flatten().distinct()
+
+        /**Список уникальных исполнителей пополняется информацией о заявках, если исполнитель участвовал в заявке, т.е. вносил трудозатраты*/
         return agents.map { it to intermediate.filter { i -> i.agentTime.any { j -> j.agent == it } }.map { i -> i.toKPIScore(it) } }.aggregate(withDetails)
     }
 
