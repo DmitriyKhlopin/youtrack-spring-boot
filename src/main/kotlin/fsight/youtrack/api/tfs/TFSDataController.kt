@@ -84,11 +84,12 @@ class TFSDataController(private val service: ITFSData) {
 
     @PostMapping("/api/tfs/serviceHooks")
     fun postHook(
+            @RequestParam("bugs", required = false) bugs: List<Int>? = null,
             @RequestBody body: String?
     ): ResponseEntity<Any> {
         return try {
             val jsonBody = Gson().fromJson(body, TFSData.Hook::class.java)
-            service.postHook(jsonBody)
+            service.postHook(jsonBody, bugs ?: listOf())
             /*if (InetAddress.getLocalHost().hostName != "hlopind") {
                 println("*** Checking server ***")
                 val status = API.create(environment = "TEST", converter = Converter.GSON).getStatus().execute()

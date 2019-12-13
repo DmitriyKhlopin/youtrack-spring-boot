@@ -2,7 +2,7 @@ package fsight.youtrack.api.tfs
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-
+import com.google.gson.annotations.SerializedName
 import com.google.gson.internal.LinkedTreeMap
 import fsight.youtrack.*
 import fsight.youtrack.api.YouTrackAPI
@@ -29,6 +29,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import java.sql.Timestamp
 import java.time.Instant
+import java.util.*
 
 @Service
 class TFSData(
@@ -86,6 +87,20 @@ class TFSData(
 
     private final val buildSuffixes: HashMap<String, String> by lazy {
         hashMapOf<String, String>().also { it["\\P7\\PP9\\9.0\\1.0\\Update 1"] = ".June" }
+    }
+
+    private final val sprints: HashMap<String, Pair<Timestamp, Timestamp>> by lazy {
+        hashMapOf<String, Pair<Timestamp, Timestamp>>().also {
+            it["\\AP\\Backlog\\Q3 FY19\\Sprint 9"] = Pair("2019-11-25".toStartOfDate(), "2019-12-06".toStartOfDate())
+            it["\\AP\\Backlog\\Q3 FY19\\Sprint 10"] = Pair("2019-12-09".toStartOfDate(), "2019-12-20".toStartOfDate())
+            it["\\AP\\Backlog\\Q3 FY19\\Sprint 11"] = Pair("2019-12-23".toStartOfDate(), "2020-01-10".toStartOfDate())
+            it["\\AP\\Backlog\\Q3 FY19\\Sprint 12"] = Pair("2020-01-13".toStartOfDate(), "2020-01-24".toStartOfDate())
+            it["\\AP\\Backlog\\Q3 FY19\\Sprint 13"] = Pair("2020-01-27".toStartOfDate(), "2020-02-07".toStartOfDate())
+            it["\\AP\\Backlog\\Q3 FY19\\Sprint 14"] = Pair("2020-02-10".toStartOfDate(), "2020-02-21".toStartOfDate())
+            it["\\AP\\Backlog\\Q3 FY19\\Sprint 15"] = Pair("2020-02-24".toStartOfDate(), "2020-03-06".toStartOfDate())
+            it["\\AP\\Backlog\\Q3 FY19\\Sprint 16"] = Pair("2020-03-09".toStartOfDate(), "2020-03-20".toStartOfDate())
+            it["\\AP\\Backlog\\Q3 FY19\\Sprint 17"] = Pair("2020-03-23".toStartOfDate(), "2020-04-03".toStartOfDate())
+        }
     }
 
     init {
@@ -628,7 +643,23 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
             var eventType: String? = null,
             var publisher: String? = null,
             var resource: HookResource? = null
-    )
+    ) {
+        fun isFieldChanged(fieldName: String): Boolean {
+            return this.resource?.fields?.get(fieldName) != null
+        }
+
+        fun oldFieldValue(fieldName: String): Any? {
+            return this.resource?.fields?.get(fieldName)?.oldValue
+        }
+
+        fun newFieldValue(fieldName: String): Any? {
+            return this.resource?.fields?.get(fieldName)?.newValue
+        }
+
+        fun getYtId(): String {
+            return this.resource?.revision?.fields?.get("System.Title").toString().trimStart().substringBefore(delimiter = " ").substringBefore(delimiter = ".")
+        }
+    }
 
     data class HookResource(
             var id: Int? = null,
@@ -658,54 +689,42 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
     )
 
     override fun postCommand(id: String?, command: String, filter: String): ResponseEntity<Any> {
-        val i = issueService.findIssueInYT(id ?: "", filter)
-        val response = if (i) {
-            val cmd = Gson().toJson(YouTrackCommand(issues = arrayListOf(YouTrackIssue(idReadable = id)), query = command))
-            val response = YouTrackAPI.create().postCommand(DEVOPS_AUTH, cmd).execute()
-            "Issue: $id returned response code ${response.code()} on command: $command"
-        } else {
-            "Issue $id doesn't exist with condition: $filter"
-        }
-        return ResponseEntity.ok(response)
+        val cmd = Gson().toJson(YouTrackCommand(issues = arrayListOf(YouTrackIssue(idReadable = id)), query = command))
+        val response = YouTrackAPI.create().postCommand(DEVOPS_AUTH, cmd).execute()
+        return ResponseEntity.ok("Issue $id returned response code ${response.code()} on command: $command")
     }
 
-    override fun postHook(body: Hook?): ResponseEntity<Any> {
+    override fun postHook(body: Hook?, bugs: List<Int>): ResponseEntity<Any> {
         return try {
-            val state = body?.resource?.fields?.get("System.State")
-            val ytId = body?.resource?.revision?.fields?.get("System.Title").toString().trimStart().substringBefore(delimiter = " ").substringBefore(delimiter = ".")
+            val ytId = body?.getYtId()
+                    ?: return ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, null, null, "Issue id not found in bug title"))
             val actualIssueState = issueService.search(ytId, listOf("idReadable", "fields(name,value(name))")).firstOrNull()
-                    ?: return ResponseEntity
-                            .status(HttpStatus.CREATED)
-                            .body(saveHookToDatabase(body, null, null, "Issue with id $ytId not found in YouTrack"))
-
-            val linkedBugs: String = actualIssueState.fields?.firstOrNull { it.name == "Issue" }?.value.toString()
-            println(linkedBugs)
+                    ?: return ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, null, null, "Issue with id $ytId not found in YouTrack"))
+            if ((actualIssueState.fields?.firstOrNull { it.name == "State" }?.value as JsonObject).get("value").asString != "Направлена разработчику") return ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, null, null, "Issue with id $ytId not found in YouTrack"))
+            val linkedBugs = if (bugs.isEmpty()) actualIssueState.fields?.firstOrNull { it.name == "Issue" }?.value.toString().split(",", " ").mapNotNull { it.toIntOrNull() } else bugs
+            val bugStates = getComposedBugsState(linkedBugs)
+            bugStates.forEach { println(it) }
+            val inferredState = when {
+                /*bugStates.any { it.sprintDates == null && it.sprint != "\\AP\\Backlog" && it.state != "Closed" } -> "Sprint dates are undefined"*/
+                /*bugStates.any { it.sprintDates == null && it.state != "Closed" } -> "Not in sprint and unresolved"*/
+                bugStates.any { it.sprint == "\\AP\\Backlog" && it.state == "Proposed" } -> "Backlog"
+                bugStates.all { it.state == "Closed" } -> "Closed"
+                else -> bugStates.filter { it.state != "Closed" }.minBy { it.stateOrder }?.state ?: "Closed"
+            }
             var fieldState: String? = null
             var fieldDetailedState: String? = null
-            if (state?.newValue in arrayOf("Closed", "Proposed")) fieldState = postCommand(ytId, "Состояние Открыта", "Состояние: {Направлена разработчику}").body.toString()
-            val bugIds = getAssociatedBugsState(ytId)
-            when {
-                bugIds?.get("System_State")?.asString == "Closed" -> fieldDetailedState = "All bugs are closed"
-                bugIds?.get("IterationPath")?.asString == "\\AP\\Backlog" -> fieldDetailedState = postCommand(ytId, "Детализированное состояние Backlog", "").body.toString()
-                state != null -> fieldDetailedState = postCommand(ytId, "Детализированное состояние ${state.newValue}", "Состояние: -{Ожидает подтверждения} ").body.toString()
+            if (body.isFieldChanged("System_State") && inferredState in arrayOf("Closed", "Proposed")) {
+                fieldState = postCommand(ytId, "Состояние Открыта", "Состояние: {Направлена разработчику}").body.toString()
+            }
+            if (body.isFieldChanged("System_State") || body.isFieldChanged("IterationPath")) {
+                fieldDetailedState = postCommand(ytId, "Детализированное состояние $inferredState", "Состояние: -{Ожидает подтверждения} ").body.toString()
             }
             ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, fieldState, fieldDetailedState, null))
         } catch (e: Error) {
-            ResponseEntity.status(HttpStatus.CREATED).body(e)
+            ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, null, null, e.localizedMessage))
         }
     }
 
-    fun Hook?.isFieldChanged(fieldName: String): Boolean {
-        return this?.resource?.fields?.get(fieldName) != null
-    }
-
-    fun Hook?.oldFieldValue(fieldName: String): Any? {
-        return this?.resource?.fields?.get(fieldName)?.oldValue
-    }
-
-    fun Hook?.newFieldValue(fieldName: String): Any? {
-        return this?.resource?.fields?.get(fieldName)?.newValue
-    }
 
     override fun saveHookToDatabase(body: Hook?, fieldState: String?, fieldDetailedState: String?, errorMessage: String?): Timestamp {
         return dslContext
@@ -718,6 +737,27 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
                 .returning(HOOKS.RECORD_DATE_TIME)
                 .fetchOne().recordDateTime
     }
+
+    override fun getComposedBugsState(ids: List<Int>): List<DevOpsBugState> {
+        val statement = """select System_Id, System_State, IterationPath from CurrentWorkItemView where System_Id in (${ids.joinToString(",")}) and TeamProjectCollectionSK = 37"""
+        return statement.execAndMap(ms) { ExposedTransformations().toDevOpsState(it) }.map { d ->
+            d.sprintDates = sprints[d.sprint]
+            d.stateOrder = dictionariesService.devOpsStates.firstOrNull { k -> k.state == d.state }?.order
+                    ?: -1
+            d
+        }
+    }
+
+    data class DevOpsBugState(
+            @SerializedName("System_Id")
+            var systemId: String,
+            @SerializedName("System_State")
+            var state: String,
+            @SerializedName("IterationPath")
+            var sprint: String,
+            var sprintDates: Pair<Timestamp, Timestamp>?,
+            var stateOrder: Int = -1
+    )
 
     override fun getAssociatedBugsState(id: String): JsonObject? {
         val issues = dslContext.select(CUSTOM_FIELD_VALUES.FIELD_VALUE)

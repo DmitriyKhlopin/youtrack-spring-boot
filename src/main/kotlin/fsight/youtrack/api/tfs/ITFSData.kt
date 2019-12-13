@@ -21,8 +21,9 @@ interface ITFSData {
     fun initDictionaries()
     fun getHook(limit: Int): ResponseEntity<Any>
     fun getPostableHooks(limit: Int): ResponseEntity<Any>
-    fun postHook(body: TFSData.Hook?): ResponseEntity<Any>
+    fun postHook(body: TFSData.Hook?, bugs: List<Int>): ResponseEntity<Any>
     fun postCommand(id: String?, command: String, filter: String): ResponseEntity<Any>
     fun getAssociatedBugsState(id: String): JsonObject?
+    fun getComposedBugsState(ids: List<Int>): List<TFSData.DevOpsBugState>
     fun saveHookToDatabase(body: TFSData.Hook?, fieldState: String?, fieldDetailedState: String?, errorMessage: String?): Timestamp
 }

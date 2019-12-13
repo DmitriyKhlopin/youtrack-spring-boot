@@ -2,6 +2,7 @@ package fsight.youtrack
 
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
+import fsight.youtrack.api.tfs.TFSData
 import fsight.youtrack.db.exposed.ms.schedule.fact.WorkHoursModel
 import fsight.youtrack.db.exposed.ms.schedule.fact.WorkHoursTable
 import fsight.youtrack.db.exposed.ms.schedule.plan.ScheduleTimeIntervalModel
@@ -193,6 +194,15 @@ class ExposedTransformations {
             }
         }
         j
+    }
+
+    val toDevOpsState: (ResultSet) -> TFSData.DevOpsBugState = { rs->
+        TFSData.DevOpsBugState(
+                systemId = rs.getString("System_Id"),
+                state = rs.getString("System_State"),
+                sprint = rs.getString("IterationPath"),
+sprintDates = null
+        )
     }
 }
 
