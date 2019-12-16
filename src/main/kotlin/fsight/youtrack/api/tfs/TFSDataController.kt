@@ -71,44 +71,10 @@ class TFSDataController(private val service: ITFSData) {
                 else -> service.getBuildsByIteration(iteration)
             }
 
-    @GetMapping("/api/tfs/serviceHooks")
-    fun getHook(
-            @RequestParam("limit", required = false) limit: Int? = null,
-            @RequestParam("postable", required = false) postable: Boolean? = null
-    ): ResponseEntity<Any> =
-            when (postable) {
-                true -> service.getPostableHooks(limit ?: 1)
-                else -> service.getHook(limit ?: 1)
-            }
 
 
-    @PostMapping("/api/tfs/serviceHooks")
-    fun postHook(
-            @RequestParam("bugs", required = false) bugs: List<Int>? = null,
-            @RequestBody body: String?
-    ): ResponseEntity<Any> {
-        return try {
-            val jsonBody = Gson().fromJson(body, TFSData.Hook::class.java)
-            service.postHook(jsonBody, bugs ?: listOf())
-            /*if (InetAddress.getLocalHost().hostName != "hlopind") {
-                println("*** Checking server ***")
-                val status = API.create(environment = "TEST", converter = Converter.GSON).getStatus().execute()
-                if (status.code() == 200) {
-                    println("*** Redirecting ***")
-                    val res = API.create(environment = "TEST", converter = Converter.GSON).postHook(body = jsonBody).execute()
-                    ResponseEntity.status(res.code()).body(res.body())
-                } else service.postHook(jsonBody)
-            } else service.postHook(jsonBody)*/
-        } catch (e: Exception) {
-            println(e.message)
-            ResponseEntity.status(HttpStatus.OK).body(e.message)
-        }
-    }
 
-    @GetMapping("/api/tfs/serviceHooks/post/{id}")
-    fun postCommand(@PathVariable("id") id: String? = null): ResponseEntity<Any> {
-        return service.postCommand(id, "Состояние Открыта", "#{Направлена разработчику}")
-    }
+
 }
 
 

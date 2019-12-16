@@ -1,22 +1,17 @@
 package fsight.youtrack.api.tfs
 
 import com.google.gson.Gson
-import com.google.gson.JsonObject
-import com.google.gson.annotations.SerializedName
 import com.google.gson.internal.LinkedTreeMap
-import fsight.youtrack.*
+import fsight.youtrack.AUTH
 import fsight.youtrack.api.YouTrackAPI
 import fsight.youtrack.api.common.ICommon
 import fsight.youtrack.api.dictionaries.IDictionary
 import fsight.youtrack.etl.issues.IIssue
 import fsight.youtrack.etl.projects.IProjects
-import fsight.youtrack.generated.jooq.tables.BundleValues.BUNDLE_VALUES
-import fsight.youtrack.generated.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALUES
-import fsight.youtrack.generated.jooq.tables.Hooks.HOOKS
 import fsight.youtrack.generated.jooq.tables.TfsLinks.TFS_LINKS
 import fsight.youtrack.generated.jooq.tables.TfsTasks.TFS_TASKS
 import fsight.youtrack.generated.jooq.tables.TfsWi.TFS_WI
-import fsight.youtrack.generated.jooq.tables.Users.USERS
+import fsight.youtrack.headers
 import fsight.youtrack.models.*
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.transactions.TransactionManager
@@ -27,8 +22,6 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
-import java.sql.Timestamp
-import java.time.Instant
 import java.util.*
 
 @Service
@@ -38,7 +31,7 @@ class TFSData(
         private val projectsService: IProjects,
         private val commonService: ICommon,
         private val issueService: IIssue,
-        private val dictionariesService: IDictionary
+        private val dictionaries: IDictionary
 ) : ITFSData {
     private final val types: HashMap<String, String> by lazy {
         hashMapOf<String, String>().also {
@@ -60,86 +53,6 @@ class TFSData(
                     "jetbrains.charisma.customfields.simple.common.SimpleIssueCustomField"*/
         }
     }
-    private final val prioritiesMap: HashMap<String, String> by lazy {
-        hashMapOf<String, String>().also {
-            it["High"] = "Major"
-            it["Medium"] = "Normal"
-            it["Low"] = "Minor"
-        }
-    }
-    private final val customFieldValues = arrayListOf<BundleValue>()
-    private final val users = arrayListOf<YouTrackUser>()
-    private final val projects = arrayListOf<YouTrackProject>()
-    private final val areas: HashMap<String, String> by lazy {
-        hashMapOf<String, String>().also {
-            it["\\P7\\Components Library\\Web-Components\\Products\\Data Entry Forms"] = "1.5 Формы ввода"
-            it["\\P7\\Components Library\\Web-Components\\Reporting\\Dashboard"] = "1.1 Аналитические панели"
-            it["Budgeting"] = "9. Бюджетная модель"
-            it["TabSheet"] = "1.2 Регламентные отчеты"
-            it["Fore.NET Language"] = "2.3 Средства разработки (Fore)"
-            it["P7"] = "8. Прочее"
-        }
-    }
-
-    private final val buildPrefixes: HashMap<String, String> by lazy {
-        hashMapOf<String, String>().also { it["\\P7\\PP9\\9.0\\1.0\\Update 1"] = "9.0." }
-    }
-
-    private final val buildSuffixes: HashMap<String, String> by lazy {
-        hashMapOf<String, String>().also { it["\\P7\\PP9\\9.0\\1.0\\Update 1"] = ".June" }
-    }
-
-    private final val sprints: HashMap<String, Pair<Timestamp, Timestamp>> by lazy {
-        hashMapOf<String, Pair<Timestamp, Timestamp>>().also {
-            it["\\AP\\Backlog\\Q3 FY19\\Sprint 9"] = Pair("2019-11-25".toStartOfDate(), "2019-12-06".toStartOfDate())
-            it["\\AP\\Backlog\\Q3 FY19\\Sprint 10"] = Pair("2019-12-09".toStartOfDate(), "2019-12-20".toStartOfDate())
-            it["\\AP\\Backlog\\Q3 FY19\\Sprint 11"] = Pair("2019-12-23".toStartOfDate(), "2020-01-10".toStartOfDate())
-            it["\\AP\\Backlog\\Q3 FY19\\Sprint 12"] = Pair("2020-01-13".toStartOfDate(), "2020-01-24".toStartOfDate())
-            it["\\AP\\Backlog\\Q3 FY19\\Sprint 13"] = Pair("2020-01-27".toStartOfDate(), "2020-02-07".toStartOfDate())
-            it["\\AP\\Backlog\\Q3 FY19\\Sprint 14"] = Pair("2020-02-10".toStartOfDate(), "2020-02-21".toStartOfDate())
-            it["\\AP\\Backlog\\Q3 FY19\\Sprint 15"] = Pair("2020-02-24".toStartOfDate(), "2020-03-06".toStartOfDate())
-            it["\\AP\\Backlog\\Q3 FY19\\Sprint 16"] = Pair("2020-03-09".toStartOfDate(), "2020-03-20".toStartOfDate())
-            it["\\AP\\Backlog\\Q3 FY19\\Sprint 17"] = Pair("2020-03-23".toStartOfDate(), "2020-04-03".toStartOfDate())
-        }
-    }
-
-    init {
-        this.initDictionaries()
-    }
-
-    override fun initDictionaries() {
-        projects.clear()
-        customFieldValues.clear()
-        users.clear()
-        customFieldValues.addAll(
-                dslContext
-                        .select(
-                                BUNDLE_VALUES.ID.`as`("id"),
-                                BUNDLE_VALUES.NAME.`as`("name"),
-                                BUNDLE_VALUES.PROJECT_ID.`as`("projectId"),
-                                BUNDLE_VALUES.PROJECT_NAME.`as`("projectName"),
-                                BUNDLE_VALUES.FIELD_ID.`as`("fieldId"),
-                                BUNDLE_VALUES.FIELD_NAME.`as`("fieldName"),
-                                BUNDLE_VALUES.TYPE.`as`("\$type")
-                        )
-                        .from(BUNDLE_VALUES)
-                        .fetchInto(BundleValue::class.java)
-        )
-
-        users.addAll(
-                dslContext
-                        .select(
-                                USERS.ID.`as`("id"),
-                                USERS.FULL_NAME.`as`("fullName"),
-                                USERS.EMAIL.`as`("email")
-                        )
-                        .from(USERS)
-                        .where(USERS.EMAIL.isNotNull)
-                        .fetchInto(YouTrackUser::class.java)
-        )
-        projects.addAll(projectsService.getProjects())
-    }
-
 
     override fun getItemsCount(): Int {
         return dslContext
@@ -190,7 +103,6 @@ class TFSData(
     }
 
     override fun postItemsToYouTrack(iteration: String?): ResponseEntity<Any> {
-        initDictionaries()
         val iterations = iteration?.split(",")
         val items = dslContext.select(
                 TFS_WI.ID.`as`("id"),
@@ -248,7 +160,7 @@ class TFSData(
 
     fun getCustomFieldValue(projectName: String, fieldName: String, value: String?): FieldValueBase? {
         return when (fieldName) {
-            "Assignee" -> users.firstOrNull { it.profile?.email?.email == value }.let { it ->
+            "Assignee" -> dictionaries.users.firstOrNull { it.profile?.email?.email == value }.let { it ->
                 if (it != null) SingleFieldValue(
                         id = "86-16",
                         `$type` = "jetbrains.charisma.customfields.complex.user.SingleUserIssueCustomField",
@@ -263,7 +175,7 @@ class TFSData(
                     `$type` = "jetbrains.charisma.customfields.simple.common.SimpleIssueCustomField",
                     value = value
             )
-            "State" -> customFieldValues.asSequence().firstOrNull {
+            "State" -> dictionaries.customFieldValues.asSequence().firstOrNull {
                 it.fieldName == fieldName && it.name == value && it.projectName == projectName
             }.let { it ->
                 if (it != null) SingleFieldValue(
@@ -274,7 +186,7 @@ class TFSData(
                         value = ActualValue(id = it.id, name = it.name)
                 ) else null
             }
-            "Affected versions" -> customFieldValues.asSequence().firstOrNull {
+            "Affected versions" -> dictionaries.customFieldValues.asSequence().firstOrNull {
                 it.fieldName == fieldName && it.name == value && it.projectName == projectName
             }.let { it ->
                 if (it != null) MultiFieldValue(
@@ -283,7 +195,7 @@ class TFSData(
                         value = listOf(ActualValue(id = it.id, name = it.name))
                 ) else null
             }
-            else -> customFieldValues.asSequence().firstOrNull {
+            else -> dictionaries.customFieldValues.asSequence().firstOrNull {
                 it.fieldName == fieldName && it.name == value && it.projectName == projectName
             }.let { it ->
                 if (it != null) SingleFieldValue(
@@ -297,7 +209,7 @@ class TFSData(
 
     fun getCustomFieldListValue(fieldName: String, value: String?): FieldValueBase? {
         return when (fieldName) {
-            "Assignee" -> users.firstOrNull { it.profile?.email?.email == value }.let { it ->
+            "Assignee" -> dictionaries.users.firstOrNull { it.profile?.email?.email == value }.let { it ->
                 if (it != null) SingleFieldValue(
                         id = "86-16",
                         `$type` = "jetbrains.charisma.customfields.complex.user.SingleUserIssueCustomField",
@@ -307,7 +219,7 @@ class TFSData(
                         )
                 ) else null
             }
-            else -> customFieldValues.asSequence().firstOrNull {
+            else -> dictionaries.customFieldValues.asSequence().firstOrNull {
                 it.fieldName == fieldName && it.name == value
             }.let {
                 if (it != null) SingleFieldValue(
@@ -321,7 +233,7 @@ class TFSData(
 
     fun getPostableRequirement(item: TFSRequirement): String {
         println(item.id)
-        val priority = getCustomFieldValue("W", "Priority", prioritiesMap[item.severity] ?: "Normal")
+        val priority = getCustomFieldValue("W", "Priority", dictionaries.priorities[item.severity] ?: "Normal")
         val iterationPath = getCustomFieldValue("W", "Iteration", item.iterationPath ?: "\\P7\\PP9")
         val proposalQuality = getCustomFieldValue("W", "Proposal quality", item.proposalQuality ?: "Average")
         val type = getCustomFieldValue("W", "Type", item.type ?: "Requirement")
@@ -568,7 +480,7 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
             "Task" -> "Feature"
             else -> "Консультация"
         }
-        val projectId = projects.firstOrNull { it.shortName == queueId }?.id ?: return null
+        val projectId = dictionaries.projects.firstOrNull { it.shortName == queueId }?.id ?: return null
         val type = getCustomFieldValue(queueId, "Type", this.parentType ?: "Bug")
         val product = getCustomFieldValue(queueId, "Продукт", /*this.parentType ?:*/ "FP 9.0")
         val database = getCustomFieldValue(queueId, "СУБД", "Любая СУБД")
@@ -577,7 +489,7 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
         val component = getCustomFieldValue(
                 queueId,
                 "Subsystem",
-                areas[this.areaPath] ?: "8. Прочее"
+                dictionaries.areas[this.areaPath] ?: "8. Прочее"
         ) //TODO calculate value from this.areaName
         val affectedVersions =
                 getCustomFieldValue(queueId, "Affected versions", "9.0.202") //TODO calculate value from defect
@@ -585,7 +497,7 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
                 getCustomFieldValue(
                         queueId,
                         "Исправлено в версии",
-                        "${buildPrefixes[this.iterationPath]}${this.mergedIn}${buildSuffixes[this.iterationPath]}"
+                        "${dictionaries.buildPrefixes[this.iterationPath]}${this.mergedIn}${dictionaries.buildSuffixes[this.iterationPath]}"
                 )
 
         val firstResponseSLA = getCustomFieldValue(queueId, "SLA по первому ответу", "Выполнен")
@@ -612,168 +524,8 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
         )
     }
 
-    override fun getHook(limit: Int): ResponseEntity<Any> {
-        val i = dslContext
-                .select(HOOKS.HOOK_BODY)
-                .from(HOOKS)
-                .orderBy(HOOKS.RECORD_DATE_TIME.desc())
-                .limit(limit)
-                .fetchInto(String::class.java)
-                .map { Gson().fromJson(it, Hook::class.java) }
-        return ResponseEntity.ok(i)
-    }
-
-    override fun getPostableHooks(limit: Int): ResponseEntity<Any> {
-        val i = dslContext
-                .select(HOOKS.HOOK_BODY)
-                .from(HOOKS)
-                .orderBy(HOOKS.RECORD_DATE_TIME.desc())
-                .limit(limit)
-                .fetchInto(String::class.java)
-                .map { Gson().fromJson(it, Hook::class.java) }
-                .filter { it.resource?.fields?.get("System.State") != null }
-                .map { it.resource?.fields?.get("System.State") }
-        return ResponseEntity.ok(i)
-    }
-
-    data class Hook(
-            var subscriptionId: String? = null,
-            var notificationId: Int? = null,
-            var id: String? = null,
-            var eventType: String? = null,
-            var publisher: String? = null,
-            var resource: HookResource? = null
-    ) {
-        fun isFieldChanged(fieldName: String): Boolean {
-            return this.resource?.fields?.get(fieldName) != null
-        }
-
-        fun oldFieldValue(fieldName: String): Any? {
-            return this.resource?.fields?.get(fieldName)?.oldValue
-        }
-
-        fun newFieldValue(fieldName: String): Any? {
-            return this.resource?.fields?.get(fieldName)?.newValue
-        }
-
-        fun getYtId(): String {
-            return this.resource?.revision?.fields?.get("System.Title").toString().trimStart().substringBefore(delimiter = " ").substringBefore(delimiter = ".")
-        }
-    }
-
-    data class HookResource(
-            var id: Int? = null,
-            var workItemId: Int? = null,
-            var rev: Int? = null,
-            var revisedBy: DevOpsUser? = null,
-            var fields: HashMap<String, HookFieldPair> = hashMapOf(),
-            var revision: HookRevision? = null
-    )
-
-    data class DevOpsUser(
-            var id: String? = null,
-            var name: String? = null,
-            var displayName: String? = null,
-            var uniqueName: String? = null
-    )
-
-    data class HookFieldPair(
-            var oldValue: Any? = null,
-            var newValue: Any? = null
-    )
-
-    data class HookRevision(
-            var id: Int? = null,
-            var rev: Int? = null,
-            var fields: HashMap<String, Any>
-    )
-
-    override fun postCommand(id: String?, command: String, filter: String): ResponseEntity<Any> {
-        val cmd = Gson().toJson(YouTrackCommand(issues = arrayListOf(YouTrackIssue(idReadable = id)), query = command))
-        val response = YouTrackAPI.create().postCommand(DEVOPS_AUTH, cmd).execute()
-        return ResponseEntity.ok("Issue $id returned response code ${response.code()} on command: $command")
-    }
-
-    override fun postHook(body: Hook?, bugs: List<Int>): ResponseEntity<Any> {
-        return try {
-            val ytId = body?.getYtId()
-                    ?: return ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, null, null, "Issue id not found in bug title"))
-            val actualIssueState = issueService.search(ytId, listOf("idReadable", "fields(name,value(name))")).firstOrNull()
-                    ?: return ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, null, null, "Issue with id $ytId not found in YouTrack"))
-            if ((actualIssueState.fields?.firstOrNull { it.name == "State" }?.value as JsonObject).get("value").asString != "Направлена разработчику") return ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, null, null, "Issue with id $ytId not found in YouTrack"))
-            val linkedBugs = if (bugs.isEmpty()) actualIssueState.fields?.firstOrNull { it.name == "Issue" }?.value.toString().split(",", " ").mapNotNull { it.toIntOrNull() } else bugs
-            val bugStates = getComposedBugsState(linkedBugs)
-            bugStates.forEach { println(it) }
-            val inferredState = when {
-                /*bugStates.any { it.sprintDates == null && it.sprint != "\\AP\\Backlog" && it.state != "Closed" } -> "Sprint dates are undefined"*/
-                /*bugStates.any { it.sprintDates == null && it.state != "Closed" } -> "Not in sprint and unresolved"*/
-                bugStates.any { it.sprint == "\\AP\\Backlog" && it.state == "Proposed" } -> "Backlog"
-                bugStates.all { it.state == "Closed" } -> "Closed"
-                else -> bugStates.filter { it.state != "Closed" }.minBy { it.stateOrder }?.state ?: "Closed"
-            }
-            var fieldState: String? = null
-            var fieldDetailedState: String? = null
-            if (body.isFieldChanged("System_State") && inferredState in arrayOf("Closed", "Proposed")) {
-                fieldState = postCommand(ytId, "Состояние Открыта", "Состояние: {Направлена разработчику}").body.toString()
-            }
-            if (body.isFieldChanged("System_State") || body.isFieldChanged("IterationPath")) {
-                fieldDetailedState = postCommand(ytId, "Детализированное состояние $inferredState", "Состояние: -{Ожидает подтверждения} ").body.toString()
-            }
-            ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, fieldState, fieldDetailedState, null))
-        } catch (e: Error) {
-            ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, null, null, e.localizedMessage))
-        }
-    }
 
 
-    override fun saveHookToDatabase(body: Hook?, fieldState: String?, fieldDetailedState: String?, errorMessage: String?): Timestamp {
-        return dslContext
-                .insertInto(HOOKS)
-                .set(HOOKS.RECORD_DATE_TIME, Timestamp.from(Instant.now()))
-                .set(HOOKS.HOOK_BODY, Gson().toJson(body).toString())
-                .set(HOOKS.FIELD_STATE, fieldState)
-                .set(HOOKS.FIELD_DETAILED_STATE, fieldDetailedState)
-                .set(HOOKS.ERROR_MESSAGE, errorMessage)
-                .returning(HOOKS.RECORD_DATE_TIME)
-                .fetchOne().recordDateTime
-    }
 
-    override fun getComposedBugsState(ids: List<Int>): List<DevOpsBugState> {
-        val statement = """select System_Id, System_State, IterationPath from CurrentWorkItemView where System_Id in (${ids.joinToString(",")}) and TeamProjectCollectionSK = 37"""
-        return statement.execAndMap(ms) { ExposedTransformations().toDevOpsState(it) }.map { d ->
-            d.sprintDates = sprints[d.sprint]
-            d.stateOrder = dictionariesService.devOpsStates.firstOrNull { k -> k.state == d.state }?.order
-                    ?: -1
-            d
-        }
-    }
-
-    data class DevOpsBugState(
-            @SerializedName("System_Id")
-            var systemId: String,
-            @SerializedName("System_State")
-            var state: String,
-            @SerializedName("IterationPath")
-            var sprint: String,
-            var sprintDates: Pair<Timestamp, Timestamp>?,
-            var stateOrder: Int = -1
-    )
-
-    override fun getAssociatedBugsState(id: String): JsonObject? {
-        val issues = dslContext.select(CUSTOM_FIELD_VALUES.FIELD_VALUE)
-                .from(CUSTOM_FIELD_VALUES)
-                .where(CUSTOM_FIELD_VALUES.ISSUE_ID.eq(id))
-                .and(CUSTOM_FIELD_VALUES.FIELD_NAME.eq("Issue"))
-                .fetchOneInto(String::class.java)
-
-        val statement = """select System_Id, System_State, IterationPath from CurrentWorkItemView where System_Id in (${issues}) and TeamProjectCollectionSK = 37"""
-        val all = statement.execAndMap(ms) { ExposedTransformations().toJsonObject(it, listOf("System_Id", "System_State", "IterationPath")) }
-                .map { e ->
-                    e.addProperty("order", dictionariesService.devOpsStates.firstOrNull { k -> k.state == e["System_State"].asString }?.order)
-                    e
-                }
-        val filtered = all.filter { it["IterationPath"].asString != "Backlog" && it["System_State"].asString != "Closed" && it["System_State"].asString != "Resolved" }
-        return if (filtered.isEmpty()) all.minBy { it["order"].toString().toInt() } else filtered.minBy { it["order"].toString().toInt() }
-    }
 }
 

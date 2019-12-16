@@ -2,7 +2,6 @@ package fsight.youtrack
 
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
-import fsight.youtrack.api.tfs.TFSData
 import fsight.youtrack.db.exposed.ms.schedule.fact.WorkHoursModel
 import fsight.youtrack.db.exposed.ms.schedule.fact.WorkHoursTable
 import fsight.youtrack.db.exposed.ms.schedule.plan.ScheduleTimeIntervalModel
@@ -11,7 +10,7 @@ import fsight.youtrack.db.exposed.pg.TimeAccountingExtendedModel
 import fsight.youtrack.db.exposed.pg.TimeAccountingExtendedView
 import fsight.youtrack.generated.jooq.tables.records.BundleValuesRecord
 import fsight.youtrack.models.BundleValue
-
+import fsight.youtrack.models.DevOpsBugState
 import okhttp3.OkHttpClient
 import org.jetbrains.exposed.sql.ColumnType
 import org.jetbrains.exposed.sql.Database
@@ -21,7 +20,6 @@ import org.jetbrains.exposed.sql.statements.Statement
 import org.jetbrains.exposed.sql.statements.StatementType
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
-
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.converter.scalars.ScalarsConverterFactory
 import java.net.InetAddress
@@ -196,12 +194,12 @@ class ExposedTransformations {
         j
     }
 
-    val toDevOpsState: (ResultSet) -> TFSData.DevOpsBugState = { rs->
-        TFSData.DevOpsBugState(
+    val toDevOpsState: (ResultSet) -> DevOpsBugState = { rs ->
+        DevOpsBugState(
                 systemId = rs.getString("System_Id"),
                 state = rs.getString("System_State"),
                 sprint = rs.getString("IterationPath"),
-sprintDates = null
+                sprintDates = null
         )
     }
 }
