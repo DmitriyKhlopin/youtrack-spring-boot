@@ -14,6 +14,7 @@ import fsight.youtrack.generated.jooq.tables.Hooks
 import fsight.youtrack.models.DevOpsBugState
 import fsight.youtrack.models.YouTrackCommand
 import fsight.youtrack.models.YouTrackIssue
+import fsight.youtrack.models.hooks.Hook
 import org.jetbrains.exposed.sql.Database
 import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Qualifier

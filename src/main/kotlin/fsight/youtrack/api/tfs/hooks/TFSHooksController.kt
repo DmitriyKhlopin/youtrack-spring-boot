@@ -2,12 +2,10 @@ package fsight.youtrack.api.tfs.hooks
 
 
 import com.google.gson.Gson
-import fsight.youtrack.Converter
-import fsight.youtrack.api.API
+import fsight.youtrack.models.hooks.Hook
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-import java.net.InetAddress
 
 @CrossOrigin
 @RestController

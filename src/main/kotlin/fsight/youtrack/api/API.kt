@@ -2,10 +2,11 @@ package fsight.youtrack.api
 
 import fsight.youtrack.Converter
 import fsight.youtrack.api.tfs.TFSData
-import fsight.youtrack.api.tfs.hooks.Hook
+
 import fsight.youtrack.getConverterFactory
 import fsight.youtrack.getOkhttpClient
 import fsight.youtrack.models.ServerStatus
+import fsight.youtrack.models.hooks.Hook
 import retrofit2.Call
 import retrofit2.Retrofit
 import retrofit2.http.Body
