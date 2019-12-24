@@ -17,6 +17,7 @@ import fsight.youtrack.models.YouTrackIssue
 import fsight.youtrack.models.hooks.Hook
 import org.jetbrains.exposed.sql.Database
 import org.jooq.DSLContext
+import org.jooq.tools.json.JSONObject
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -75,17 +76,24 @@ class TFSHooks(private val dsl: DSLContext,
                 /*bugStates.any { it.sprintDates == null && it.state != "Closed" } -> "Not in sprint and unresolved"*/
                 bugStates.any { it.sprint == "\\AP\\Backlog" && it.state == "Proposed" } -> "Backlog"
                 bugStates.all { it.state == "Closed" } -> "Closed"
+                bugStates.all { it.state == "Closed" || it.state == "Resolved" } -> "Resolved"
                 else -> bugStates.filter { it.state != "Closed" }.minBy { it.stateOrder }?.state ?: "Closed"
             }
             var fieldState: String? = null
             var fieldDetailedState: String? = null
-            if (body.isFieldChanged("System_State") && inferredState in arrayOf("Closed", "Proposed")) {
+            if (body.isFieldChanged("System.State") && inferredState in arrayOf("Closed", "Proposed", "Resolved")) {
                 fieldState = postCommand(ytId, "Состояние Открыта", "Состояние: {Направлена разработчику}").body.toString()
             }
-            if (body.isFieldChanged("System_State") || body.isFieldChanged("IterationPath")) {
+            if (inferredState !in arrayOf("Closed", "Resolved") && (body.isFieldChanged("System.State") || body.isFieldChanged("IterationPath"))) {
                 fieldDetailedState = postCommand(ytId, "Детализированное состояние $inferredState", "Состояние: -{Ожидает подтверждения} ").body.toString()
             }
-            ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, fieldState, fieldDetailedState, null))
+            val result = JSONObject(mapOf("timestamp" to saveHookToDatabase(body, fieldState, fieldDetailedState, null),
+                    "ytId" to ytId,
+                    "actualIssueState" to actualIssueState,
+                    "linkedBugs" to linkedBugs,
+                    "fieldState" to fieldState,
+                    "fieldDetailedState" to fieldDetailedState))
+            ResponseEntity.status(HttpStatus.CREATED).body(result)
         } catch (e: Error) {
             ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, null, null, e.localizedMessage))
         }
