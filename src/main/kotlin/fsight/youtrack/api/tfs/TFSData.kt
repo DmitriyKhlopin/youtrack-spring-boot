@@ -13,6 +13,8 @@ import fsight.youtrack.generated.jooq.tables.TfsTasks.TFS_TASKS
 import fsight.youtrack.generated.jooq.tables.TfsWi.TFS_WI
 import fsight.youtrack.headers
 import fsight.youtrack.models.*
+import fsight.youtrack.models.youtrack.Issue
+import fsight.youtrack.models.youtrack.Command
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -138,10 +140,10 @@ class TFSData(
         r.forEach {
             val id2 = YouTrackAPI.create().createIssue(AUTH, it).execute()
             if (id2.errorBody() != null) println(it)
-            val issue = Gson().fromJson(id2.body(), YouTrackIssue::class.java)
+            val issue = Gson().fromJson(id2.body(), Issue::class.java)
             val command = Gson().toJson(
-                    YouTrackCommand(
-                            issues = arrayListOf(YouTrackIssue(idReadable = issue.idReadable)),
+                    Command(
+                            issues = arrayListOf(Issue(idReadable = issue.idReadable)),
                             silent = true,
                             query = "подзадача $parentId"
                     )
@@ -467,7 +469,7 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
             if (i["body"] != null) this.body = i["body"].toString()*/
         }
         val id2 = YouTrackAPI.create().createIssue(AUTH, Gson().toJson(item.toYouTrackPostableIssue("FP"))).execute()
-        val idReadable = Gson().fromJson(id2.body(), YouTrackIssue::class.java)
+        val idReadable = Gson().fromJson(id2.body(), Issue::class.java)
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .headers(headers())

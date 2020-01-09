@@ -6,11 +6,15 @@ import fsight.youtrack.*
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
 import fsight.youtrack.generated.jooq.tables.records.IssueHistoryRecord
 import fsight.youtrack.generated.jooq.tables.records.IssuesRecord
+import fsight.youtrack.models.youtrack.Issue
+import fsight.youtrack.models.youtrack.SimpleIssueCustomField
+import fsight.youtrack.models.youtrack.Visibility
 import org.jooq.DSLContext
 import java.sql.Timestamp
 import java.time.LocalDateTime
 import kotlin.math.roundToInt
 
+/*
 //TODO https://www.jetbrains.com/help/youtrack/standalone/operations-api-issues.html
 @Deprecated("fields was replaced with customFields")
 data class YouTrackIssue(
@@ -28,11 +32,12 @@ data class YouTrackIssue(
         var votes: Int? = null,
         var project: YouTrackProject? = null
 )
+*/
 
 data class YouTrackPostableIssue(
         var fields: List<FieldValueBase>? = null,
         var description: String? = null,
-        var visibility: YouTrackIssueVisibility? = null,
+        var visibility: Visibility? = null,
         var summary: String? = null,
         var reporter: YouTrackUser? = null,
         var created: Long? = null,
@@ -109,7 +114,7 @@ data class YouTrackActivityCursor(
 data class YouTrackActivity(
         var field: YouTrackCustomFilterField? = null,
         var id: String? = null,
-        var target: YouTrackIssue? = null,
+        var target: Issue? = null,
         var timestamp: Long? = null,
         var category: Any? = null,
         var removed: Any? = null,
@@ -119,7 +124,7 @@ data class YouTrackActivity(
         var `$type`: String? = null
 )
 
-fun YouTrackIssue.toIssueRecord(): IssuesRecord {
+fun Issue.toIssueRecord(): IssuesRecord {
     //TODO исправить, не работает
     val firstResponseDate = this.unwrapLongValue("Дата первого ответа")
     val solutionDate = this.unwrapLongValue("Дата решения")
@@ -270,12 +275,6 @@ fun YouTrackActivity.toIssueHistoryRecord(idReadable: String): IssueHistoryRecor
     )
 }
 
-data class YouTrackIssueVisibility(
-        var permittedGroups: List<Any>? = null,
-        var permittedUsers: List<Any>? = null,
-        var `$type`: String? = null
-)
-
 data class YouTrackUser(
         var type: String? = null,
         var id: String? = null,
@@ -310,7 +309,7 @@ data class YouTrackIssueWorkItem(
         var created: Long? = null,
         var date: Long? = null,
         var duration: YouTrackPeriodValue? = null,
-        var issue: YouTrackIssue? = null,
+        var issue: Issue? = null,
         var updated: Long? = null,
         var author: YouTrackUser? = null,
         var creator: YouTrackUser? = null,
@@ -335,16 +334,16 @@ data class YouTrackPeriodValue(
 }*/
 
 
-fun YouTrackIssue.unwrapLongValue(fieldName: String): Long? = 0
+fun Issue.unwrapLongValue(fieldName: String): Long? = 0
 /*fun YouTrackIssue.unwrapStringValue(fieldName: String): String? =
     fields?.firstOrNull { field -> field.projectCustomField?.field?.name == fieldName }?.value.toString()*/
 
-fun YouTrackIssue.unwrapEnumValue(fieldName: String): String? {
-    val temp = fields?.firstOrNull { field -> field.projectCustomField?.field?.name == fieldName }?.value ?: return null
+fun Issue.unwrapEnumValue(fieldName: String): String? {
+    val temp = customFields?.firstOrNull { field -> field.projectCustomField?.field?.name == fieldName }?.value ?: return null
     return (Gson().toJsonTree(temp).asJsonObject).get("name").asString
 }
 
-fun YouTrackField.unwrapValue(): String? {
+fun SimpleIssueCustomField.unwrapValue(): String? {
     return when (this.`$type`) {
         SINGLE_ENUM_ISSUE_CUSTOM_FIELD, SINGLE_OWNED_ISSUE_CUSTOM_FIELD, STATE_ISSUE_CUSTOM_FIELD, STATE_MACHINE_ISSUE_CUSTOM_FIELD, SINGLE_VERSION_ISSUE_CUSTOM_FIELD, SINGLE_BUILD_ISSUE_CUSTOM_FIELD -> {
             val temp = this.value ?: return null

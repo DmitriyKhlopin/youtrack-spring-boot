@@ -12,9 +12,9 @@ import fsight.youtrack.execAndMap
 import fsight.youtrack.generated.jooq.tables.CustomFieldValues
 import fsight.youtrack.generated.jooq.tables.Hooks
 import fsight.youtrack.models.DevOpsBugState
-import fsight.youtrack.models.YouTrackCommand
-import fsight.youtrack.models.YouTrackIssue
+import fsight.youtrack.models.youtrack.Command
 import fsight.youtrack.models.hooks.Hook
+import fsight.youtrack.models.youtrack.Issue
 import org.jetbrains.exposed.sql.Database
 import org.jooq.DSLContext
 import org.jooq.tools.json.JSONObject
@@ -57,7 +57,7 @@ class TFSHooks(private val dsl: DSLContext,
     }
 
     override fun postCommand(id: String?, command: String, filter: String): ResponseEntity<Any> {
-        val cmd = Gson().toJson(YouTrackCommand(issues = arrayListOf(YouTrackIssue(idReadable = id)), query = command))
+        val cmd = Gson().toJson(Command(issues = arrayListOf(Issue(idReadable = id)), query = command))
         val response = YouTrackAPI.create().postCommand(DEVOPS_AUTH, cmd).execute()
         return ResponseEntity.ok("Issue $id returned response code ${response.code()} on command: $command")
     }
@@ -69,8 +69,8 @@ class TFSHooks(private val dsl: DSLContext,
                     ?: return ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, null, null, "Issue id not found in bug title"))
             val actualIssueState = issueService.search(ytId, listOf("idReadable", "fields(name,value(name))")).firstOrNull()
                     ?: return ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, null, null, "Issue with id $ytId not found in YouTrack"))
-            if ((actualIssueState.fields?.firstOrNull { it.name == "State" }?.value as? LinkedTreeMap<*, *>)?.get("name").toString() != "Направлена разработчику") return ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, null, null, "Issue with id $ytId is not on 3rd line"))
-            val linkedBugs = if (bugs.isEmpty()) actualIssueState.fields?.firstOrNull { it.name == "Issue" }?.value.toString().split(",", " ").mapNotNull { it.toIntOrNull() } else bugs
+            if ((actualIssueState.customFields?.firstOrNull { it.name == "State" }?.value as? LinkedTreeMap<*, *>)?.get("name").toString() != "Направлена разработчику") return ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, null, null, "Issue with id $ytId is not on 3rd line"))
+            val linkedBugs = if (bugs.isEmpty()) actualIssueState.customFields?.firstOrNull { it.name == "Issue" }?.value.toString().split(",", " ").mapNotNull { it.toIntOrNull() } else bugs
             val bugStates = getComposedBugsState(linkedBugs)
             val inferredState = when {
                 bugStates.any { it.sprint == "\\AP\\Backlog" && it.state == "Proposed" } -> "Backlog"

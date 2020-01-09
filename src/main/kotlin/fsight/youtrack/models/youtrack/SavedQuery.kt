@@ -1,5 +1,8 @@
 package fsight.youtrack.models.youtrack
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class SavedQuery(
         var query: String?,
         var issues: Array<Issue>?,

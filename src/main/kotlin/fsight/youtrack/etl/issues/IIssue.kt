@@ -1,6 +1,6 @@
 package fsight.youtrack.etl.issues
 
-import fsight.youtrack.models.YouTrackIssue
+import fsight.youtrack.models.youtrack.Issue
 
 interface IIssue {
     fun getIssues(customFilter: String?): Int
@@ -9,6 +9,6 @@ interface IIssue {
     fun findDeletedIssues()
     fun checkPendingIssues()
     fun findIssueInYT(id: String, filter: String): Boolean
-    fun getIssueById(id: String): YouTrackIssue
-    fun search(filter: String, fields: List<String>): List<YouTrackIssue>
+    fun getIssueById(id: String): Issue
+    fun search(filter: String, fields: List<String>): List<Issue>
 }

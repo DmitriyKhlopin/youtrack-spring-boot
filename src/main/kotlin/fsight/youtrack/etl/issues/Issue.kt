@@ -12,6 +12,7 @@ import fsight.youtrack.generated.jooq.tables.IssueHistory.ISSUE_HISTORY
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
 import fsight.youtrack.generated.jooq.tables.WorkItems.WORK_ITEMS
 import fsight.youtrack.models.*
+import fsight.youtrack.models.youtrack.Issue
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.springframework.stereotype.Service
@@ -58,7 +59,7 @@ class Issue(
             else
                 YouTrackAPI.create(Converter.GSON).getIssueList(auth = AUTH, fields = fields, top = top, skip = skip, query = filter)
 
-            var result: List<YouTrackIssue>?
+            var result: List<Issue>?
             try {
                 val t = request.execute()
                 result = t.body()
@@ -121,9 +122,9 @@ class Issue(
     }
 
     //TODO преобразовать в loadInto
-    private fun YouTrackIssue.saveCustomFields() {
+    private fun Issue.saveCustomFields() {
         dslContext.deleteFrom(CUSTOM_FIELD_VALUES).where(CUSTOM_FIELD_VALUES.ISSUE_ID.eq(idReadable)).execute()
-        fields?.forEach { field ->
+        customFields?.forEach { field ->
             try {
                 dslContext
                         .insertInto(CUSTOM_FIELD_VALUES)
@@ -139,7 +140,7 @@ class Issue(
     }
 
     //TODO преобразовать в loadInto
-    private fun YouTrackIssue.saveComments() {
+    private fun Issue.saveComments() {
         dslContext.deleteFrom(ISSUE_COMMENTS).where(ISSUE_COMMENTS.ISSUE_ID.eq(idReadable)).execute()
         //TODO аменить на loadInto
         this.comments?.forEach { comment ->
@@ -301,11 +302,11 @@ class Issue(
         return result?.contains(id) ?: false
     }
 
-    override fun getIssueById(id: String): YouTrackIssue {
-        return YouTrackIssue()
+    override fun getIssueById(id: String): Issue {
+        return Issue()
     }
 
-    override fun search(filter: String, fields: List<String>): List<YouTrackIssue> {
+    override fun search(filter: String, fields: List<String>): List<Issue> {
         val fieldsString = (if (fields.isEmpty()) listOf("idReadable", "customFields(name,value)") else fields).joinToString(",")
         val request = YouTrackAPI.create(Converter.GSON).getIssueList(auth = AUTH, fields = fieldsString, top = 100, skip = 0, query = filter)
         return request.execute().body().orEmpty()

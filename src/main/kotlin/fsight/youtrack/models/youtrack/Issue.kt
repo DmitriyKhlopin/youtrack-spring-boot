@@ -1,33 +1,36 @@
 package fsight.youtrack.models.youtrack
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Issue(
-        var idReadable: String?,
-        var created: Long?,
-        var updated: Long?,
-        var resolved: Long?,
-        var numberInProject: Long?,
-        var project: Project?,
-        var summary: String?,
-        var description: String?,
-        var usesMarkdown: Boolean?,
-        var wikifiedDescription: String?,
-        var reporter: User?,
-        var updater: User?,
-        var draftOwner: User?,
-        var isDraft: Boolean?,
-        var visibility: Visibility?,
-        var votes: Int?,
-        var comments: Array<IssueComment>?,
-        var commentsCount: Long?,
-        var tags: Array<IssueTag>?,
-        var links: Array<IssueLink>?,
-        var externalIssue: ExternalIssue?,
-        var customFields: Array<IssueCustomField>?,
-        var voters: IssueVoters?,
-        var watchers: Array<IssueWatcher>?,
-        var attachments: Array<Any>?,
-        var subtasks: Array<IssueLink>?,
-        var parent: Array<IssueLink>?
+        var idReadable: String? = null,
+        var created: Long? = null,
+        var updated: Long? = null,
+        var resolved: Long? = null,
+        var numberInProject: Long? = null,
+        var project: Project? = null,
+        var summary: String? = null,
+        var description: String? = null,
+        var usesMarkdown: Boolean? = null,
+        var wikifiedDescription: String? = null,
+        var reporter: User? = null,
+        var updater: User? = null,
+        var draftOwner: User? = null,
+        var isDraft: Boolean? = null,
+        var visibility: Visibility? = null,
+        var votes: Int? = null,
+        var comments: Array<IssueComment>? = null,
+        var commentsCount: Long? = null,
+        var tags: Array<IssueTag>? = null,
+        var links: Array<IssueLink>? = null,
+        var externalIssue: ExternalIssue? = null,
+        var customFields: Array<SimpleIssueCustomField>? = null,
+        var voters: IssueVoters? = null,
+        var watchers: Array<IssueWatcher>? = null,
+        /*var attachments: Array<Any>?,*/
+        var subtasks: Array<IssueLink>? = null,
+        var parent: Array<IssueLink>? = null
 )
 
 

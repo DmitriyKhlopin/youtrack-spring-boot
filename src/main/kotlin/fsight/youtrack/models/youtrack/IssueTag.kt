@@ -1,5 +1,8 @@
 package fsight.youtrack.models.youtrack
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class IssueTag(
         var issues: Array<Issue>?,
         var color: FieldStyle?,

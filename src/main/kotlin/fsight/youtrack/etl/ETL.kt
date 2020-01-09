@@ -7,7 +7,7 @@ import fsight.youtrack.etl.projects.IProjects
 import fsight.youtrack.etl.timeline.ITimeline
 import fsight.youtrack.etl.users.UsersETL
 import fsight.youtrack.models.ETLResult
-import fsight.youtrack.models.YouTrackIssue
+import fsight.youtrack.models.youtrack.Issue
 import fsight.youtrack.printlnIf
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
@@ -61,8 +61,8 @@ class ETL(
         users.getUsers()
     }
 
-    override fun getIssueById(id: String): YouTrackIssue {
-        return YouTrackIssue()
+    override fun getIssueById(id: String): Issue {
+        return Issue()
     }
 
     override fun getIssueHistory(idReadable: String) {

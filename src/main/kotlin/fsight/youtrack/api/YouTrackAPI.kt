@@ -5,6 +5,7 @@ import fsight.youtrack.NEW_ROOT_REF
 import fsight.youtrack.getConverterFactory
 import fsight.youtrack.getOkhttpClient
 import fsight.youtrack.models.*
+import fsight.youtrack.models.youtrack.Issue
 import retrofit2.Call
 import retrofit2.Retrofit
 import retrofit2.http.*
@@ -17,14 +18,14 @@ interface YouTrackAPI {
             @Query("fields") fields: String,
             @Query("\$top") top: Int,
             @Query("\$skip") skip: Int
-    ): Call<List<YouTrackIssue>>
+    ): Call<List<Issue>>
 
     @Headers("Accept: application/json")
     @GET("api/issues/{id}?fields=idReadable,project(id,shortName)")
     fun getIssueProject(
             @Header("Authorization") auth: String,
             @Path("id") id: String
-    ): Call<YouTrackIssue>
+    ): Call<Issue>
 
     @Headers("Accept: application/json")
     @GET("api/admin/projects?fields=shortName,id,name,description,fromEmail,replytoEmail,leader(login,id,name),fields(id,canBeEmpty,field(name),isPublic,ordinal)&\$top=-1")
@@ -53,7 +54,7 @@ interface YouTrackAPI {
             @Query("\$top") top: Int,
             @Query("\$skip") skip: Int,
             @Query("query") query: String
-    ): Call<List<YouTrackIssue>>
+    ): Call<List<Issue>>
 
     @Headers("Accept: application/json")
     @GET("api/issues")
@@ -63,7 +64,7 @@ interface YouTrackAPI {
             @Query("\$top") top: Int,
             @Query("\$skip") skip: Int,
             @Query("query") query: String
-    ): Call<List<YouTrackIssue>>
+    ): Call<List<Issue>>
 
     @Headers("Accept: application/json")
     @GET("api/issues/{issueId}/timeTracking/workItems?\$top=-1&fields=created,date,duration(minutes),updated,author(login,email),creator,id,type(id,name,autoAttached),text")
