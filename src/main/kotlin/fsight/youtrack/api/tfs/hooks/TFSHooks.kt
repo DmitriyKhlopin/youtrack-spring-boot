@@ -64,7 +64,8 @@ class TFSHooks(private val dsl: DSLContext,
 
     override fun postHook(body: Hook?, bugs: List<Int>): ResponseEntity<Any> {
         return try {
-            val ytId = body?.getYtId()
+            if (body?.isFieldChanged("System.State") != true) return ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, null, null, "Bug state didn't change"))
+            val ytId = body.getYtId()
                     ?: return ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, null, null, "Issue id not found in bug title"))
             val actualIssueState = issueService.search(ytId, listOf("idReadable", "fields(name,value(name))")).firstOrNull()
                     ?: return ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, null, null, "Issue with id $ytId not found in YouTrack"))
@@ -72,8 +73,6 @@ class TFSHooks(private val dsl: DSLContext,
             val linkedBugs = if (bugs.isEmpty()) actualIssueState.fields?.firstOrNull { it.name == "Issue" }?.value.toString().split(",", " ").mapNotNull { it.toIntOrNull() } else bugs
             val bugStates = getComposedBugsState(linkedBugs)
             val inferredState = when {
-                /*bugStates.any { it.sprintDates == null && it.sprint != "\\AP\\Backlog" && it.state != "Closed" } -> "Sprint dates are undefined"*/
-                /*bugStates.any { it.sprintDates == null && it.state != "Closed" } -> "Not in sprint and unresolved"*/
                 bugStates.any { it.sprint == "\\AP\\Backlog" && it.state == "Proposed" } -> "Backlog"
                 bugStates.all { it.state == "Closed" } -> "Closed"
                 bugStates.all { it.state == "Closed" || it.state == "Resolved" } -> "Resolved"
@@ -89,6 +88,7 @@ class TFSHooks(private val dsl: DSLContext,
             }
             val result = JSONObject(mapOf("timestamp" to saveHookToDatabase(body, fieldState, fieldDetailedState, null),
                     "ytId" to ytId,
+                    "inferredState" to inferredState,
                     "actualIssueState" to actualIssueState,
                     "linkedBugs" to linkedBugs,
                     "fieldState" to fieldState,

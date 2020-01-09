@@ -16,14 +16,14 @@ class ScheduledTasks(private val service: IETL, private val state: IETLState) : 
     @Scheduled(cron = "0 0/10 * * * *")
     fun loadData() {
         when {
-            InetAddress.getLocalHost().hostName != "SPB-FSIGHT11" && state.state != ETLState.RUNNING -> {
+            InetAddress.getLocalHost().hostName !in listOf("SPB-FSIGHT11", "v-hlopind") && state.state != ETLState.RUNNING -> {
                 println("*** Scheduled task started ***")
                 state.state = ETLState.RUNNING
                 val result = service.loadDataFromYT(false, null)
                 state.state = ETLState.IDLE
                 println("*** Scheduled task finished. Processed ${result?.issues} issues***")
             }
-            InetAddress.getLocalHost().hostName != "SPB-FSIGHT11" && state.state == ETLState.RUNNING -> {
+            InetAddress.getLocalHost().hostName !in listOf("SPB-FSIGHT11", "v-hlopind") && state.state == ETLState.RUNNING -> {
                 println("Service is running in production mode, but previous ETL is not finished")
             }
             else -> println("Service is running in dev mode, ETL will not be launched")
