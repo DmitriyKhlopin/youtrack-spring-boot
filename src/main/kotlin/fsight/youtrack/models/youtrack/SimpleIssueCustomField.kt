@@ -7,23 +7,20 @@ import kotlinx.serialization.Serializable
 data class SimpleIssueCustomField(
         var projectCustomField: ProjectCustomField?,
         @ContextualSerialization
-        var value: CustomFieldValueBase?,
+        var value: Any?,
         var name: String?,
         var id: String?,
         var `$type`: String?
-)
+)/*{
+        @Serializer(forClass = SimpleIssueCustomField::class)
+        companion object: KSerializer<SimpleIssueCustomField>{
+                override val descriptor: SerialDescriptor =
+                        StringDescriptor.withName("SimpleIssueCustomField")
 
-@Serializable
-abstract class CustomFieldValueBase
-
-@Serializable
-data class UserCustomFieldValue(
-        var name: String? = null,
-        val `$type`: String = "User"
-) : CustomFieldValueBase()
-
-@Serializable
-data class StateCustomFieldValue(
-        var name: String? = null,
-        val `$type`: String = "StateBundleElement"
-) : CustomFieldValueBase()
+                override fun deserialize(decoder: Decoder): SimpleIssueCustomField {
+                      return SimpleIssueCustomField(
+                              decoder.context
+                      )
+                }
+        }
+}*/

@@ -21,6 +21,16 @@ interface YouTrackAPI {
     ): Call<List<Issue>>
 
     @Headers("Accept: application/json")
+    @GET("api/issues")
+    fun getIssueList(
+            @Header("Authorization") auth: String,
+            @Query("fields") fields: String,
+            @Query("\$top") top: Int,
+            @Query("\$skip") skip: Int,
+            @Query("query") query: String
+    ): Call<List<Issue>>
+
+    @Headers("Accept: application/json")
     @GET("api/issues/{id}?fields=idReadable,project(id,shortName)")
     fun getIssueProject(
             @Header("Authorization") auth: String,
@@ -45,16 +55,6 @@ interface YouTrackAPI {
             @Header("Authorization") auth: String,
             @Path("fieldId") fieldId: String
     ): Call<CustomField>
-
-    @Headers("Accept: application/json")
-    @GET("api/issues")
-    fun getIssueList(
-            @Header("Authorization") auth: String,
-            @Query("fields") fields: String,
-            @Query("\$top") top: Int,
-            @Query("\$skip") skip: Int,
-            @Query("query") query: String
-    ): Call<List<Issue>>
 
     @Headers("Accept: application/json")
     @GET("api/issues")
@@ -95,7 +95,7 @@ interface YouTrackAPI {
 
 
     @Headers("Accept: application/json")
-    @GET("hub/api/rest/users?&\$top=-1&fields=id,login,name,profile(email),groups(name)")
+    @GET("hub/api/rest/users?&\$top=-1&fields=id,login,name,profile(email),groups(name),creationTime,lastAccessTime")
     fun getUserDetails(
             @Header("Authorization") auth: String
     ): Call<HubResponse>

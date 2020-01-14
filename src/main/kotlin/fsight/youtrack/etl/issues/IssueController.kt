@@ -11,4 +11,10 @@ class IssueController(private val service: IIssue) {
             @RequestParam("filter", required = true) filter: String,
             @RequestParam("fields", required = true) fields: String
     ) = service.search(filter, fields.split(","))
+
+    @GetMapping("/api/etl/issue/check")
+    fun check(
+            @RequestParam("id", required = true) id: String,
+            @RequestParam("filter", required = false) filter: String?
+    ) = service.checkIfIssueExists(id, filter ?: "")
 }

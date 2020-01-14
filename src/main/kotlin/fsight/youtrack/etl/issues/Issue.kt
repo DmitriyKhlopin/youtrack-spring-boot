@@ -15,6 +15,7 @@ import fsight.youtrack.models.*
 import fsight.youtrack.models.youtrack.Issue
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
+import org.jooq.tools.json.JSONObject
 import org.springframework.stereotype.Service
 import java.sql.Timestamp
 import java.time.LocalDate
@@ -29,7 +30,6 @@ class Issue(
 ) : IIssue {
     override fun getIssues(customFilter: String?): Int {
         val issueIds = arrayListOf<String?>()
-
         val fields =
                 listOf(
                         "idReadable",
@@ -43,7 +43,7 @@ class Issue(
                         "resolved",
                         "votes",
                         "comments(id,author(login,fullName),text,created,updated,deleted)",
-                        "fields(\$type,projectCustomField(\$type,field(name)),value(\$type,avatarUrl,buildLink,fullName,id,isResolved,localizedName,login,minutes,name,presentation,ringId,text))",
+                        "customFields(\$type,projectCustomField(\$type,field(name)),value(\$type,avatarUrl,buildLink,fullName,id,isResolved,localizedName,login,minutes,name,presentation,ringId,text))",
                         "visibility(permittedGroups(name),permittedUsers(name,login))",
                         "deleted"
                 ).joinToString(",")
@@ -58,11 +58,8 @@ class Issue(
                 YouTrackAPI.create(Converter.GSON).getIssueList(auth = AUTH, fields = fields, top = top, skip = skip)
             else
                 YouTrackAPI.create(Converter.GSON).getIssueList(auth = AUTH, fields = fields, top = top, skip = skip, query = filter)
-
-            var result: List<Issue>?
-            try {
-                val t = request.execute()
-                result = t.body()
+            val result: List<Issue>? = try {
+                request.execute().body()
             } catch (e: Exception) {
                 writeError("Access error", e.localizedMessage)
                 break
@@ -290,16 +287,13 @@ class Issue(
         }
     }
 
-    override fun findIssueInYT(id: String, filter: String): Boolean {
-        val fields =
-                listOf(
-                        "idReadable"
-                        /*"fields(\$type,projectCustomField(\$type,field(name)),value(\$type,avatarUrl,buildLink,fullName,id,isResolved,localizedName,login,minutes,name,presentation,ringId,text))"*/
-                ).joinToString(",")
-        val composedFilter = "$id $filter"
+    override fun checkIfIssueExists(id: String, filter: String): JSONObject {
+        val fields = "idReadable"
+        val composedFilter = "$id $filter".removeSurrounding(" ", " ")
+        println(composedFilter)
         val request = YouTrackAPI.create(Converter.GSON).getIssueList(auth = AUTH, fields = fields, top = 100, skip = 0, query = composedFilter)
-        val result = request.execute().body()?.mapNotNull { it.idReadable }
-        return result?.contains(id) ?: false
+        val result = request.execute().body()?.mapNotNull { it.idReadable }?.contains(id) ?: false
+        return JSONObject(mapOf("issueExists" to result))
     }
 
     override fun getIssueById(id: String): Issue {

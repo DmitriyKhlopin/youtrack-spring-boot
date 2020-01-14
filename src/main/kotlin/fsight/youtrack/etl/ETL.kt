@@ -23,7 +23,7 @@ class ETL(
 ) : IETL {
 
     override fun loadDataFromYT(manual: Boolean, customFilter: String?, parameters: String): ETLResult? {
-        printlnIf(customFilter != null, "Custom filter: $customFilter")
+        printlnIf(customFilter != null, "Custom filter: $customFilter with parameters: $parameters")
         val p = parameters.split(delimiters = *arrayOf(","))
         val time = GregorianCalendar.getInstance().also { it.time = Date() }
         if (time.get(Calendar.MINUTE) == 30 && time.get(Calendar.HOUR) == 0 && !manual) {

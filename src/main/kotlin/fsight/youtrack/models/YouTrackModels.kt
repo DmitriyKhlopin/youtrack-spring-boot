@@ -13,26 +13,7 @@ import org.jooq.DSLContext
 import java.sql.Timestamp
 import java.time.LocalDateTime
 import kotlin.math.roundToInt
-
-/*
-//TODO https://www.jetbrains.com/help/youtrack/standalone/operations-api-issues.html
-@Deprecated("fields was replaced with customFields")
-data class YouTrackIssue(
-        var fields: List<YouTrackField>? = null,
-        var description: String? = null,
-        var visibility: YouTrackIssueVisibility? = null,
-        var summary: String? = null,
-        var reporter: YouTrackUser? = null,
-        var created: Long? = null,
-        var updated: Long? = null,
-        var resolved: Long? = null,
-        var idReadable: String? = null,
-        var updater: YouTrackUser? = null,
-        var comments: List<YouTrackComment>? = null,
-        var votes: Int? = null,
-        var project: YouTrackProject? = null
-)
-*/
+import kotlin.reflect.KClass
 
 data class YouTrackPostableIssue(
         var fields: List<FieldValueBase>? = null,
@@ -286,7 +267,9 @@ data class YouTrackUser(
         var groups: List<HubUserGroup>? = null,
         var ringId: String? = null,
         var jabber: String? = null,
-        var email: String? = null
+        var email: String? = null,
+        var creationTime: Long? = null,
+        var lastAccessTime: Long? = null
 )
 
 data class HubUserProfile(
@@ -328,6 +311,17 @@ data class YouTrackPeriodValue(
         var minutes: Int? = null
 )
 
+/*fun <T> t(): T {
+    return "s" as T
+}*/
+
+/*fun <T: Any> SimpleIssueCustomField.getData(clazz: KClass<T>): List<T>? {
+    return when(clazz) {
+        Double::class -> getUsers() as List<T>
+        Student::class -> getStudents()  as List<T>
+        else -> null
+    }
+}*/
 /*fun YouTrackIssue.unwrapIntValue(fieldName: String): Int? {
     val temp = this.fields?.firstOrNull { it.projectCustomField?.field?.name == fieldName }?.value
     return if (temp != null) (temp as JsonObject).get("name").asInt else null
@@ -339,43 +333,62 @@ fun Issue.unwrapLongValue(fieldName: String): Long? = 0
     fields?.firstOrNull { field -> field.projectCustomField?.field?.name == fieldName }?.value.toString()*/
 
 fun Issue.unwrapEnumValue(fieldName: String): String? {
-    val temp = customFields?.firstOrNull { field -> field.projectCustomField?.field?.name == fieldName }?.value ?: return null
+    val temp = customFields?.firstOrNull { field -> field.projectCustomField?.field?.name == fieldName }?.value
+            ?: return null
     return (Gson().toJsonTree(temp).asJsonObject).get("name").asString
 }
 
-fun SimpleIssueCustomField.unwrapValue(): String? {
+/*fun SimpleIssueCustomField.unwrapEnumValue(): String? {
+    val temp = this.value ?: return null
     return when (this.`$type`) {
-        SINGLE_ENUM_ISSUE_CUSTOM_FIELD, SINGLE_OWNED_ISSUE_CUSTOM_FIELD, STATE_ISSUE_CUSTOM_FIELD, STATE_MACHINE_ISSUE_CUSTOM_FIELD, SINGLE_VERSION_ISSUE_CUSTOM_FIELD, SINGLE_BUILD_ISSUE_CUSTOM_FIELD -> {
-            val temp = this.value ?: return null
-            (Gson().toJsonTree(temp).asJsonObject).get("name").asString
-        }
-        SINGLE_USER_ISSUE_CUSTOM_FIELD -> {
-            val temp = this.value ?: return null
-            (Gson().toJsonTree(temp).asJsonObject).get("login").asString
-        }
-        SIMPLE_ISSUE_CUSTOM_FIELD, DATE_ISSUE_CUSTOM_FIELD -> {
-            val i: Any? = when (val t = this.value) {
-                is Double -> t.toLong()
-                else -> t
-            }
-            i.toString()
-        }
-        MULTI_VERSION_ISSUE_CUSTOM_FIELD, MULTI_ENUM_ISSUE_CUSTOM_FIELD -> {
-            val temp = this.value ?: return null
-            (Gson().toJsonTree(temp).asJsonArray).map { item -> item.asJsonObject.get("name") }
-                    .joinToString(separator = ", ")
-        }
-        TEXT_ISSUE_CUSTOM_FIELD -> {
-            val temp = this.value ?: return null
-            (Gson().toJsonTree(temp).asJsonObject).get("text").asString
-        }
-        PERIOD_ISSUE_CUSTOM_FIELD -> {
-            val temp = this.value ?: return null
-            (Gson().toJsonTree(temp).asJsonObject).get("minutes").asInt.toString()
-        }
-        else -> {
-            println("${this.`$type`} - ${this.projectCustomField?.field?.name}")
-            this.value.toString()
-        }
+        SINGLE_USER_ISSUE_CUSTOM_FIELD,
+        SINGLE_ENUM_ISSUE_CUSTOM_FIELD,
+        STATE_MACHINE_ISSUE_CUSTOM_FIELD,
+        SINGLE_VERSION_ISSUE_CUSTOM_FIELD,
+        SINGLE_BUILD_ISSUE_CUSTOM_FIELD -> (Gson().toJsonTree(temp).asJsonObject).get("name").asString
+        else -> "Value is not ENUM"
     }
+}*/
+
+fun SimpleIssueCustomField.unwrapValue(): String? {
+    val temp = this.value ?: return null
+    return when (this.`$type`) {
+        SINGLE_ENUM_ISSUE_CUSTOM_FIELD,
+        SINGLE_OWNED_ISSUE_CUSTOM_FIELD,
+        STATE_ISSUE_CUSTOM_FIELD,
+        STATE_MACHINE_ISSUE_CUSTOM_FIELD,
+        SINGLE_VERSION_ISSUE_CUSTOM_FIELD,
+        SINGLE_BUILD_ISSUE_CUSTOM_FIELD -> (Gson().toJsonTree(temp).asJsonObject).get("name").asString
+        SINGLE_USER_ISSUE_CUSTOM_FIELD -> (Gson().toJsonTree(temp).asJsonObject).get("email").asString
+        SIMPLE_ISSUE_CUSTOM_FIELD, DATE_ISSUE_CUSTOM_FIELD -> when (temp) {
+            is Double -> temp.toLong().toString()
+            else -> temp.toString()
+        }
+        MULTI_VERSION_ISSUE_CUSTOM_FIELD, MULTI_ENUM_ISSUE_CUSTOM_FIELD -> (Gson().toJsonTree(temp).asJsonArray).map { item -> item.asJsonObject.get("name") }.joinToString(separator = ", ")
+        TEXT_ISSUE_CUSTOM_FIELD -> (Gson().toJsonTree(temp).asJsonObject).get("text").asString
+        PERIOD_ISSUE_CUSTOM_FIELD -> (Gson().toJsonTree(temp).asJsonObject).get("minutes").asInt.toString()
+        else -> this.value.toString()
+    }
+}
+
+fun <T : Any> SimpleIssueCustomField.unwrapValue(clazz: KClass<T>): T? {
+    val temp = this.value ?: return null
+    val result = when (this.`$type`) {
+        SINGLE_ENUM_ISSUE_CUSTOM_FIELD,
+        SINGLE_OWNED_ISSUE_CUSTOM_FIELD,
+        STATE_ISSUE_CUSTOM_FIELD,
+        STATE_MACHINE_ISSUE_CUSTOM_FIELD,
+        SINGLE_VERSION_ISSUE_CUSTOM_FIELD,
+        SINGLE_BUILD_ISSUE_CUSTOM_FIELD -> (Gson().toJsonTree(temp).asJsonObject).get("name").asString
+        SINGLE_USER_ISSUE_CUSTOM_FIELD -> (Gson().toJsonTree(temp).asJsonObject).get("email").asString
+        SIMPLE_ISSUE_CUSTOM_FIELD, DATE_ISSUE_CUSTOM_FIELD -> when (temp) {
+            is Double -> temp.toLong()
+            else -> temp
+        }
+        MULTI_VERSION_ISSUE_CUSTOM_FIELD, MULTI_ENUM_ISSUE_CUSTOM_FIELD -> (Gson().toJsonTree(temp).asJsonArray).map { item -> item.asJsonObject.get("name") }.joinToString(separator = ", ")
+        TEXT_ISSUE_CUSTOM_FIELD -> (Gson().toJsonTree(temp).asJsonObject).get("text").asString
+        PERIOD_ISSUE_CUSTOM_FIELD -> (Gson().toJsonTree(temp).asJsonObject).get("minutes").asInt.toString()
+        else -> this.value.toString()
+    }
+    return result as? T
 }
