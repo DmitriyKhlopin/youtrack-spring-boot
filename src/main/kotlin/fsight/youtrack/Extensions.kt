@@ -2,6 +2,7 @@ package fsight.youtrack
 
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
+import com.google.gson.LongSerializationPolicy
 import fsight.youtrack.db.exposed.ms.schedule.fact.WorkHoursModel
 import fsight.youtrack.db.exposed.ms.schedule.fact.WorkHoursTable
 import fsight.youtrack.db.exposed.ms.schedule.plan.ScheduleTimeIntervalModel
@@ -32,6 +33,7 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoField
 import java.util.*
 import java.util.concurrent.TimeUnit
+
 
 /*fun debugPrint(print: Boolean = false, message: String = "") {
     if (print) println(message)
@@ -167,7 +169,12 @@ fun getConverterFactory(converter: Converter = Converter.SCALAR) = when (convert
         ScalarsConverterFactory.create()
     }
     else -> {
-        val gson = GsonBuilder().setLenient().create()
+        val gsonBuilder = GsonBuilder()
+        gsonBuilder.setLenient()
+        gsonBuilder.setLongSerializationPolicy(LongSerializationPolicy.STRING)
+        val gson = gsonBuilder.create()
+
+/*        val gson = GsonBuilder().setLenient().setLongSerializationPolicy(LongSerializationPolicy.STRING).create()*/
         GsonConverterFactory.create(gson)
     }
 }

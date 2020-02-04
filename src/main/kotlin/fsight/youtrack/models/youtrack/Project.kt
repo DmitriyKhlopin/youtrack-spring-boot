@@ -1,8 +1,6 @@
 package fsight.youtrack.models.youtrack
 
-import kotlinx.serialization.Serializable
 
-@Serializable
 data class Project(
         var startingNumber: Long?,
         var shortName: String?,

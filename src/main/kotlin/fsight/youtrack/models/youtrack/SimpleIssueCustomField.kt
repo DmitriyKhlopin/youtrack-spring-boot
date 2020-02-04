@@ -1,29 +1,31 @@
 package fsight.youtrack.models.youtrack
 
-import kotlinx.serialization.ContextualSerialization
-import kotlinx.serialization.Serializable
 
-@Serializable
+abstract class CustomFieldValueBase
+
 data class SimpleIssueCustomField(
         var projectCustomField: ProjectCustomField?,
-        @ContextualSerialization
-        var value: CustomFieldValueBase?,
+        var value: Any?,
         var name: String?,
         var id: String?,
         var `$type`: String?
-)
+) : CustomFieldValueBase()
 
-@Serializable
-abstract class CustomFieldValueBase
+data class LongIssueCustomField(
+        var projectCustomField: ProjectCustomField?,
+        var value: Any?,
+        var name: String?,
+        var id: String?,
+        var `$type`: String?
+) : CustomFieldValueBase()
 
-@Serializable
+
 data class UserCustomFieldValue(
         var name: String? = null,
         val `$type`: String = "User"
-) : CustomFieldValueBase()
+)
 
-@Serializable
 data class StateCustomFieldValue(
         var name: String? = null,
         val `$type`: String = "StateBundleElement"
-) : CustomFieldValueBase()
+)

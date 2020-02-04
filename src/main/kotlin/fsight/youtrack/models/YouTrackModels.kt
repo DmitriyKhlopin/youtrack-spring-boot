@@ -7,7 +7,6 @@ import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
 import fsight.youtrack.generated.jooq.tables.records.IssueHistoryRecord
 import fsight.youtrack.generated.jooq.tables.records.IssuesRecord
 import fsight.youtrack.models.youtrack.Issue
-import fsight.youtrack.models.youtrack.SimpleIssueCustomField
 import fsight.youtrack.models.youtrack.Visibility
 import org.jooq.DSLContext
 import java.sql.Timestamp
@@ -128,6 +127,11 @@ fun Issue.toIssueRecord(): IssuesRecord {
     //TODO исправить, не работает
     val firstResponseDate = this.unwrapLongValue("Дата первого ответа")
     val solutionDate = this.unwrapLongValue("Дата решения")
+    if (this.idReadable == "ITS-44") {
+        println(this.customFields)
+        println(firstResponseDate)
+        println(solutionDate)
+    }
     return IssuesRecord(
             idReadable,
             idReadable,
@@ -144,22 +148,22 @@ fun Issue.toIssueRecord(): IssuesRecord {
             reporter?.login,
             comments?.size,
             votes,
-            unwrapEnumValue("subsystem"),
-            unwrapEnumValue("SLA"),
-            unwrapEnumValue("SLA по первому ответу"),
+            unwrapFieldValue("subsystem"),
+            unwrapFieldValue("SLA"),
+            unwrapFieldValue("SLA по первому ответу"),
             firstResponseDate?.toTimestamp(),
             firstResponseDate?.toDate(),
             firstResponseDate?.toDate(toStartOfTheWeek = true),
-            unwrapEnumValue("SLA по решению"),
+            unwrapFieldValue("SLA по решению"),
             solutionDate?.toTimestamp(),
             solutionDate?.toDate(),
             solutionDate?.toDate(toStartOfTheWeek = true),
             project?.name,
-            unwrapEnumValue("Type"),
-            unwrapEnumValue("State"),
-            unwrapEnumValue("Priority"),
-            unwrapEnumValue("Версия Prognoz Platform"),
-            unwrapEnumValue("Оценка"),
+            unwrapFieldValue("Type"),
+            unwrapFieldValue("State"),
+            unwrapFieldValue("Priority"),
+            unwrapFieldValue("Версия Prognoz Platform"),
+            unwrapFieldValue("Оценка"),
             null,
             null,
             null,
@@ -167,9 +171,9 @@ fun Issue.toIssueRecord(): IssuesRecord {
             null,
             null,
             null,
-            unwrapEnumValue("Проект (ETS)"),
+            unwrapFieldValue("Проект (ETS)"),
             project?.shortName,
-            unwrapEnumValue("Заказчик")
+            unwrapFieldValue("Заказчик")
     )
 }
 
@@ -328,54 +332,52 @@ data class YouTrackPeriodValue(
         var minutes: Int? = null
 )
 
-/*fun YouTrackIssue.unwrapIntValue(fieldName: String): Int? {
-    val temp = this.fields?.firstOrNull { it.projectCustomField?.field?.name == fieldName }?.value
-    return if (temp != null) (temp as JsonObject).get("name").asInt else null
-}*/
-
-
-fun Issue.unwrapLongValue(fieldName: String): Long? = 0
-/*fun YouTrackIssue.unwrapStringValue(fieldName: String): String? =
-    fields?.firstOrNull { field -> field.projectCustomField?.field?.name == fieldName }?.value.toString()*/
+fun Issue.unwrapLongValue(fieldName: String): Long? {
+    val i = this.customFields?.firstOrNull { field -> field.name == fieldName } ?: return null
+    val t = (Gson().toJsonTree(i).asJsonObject) ?: return null
+    val t2 = t.get("value") ?: return null
+    return t2.asLong
+}
 
 fun Issue.unwrapEnumValue(fieldName: String): String? {
-    val temp = customFields?.firstOrNull { field -> field.projectCustomField?.field?.name == fieldName }?.value ?: return null
+    val temp = this.customFields?.firstOrNull { field -> field.name == fieldName }?.value ?: return null
     return (Gson().toJsonTree(temp).asJsonObject).get("name").asString
 }
 
-fun SimpleIssueCustomField.unwrapValue(): String? {
-    return when (this.`$type`) {
+fun Issue.unwrapFieldValue(fieldName: String?): String? {
+    fieldName ?: return null
+    val field = this.customFields?.firstOrNull { field -> field.name == fieldName } ?: return null
+    return when (field.`$type`) {
         SINGLE_ENUM_ISSUE_CUSTOM_FIELD, SINGLE_OWNED_ISSUE_CUSTOM_FIELD, STATE_ISSUE_CUSTOM_FIELD, STATE_MACHINE_ISSUE_CUSTOM_FIELD, SINGLE_VERSION_ISSUE_CUSTOM_FIELD, SINGLE_BUILD_ISSUE_CUSTOM_FIELD -> {
-            val temp = this.value ?: return null
+            val temp = field.value ?: return null
             (Gson().toJsonTree(temp).asJsonObject).get("name").asString
         }
         SINGLE_USER_ISSUE_CUSTOM_FIELD -> {
-            val temp = this.value ?: return null
+            val temp = field.value ?: return null
             (Gson().toJsonTree(temp).asJsonObject).get("login").asString
         }
         SIMPLE_ISSUE_CUSTOM_FIELD, DATE_ISSUE_CUSTOM_FIELD -> {
-            val i: Any? = when (val t = this.value) {
-                is Double -> t.toLong()
-                else -> t
-            }
-            i.toString()
+            val t = (Gson().toJsonTree(field).asJsonObject) ?: return null
+            val t2 = t.get("value") ?: return null
+            t2.asLong.toString()
         }
         MULTI_VERSION_ISSUE_CUSTOM_FIELD, MULTI_ENUM_ISSUE_CUSTOM_FIELD -> {
-            val temp = this.value ?: return null
-            (Gson().toJsonTree(temp).asJsonArray).map { item -> item.asJsonObject.get("name") }
-                    .joinToString(separator = ", ")
+            val temp = field.value ?: return null
+            val arr = Gson().toJsonTree(temp).asJsonArray ?: return null
+            if (arr.size() == 0) return null
+            arr.joinToString(separator = ", ") { item -> item.asJsonObject.get("name").asString }
         }
         TEXT_ISSUE_CUSTOM_FIELD -> {
-            val temp = this.value ?: return null
+            val temp = field.value ?: return null
             (Gson().toJsonTree(temp).asJsonObject).get("text").asString
         }
         PERIOD_ISSUE_CUSTOM_FIELD -> {
-            val temp = this.value ?: return null
+            val temp = field.value ?: return null
             (Gson().toJsonTree(temp).asJsonObject).get("minutes").asInt.toString()
         }
         else -> {
-            println("${this.`$type`} - ${this.projectCustomField?.field?.name}")
-            this.value.toString()
+            println("${field.`$type`} - ${field.projectCustomField?.field?.name}")
+            field.value.toString()
         }
     }
 }

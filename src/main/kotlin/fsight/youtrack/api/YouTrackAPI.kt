@@ -6,6 +6,7 @@ import fsight.youtrack.getConverterFactory
 import fsight.youtrack.getOkhttpClient
 import fsight.youtrack.models.*
 import fsight.youtrack.models.youtrack.Issue
+import okhttp3.MediaType
 import retrofit2.Call
 import retrofit2.Retrofit
 import retrofit2.http.*
@@ -55,6 +56,16 @@ interface YouTrackAPI {
             @Query("\$skip") skip: Int,
             @Query("query") query: String
     ): Call<List<Issue>>
+
+    @Headers("Accept: application/json")
+    @GET("api/issues")
+    fun getIssueListAsString(
+            @Header("Authorization") auth: String,
+            @Query("fields") fields: String,
+            @Query("\$top") top: Int,
+            @Query("\$skip") skip: Int,
+            @Query("query") query: String
+    ): Call<String>
 
     @Headers("Accept: application/json")
     @GET("api/issues")
@@ -129,12 +140,15 @@ interface YouTrackAPI {
     )
 
     companion object Factory {
+        /*val contentType = MediaType.get("application/json")*/
+
         fun create(converter: Converter = Converter.SCALAR): YouTrackAPI =
                 Retrofit
                         .Builder()
                         .baseUrl(NEW_ROOT_REF)
                         .client(getOkhttpClient())
                         .addConverterFactory(getConverterFactory(converter))
+                        /*.serializationConverterFactory(contentType, JSON)*/
                         .build()
                         .create(YouTrackAPI::class.java)
     }

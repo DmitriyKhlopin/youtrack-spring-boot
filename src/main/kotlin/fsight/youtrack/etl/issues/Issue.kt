@@ -43,7 +43,7 @@ class Issue(
                         "resolved",
                         "votes",
                         "comments(id,author(login,fullName),text,created,updated,deleted)",
-                        "fields(\$type,projectCustomField(\$type,field(name)),value(\$type,avatarUrl,buildLink,fullName,id,isResolved,localizedName,login,minutes,name,presentation,ringId,text))",
+                        "customFields(\$type,name,projectCustomField(\$type,field(name)),value(\$type,avatarUrl,buildLink,fullName,id,isResolved,localizedName,login,minutes,name,presentation,ringId,text))",
                         "visibility(permittedGroups(name),permittedUsers(name,login))",
                         "deleted"
                 ).joinToString(",")
@@ -52,13 +52,11 @@ class Issue(
         var stored = 0
         val filter = customFilter ?: getFilter()
         println("Loading issues with actual filter: $filter")
-
         do {
             val request = if (filter == null)
                 YouTrackAPI.create(Converter.GSON).getIssueList(auth = AUTH, fields = fields, top = top, skip = skip)
             else
                 YouTrackAPI.create(Converter.GSON).getIssueList(auth = AUTH, fields = fields, top = top, skip = skip, query = filter)
-
             var result: List<Issue>?
             try {
                 val t = request.execute()
@@ -67,6 +65,7 @@ class Issue(
                 writeError("Access error", e.localizedMessage)
                 break
             }
+
             issueIds.addAll(result?.mapNotNull { it.idReadable } ?: listOf())
             skip += result?.size ?: 0
             stored += result?.map { it.toIssueRecord() }?.loadToDatabase(dslContext) ?: 0
@@ -130,7 +129,7 @@ class Issue(
                         .insertInto(CUSTOM_FIELD_VALUES)
                         .set(CUSTOM_FIELD_VALUES.ISSUE_ID, idReadable)
                         .set(CUSTOM_FIELD_VALUES.FIELD_NAME, field.projectCustomField?.field?.name)
-                        .set(CUSTOM_FIELD_VALUES.FIELD_VALUE, field.unwrapValue())
+                        .set(CUSTOM_FIELD_VALUES.FIELD_VALUE, this.unwrapFieldValue(field.projectCustomField?.field?.name))
                         .execute()
             } catch (e: Exception) {
                 etlStateService.state = ETLState.DONE

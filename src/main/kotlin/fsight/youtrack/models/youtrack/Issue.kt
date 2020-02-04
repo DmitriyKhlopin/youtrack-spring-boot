@@ -1,8 +1,5 @@
 package fsight.youtrack.models.youtrack
 
-import kotlinx.serialization.Serializable
-
-@Serializable
 data class Issue(
         var idReadable: String? = null,
         var created: Long? = null,

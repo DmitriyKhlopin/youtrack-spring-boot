@@ -1,8 +1,5 @@
 package fsight.youtrack.models.youtrack
 
-import kotlinx.serialization.Serializable
-
-@Serializable
 data class UserGroup(
         var name: String?,
         var ringId: String?,

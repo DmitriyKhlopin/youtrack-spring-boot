@@ -1,8 +1,6 @@
 package fsight.youtrack.models.youtrack
 
-import kotlinx.serialization.Serializable
 
-@Serializable
 data class CustomField(
         var name: String?,
         var localizedName: String?,
