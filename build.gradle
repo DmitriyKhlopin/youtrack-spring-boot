@@ -106,12 +106,6 @@ dependencies {
     compile "net.logstash.logback:logstash-logback-encoder:5.0"
     compile "io.github.microutils:kotlin-logging:1.5.3"
 
-   /* testImplementation 'org.junit.jupiter:junit-jupiter-api:5.5.2'
-    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.5.2'
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.5.2")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.5.2")
-    testRuntimeOnly("org.junit.vintage:junit-vintage-engine:5.5.2")
-    test.useJUnitPlatform()*/
     testImplementation("org.junit.jupiter:junit-jupiter:5.5.2")
 }
 
@@ -120,6 +114,11 @@ test {
         includeTags 'fast'
         excludeTags 'slow'
     }*/
+}
+
+task copyTest(type: Copy) {
+    from file("$buildDir/libs/youtrack export-0.0.1-SNAPSHOT.jar")
+    into file("$buildDir/toArchive")
 }
 
 jooq {
@@ -148,7 +147,7 @@ jooq {
                 name = 'org.jooq.meta.postgres.PostgresDatabase'
                 inputSchema = 'public'
                 forcedTypes {
-                    forcedType {
+                    /*forcedType {
                         name = 'varchar'
                         expression = '.*'
                         types = 'JSONB?'
@@ -157,7 +156,13 @@ jooq {
                         name = 'varchar'
                         expression = '.*'
                         types = 'INET'
-                    }
+                    }*/
+                    /*forcedType {
+                        userType = 'com.google.gson.JsonElement'
+                        binding = 'fsight.youtrack.config.PostgresJSONGsonBinding'
+                        expression = '.*DETAILS*'
+                        types = '.*'
+                    }*/
                 }
                 // ...
             }

@@ -13,6 +13,7 @@ data class Hook(
     fun oldFieldValue(fieldName: String): Any? = this.resource?.fields?.get(fieldName)?.oldValue
     fun newFieldValue(fieldName: String): Any? = this.resource?.fields?.get(fieldName)?.newValue
     fun getYtId(): String = this.resource?.revision?.fields?.get("System.Title").toString().trimStart().substringBefore(delimiter = " ").substringBefore(delimiter = ".")
+    fun getFieldValue(fieldName: String): Any? = this.resource?.revision?.fields?.get(fieldName)
 }
 
 

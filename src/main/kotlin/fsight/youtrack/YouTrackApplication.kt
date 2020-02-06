@@ -75,7 +75,6 @@ class YouTrackApplication : SpringBootServletInitializer() {
                 registry.addMapping("/**")
                         .allowedOrigins(
                                 "http://localhost:3000",
-                                "chrome-extension://omalebghpgejjiaoknljcfmglgbpocdp",
                                 "http://10.9.172.12:3000",
                                 "http://10.9.172.76:3000",
                                 "http://localhost:8080",
