@@ -290,7 +290,8 @@ data class YouTrackUser(
         var groups: List<HubUserGroup>? = null,
         var ringId: String? = null,
         var jabber: String? = null,
-        var email: String? = null
+        var email: String? = null, var creationTime: Long? = null,
+        var lastAccessTime: Long? = null
 )
 
 data class HubUserProfile(

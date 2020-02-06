@@ -15,6 +15,7 @@ import fsight.youtrack.models.*
 import fsight.youtrack.models.youtrack.Issue
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
+import org.jooq.tools.json.JSONObject
 import org.springframework.stereotype.Service
 import java.sql.Timestamp
 import java.time.LocalDate
@@ -289,21 +290,19 @@ class Issue(
         }
     }
 
-    override fun findIssueInYT(id: String, filter: String): Boolean {
-        val fields =
-                listOf(
-                        "idReadable"
-                        /*"fields(\$type,projectCustomField(\$type,field(name)),value(\$type,avatarUrl,buildLink,fullName,id,isResolved,localizedName,login,minutes,name,presentation,ringId,text))"*/
-                ).joinToString(",")
-        val composedFilter = "$id $filter"
-        val request = YouTrackAPI.create(Converter.GSON).getIssueList(auth = AUTH, fields = fields, top = 100, skip = 0, query = composedFilter)
-        val result = request.execute().body()?.mapNotNull { it.idReadable }
-        return result?.contains(id) ?: false
-    }
-
     override fun getIssueById(id: String): Issue {
         return Issue()
     }
+
+    override fun checkIfIssueExists(id: String, filter: String): JSONObject {
+        val fields = "idReadable"
+        val composedFilter = "$id $filter".removeSurrounding(" ", " ")
+        println(composedFilter)
+        val request = YouTrackAPI.create(Converter.GSON).getIssueList(auth = AUTH, fields = fields, top = 100, skip = 0, query = composedFilter)
+        val result = request.execute().body()?.mapNotNull { it.idReadable }?.contains(id) ?: false
+        return JSONObject(mapOf("issueExists" to result))
+    }
+
 
     override fun search(filter: String, fields: List<String>): List<Issue> {
         val fieldsString = (if (fields.isEmpty()) listOf("idReadable", "customFields(name,value)") else fields).joinToString(",")
