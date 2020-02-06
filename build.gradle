@@ -106,15 +106,33 @@ dependencies {
     compile "net.logstash.logback:logstash-logback-encoder:5.0"
     compile "io.github.microutils:kotlin-logging:1.5.3"
 
-    testImplementation("org.junit.jupiter:junit-jupiter:5.5.2")
+    /*testCompile("org.junit.jupiter:junit-jupiter:5.6.0")*/
+    testCompile("org.junit.jupiter:junit-jupiter-api:5.6.0")
+    testCompile('org.junit.jupiter:junit-jupiter-params:5.6.0')
+    testCompile('org.junit.platform:junit-platform-runner:1.6.0')
+    testCompile("org.junit.platform:junit-platform-launcher:1.6.0")
+    testCompile("org.junit.platform:junit-platform-commons:1.6.0")
+    testCompile("org.junit.platform:junit-platform-engine:1.6.0")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.0")
+
 }
 
+
 test {
-    useJUnitPlatform()/* {
-        includeTags 'fast'
-        excludeTags 'slow'
-    }*/
+    useJUnitPlatform()
+
+    // Always run tests, even when nothing changed.
+    dependsOn 'cleanTest'
+
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
 }
+
+/*tasks.withType(Test) {
+    useJUnitPlatform()
+}*/
+
 
 task copyTest(type: Copy) {
     from file("$buildDir/libs/youtrack export-0.0.1-SNAPSHOT.jar")

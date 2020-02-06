@@ -31,7 +31,6 @@ class DatabaseTest {
 
     @Test
     fun test1() {
-        val ids = listOf(21604, 16684)
         val result = Queries().getBugsByIdsQuery(bugIds).execAndMap(tfsConnection) { ExposedTransformations().toDevOpsState(it) }
         /*.map { d ->
             d.sprintDates = dictionaries.sprints[d.sprint]
@@ -66,6 +65,5 @@ class DatabaseTest {
 
         val bugsFromDatabase = Queries().getBugsByIdsQuery(bugIds).execAndMap(tfsConnection) { ExposedTransformations().toDevOpsState(it) }
         assertEquals(bugsFromJson, bugsFromDatabase, "List re not equal")
-        assert(true)
     }
 }

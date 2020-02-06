@@ -6,7 +6,6 @@ package fsight.youtrack
 import fsight.youtrack.api.YouTrackAPI
 import fsight.youtrack.models.unwrapFieldValue
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -18,7 +17,7 @@ class SimpleTest {
     @Tag("fast")
     @Test
     fun issueParsingTest() {
-        DatabaseTest()
+
         val idReadable = "TEST-1"
         val q = listOf("idReadable", "customFields(name,value(name))").joinToString(",")
         val request = YouTrackAPI.create(Converter.GSON).getIssueList(auth = AUTH, fields = q, top = 100, skip = 0, query = "#$idReadable")
@@ -78,7 +77,8 @@ class SimpleTest {
         val idReadable = YouTrackAPI.create(Converter.GSON).getIssueList(auth = AUTH, fields = q, top = 100, skip = 0, query = "Состояние: {Направлена разработчику}").execute().body().orEmpty().firstOrNull()?.idReadable
         /*val idReadable = "IT-220"*/
         /*val issues = YouTrackAPI.create(Converter.GSON).getIssueList(auth = AUTH, fields = q, top = 10, skip = 0, query = "${idReadable} Состояние: {Направлена разработчику} ").execute().body().orEmpty()
-        *//**Поиск без # перед номером задачи выводит список задач вместо конкретной задачи.*//*
+        */
+        /**Поиск без # перед номером задачи выводит список задач вместо конкретной задачи.*//*
         assertNotEquals(1, issues.size, "Issue id was ${idReadable}")*/
         /**Для поиска конкретной задачи нужно добавлять # перед её номером.*/
         val issuesWithStrictFilter = YouTrackAPI.create(Converter.GSON).getIssueList(auth = AUTH, fields = q, top = 10, skip = 0, query = "#${idReadable} Состояние: {Направлена разработчику} ").execute().body().orEmpty()
