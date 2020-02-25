@@ -123,59 +123,7 @@ data class YouTrackActivity(
         var `$type`: String? = null
 )
 
-fun Issue.toIssueRecord(): IssuesRecord {
-    //TODO исправить, не работает
-    val firstResponseDate = this.unwrapLongValue("Дата первого ответа")
-    val solutionDate = this.unwrapLongValue("Дата решения")
-    if (this.idReadable == "ITS-44") {
-        println(this.customFields)
-        println(firstResponseDate)
-        println(solutionDate)
-    }
-    return IssuesRecord(
-            idReadable,
-            idReadable,
-            summary,
-            created?.toTimestamp(),
-            created?.toDate(),
-            created?.toDate(toStartOfTheWeek = true),
-            updated?.toTimestamp(),
-            updated.toDate(),
-            updated.toDate(toStartOfTheWeek = true),
-            resolved?.toTimestamp(),
-            resolved?.toDate(),
-            resolved?.toDate(toStartOfTheWeek = true),
-            reporter?.login,
-            comments?.size,
-            votes,
-            unwrapFieldValue("subsystem"),
-            unwrapFieldValue("SLA"),
-            unwrapFieldValue("SLA по первому ответу"),
-            firstResponseDate?.toTimestamp(),
-            firstResponseDate?.toDate(),
-            firstResponseDate?.toDate(toStartOfTheWeek = true),
-            unwrapFieldValue("SLA по решению"),
-            solutionDate?.toTimestamp(),
-            solutionDate?.toDate(),
-            solutionDate?.toDate(toStartOfTheWeek = true),
-            project?.name,
-            unwrapFieldValue("Type"),
-            unwrapFieldValue("State"),
-            unwrapFieldValue("Priority"),
-            unwrapFieldValue("Версия Prognoz Platform"),
-            unwrapFieldValue("Оценка"),
-            null,
-            null,
-            null,
-            Timestamp.valueOf(LocalDateTime.now()),
-            null,
-            null,
-            null,
-            unwrapFieldValue("Проект (ETS)"),
-            project?.shortName,
-            unwrapFieldValue("Заказчик")
-    )
-}
+
 
 fun List<IssuesRecord>.loadToDatabase(dslContext: DSLContext): Int {
     dslContext.deleteFrom(ISSUES).where(ISSUES.ID.`in`(this.map { it.id })).execute()
@@ -332,53 +280,3 @@ data class YouTrackWorkItemType(
 data class YouTrackPeriodValue(
         var minutes: Int? = null
 )
-
-fun Issue.unwrapLongValue(fieldName: String): Long? {
-    val i = this.customFields?.firstOrNull { field -> field.name == fieldName } ?: return null
-    val t = (Gson().toJsonTree(i).asJsonObject) ?: return null
-    val t2 = t.get("value") ?: return null
-    return t2.asLong
-}
-
-fun Issue.unwrapEnumValue(fieldName: String): String? {
-    val temp = this.customFields?.firstOrNull { field -> field.name == fieldName }?.value ?: return null
-    return (Gson().toJsonTree(temp).asJsonObject).get("name").asString
-}
-
-fun Issue.unwrapFieldValue(fieldName: String?): String? {
-    fieldName ?: return null
-    val field = this.customFields?.firstOrNull { field -> field.name == fieldName } ?: return null
-    return when (field.`$type`) {
-        SINGLE_ENUM_ISSUE_CUSTOM_FIELD, SINGLE_OWNED_ISSUE_CUSTOM_FIELD, STATE_ISSUE_CUSTOM_FIELD, STATE_MACHINE_ISSUE_CUSTOM_FIELD, SINGLE_VERSION_ISSUE_CUSTOM_FIELD, SINGLE_BUILD_ISSUE_CUSTOM_FIELD -> {
-            val temp = field.value ?: return null
-            (Gson().toJsonTree(temp).asJsonObject).get("name").asString
-        }
-        SINGLE_USER_ISSUE_CUSTOM_FIELD -> {
-            val temp = field.value ?: return null
-            (Gson().toJsonTree(temp).asJsonObject).get("login").asString
-        }
-        SIMPLE_ISSUE_CUSTOM_FIELD, DATE_ISSUE_CUSTOM_FIELD -> {
-            val t = (Gson().toJsonTree(field).asJsonObject) ?: return null
-            val t2 = t.get("value") ?: return null
-            t2.asLong.toString()
-        }
-        MULTI_VERSION_ISSUE_CUSTOM_FIELD, MULTI_ENUM_ISSUE_CUSTOM_FIELD -> {
-            val temp = field.value ?: return null
-            val arr = Gson().toJsonTree(temp).asJsonArray ?: return null
-            if (arr.size() == 0) return null
-            arr.joinToString(separator = ", ") { item -> item.asJsonObject.get("name").asString }
-        }
-        TEXT_ISSUE_CUSTOM_FIELD -> {
-            val temp = field.value ?: return null
-            (Gson().toJsonTree(temp).asJsonObject).get("text").asString
-        }
-        PERIOD_ISSUE_CUSTOM_FIELD -> {
-            val temp = field.value ?: return null
-            (Gson().toJsonTree(temp).asJsonObject).get("minutes").asInt.toString()
-        }
-        else -> {
-            println("${field.`$type`} - ${field.projectCustomField?.field?.name}")
-            field.value.toString()
-        }
-    }
-}

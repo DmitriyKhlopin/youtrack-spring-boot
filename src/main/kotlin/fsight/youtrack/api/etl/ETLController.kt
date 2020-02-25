@@ -1,11 +1,20 @@
-package fsight.youtrack.etl
+package fsight.youtrack.api.etl
 
 
+import fsight.youtrack.etl.IETL
+import fsight.youtrack.etl.IETLState
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.*
 
 @CrossOrigin
 @RestController
-class ETLController(private val service: IETL, private val etlStateService: IETLState) {
+class ETLController {
+    @Autowired
+    lateinit var service: IETL
+
+    @Autowired
+    lateinit var etlStateService: IETLState
+
     @GetMapping("/api/etl")
     fun loadData(
             @RequestParam("dateFrom", required = false) dateFrom: String? = "",

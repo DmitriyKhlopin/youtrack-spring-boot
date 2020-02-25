@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service
 import kotlin.system.measureTimeMillis
 
 @Service
-class CustomTest(private val etlStateService: IETLState, @Qualifier("gkbDataSource") private val db: Database) : ICustomTest {
+class CustomTest(private val etlStateService: IETLState) : ICustomTest {
     private var counter = 0
     override fun increment(): Int {
         return ++counter
@@ -25,11 +25,5 @@ class CustomTest(private val etlStateService: IETLState, @Qualifier("gkbDataSour
             val timeInMillis: Long,
             val query: String
     )
-
-    override fun repositoryEntrance(queries: List<String>): Any {
-        return queries.mapIndexed { index, query ->
-            Response(index, measureTimeMillis { query.execAndMap(db) { i -> ExposedTransformations().toList(i) } }, query)
-        }
-    }
 }
 

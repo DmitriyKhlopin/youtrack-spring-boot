@@ -12,7 +12,6 @@ import fsight.youtrack.generated.jooq.tables.CustomFieldValues
 import fsight.youtrack.generated.jooq.tables.Hooks
 import fsight.youtrack.models.DevOpsBugState
 import fsight.youtrack.models.hooks.Hook
-import fsight.youtrack.models.unwrapFieldValue
 import fsight.youtrack.models.youtrack.Command
 import fsight.youtrack.models.youtrack.Issue
 import org.jetbrains.exposed.sql.Database
@@ -64,20 +63,37 @@ class TFSHooks(private val dsl: DSLContext,
 
     override fun postHook(body: Hook?, bugs: List<Int>): ResponseEntity<Any> {
         return try {
-            if (body?.isFieldChanged("System.State") != true) return ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, null, null, "Bug state didn't change"))
+            when {
+                body?.isFieldChanged("System.State") == true && body.wasIncludedToSprint() -> {
+                }
+                body?.isFieldChanged("System.State") == true -> {
+                }
+                body?.wasIncludedToSprint() == true -> {
+                }
+                else -> return ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, null, null, "Bug state and sprint didn't change"))
+            }
+            /*if (body?.isFieldChanged("System.State") != true && body?.wasIncludedToSprint() != true) return ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, null, null, "Bug state didn't change"))*/
             val ytId = body.getYtId()
             val actualIssueState = issueService.search("#$ytId", listOf("idReadable", "customFields(name,value(name))")).firstOrNull()
                     ?: return ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, null, null, "Issue with id $ytId not found in YouTrack"))
             val actualIssueFieldState = actualIssueState.unwrapFieldValue("State")
             if (actualIssueFieldState != "Направлена разработчику") return ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, actualIssueFieldState, null, "Issue with id $ytId is not on 3rd line"))
             val linkedBugs = if (bugs.isEmpty()) actualIssueState.customFields?.firstOrNull { it.name == "Issue" }?.value.toString().split(",", " ").mapNotNull { it.toIntOrNull() } else bugs
-            val bugStates = getDevOpsBugsState(linkedBugs)/*.map {
-                if (it.systemId == body.resource?.workItemId.toString()) it.state = body.resource.revision.fields["System.State"].toString()
+            val bugStates = getDevOpsBugsState(linkedBugs).map {
+                if (it.systemId == body.resource?.workItemId.toString()) {
+                    it.state = body.getFieldValue("System.State").toString()
+                    it.sprint = body.getFieldValue("System.IterationPath").toString()
+                }
                 it
-            }*/
+            }.map {
+                it.sprintDates = dictionaries.sprints[it.sprint]
+                it.stateOrder = dictionaries.devOpsStates.firstOrNull { k -> k.state == it.state }?.order ?: -1
+                it
+            }
 
             val inferredState = when {
                 bugStates.any { it.sprint == "\\AP\\Backlog" && it.state == "Proposed" } -> "Backlog"
+                bugStates.any { it.state == "Proposed" } -> "Proposed"
                 bugStates.all { it.state == "Closed" } -> "Closed"
                 bugStates.all { it.state == "Closed" || it.state == "Resolved" } -> "Resolved"
                 else -> bugStates.filter { it.state != "Closed" }.minBy { it.stateOrder }?.state ?: "Closed"
@@ -87,8 +103,8 @@ class TFSHooks(private val dsl: DSLContext,
             if (body.isFieldChanged("System.State") && inferredState in arrayOf("Closed", "Proposed", "Resolved")) {
                 fieldState = postCommand(ytId, "Состояние Открыта", "Состояние: {Направлена разработчику}").body.toString()
             }
-            if (inferredState !in arrayOf("Closed", "Resolved") && (body.isFieldChanged("System.State") || body.isFieldChanged("IterationPath"))) {
-                fieldDetailedState = postCommand(ytId, "Детализированное состояние $inferredState", "Состояние: -{Ожидает подтверждения} ").body.toString()
+            if (inferredState !in arrayOf("Closed", "Resolved") && (body.isFieldChanged("System.State") || body.isFieldChanged("System.IterationPath"))) {
+                fieldDetailedState = postCommand(ytId, "Детализированное состояние $inferredState", "Состояние: {Направлена разработчику}").body.toString()
             }
             val result = JSONObject(mapOf("timestamp" to saveHookToDatabase(body, fieldState, fieldDetailedState, null),
                     "ytId" to ytId,
@@ -118,12 +134,7 @@ class TFSHooks(private val dsl: DSLContext,
 
     override fun getDevOpsBugsState(ids: List<Int>): List<DevOpsBugState> {
         val statement = """select System_Id, System_State, IterationPath from CurrentWorkItemView where System_Id in (${ids.joinToString(",")}) and TeamProjectCollectionSK = 37"""
-        return statement.execAndMap(ms) { ExposedTransformations().toDevOpsState(it) }.map { d ->
-            d.sprintDates = dictionaries.sprints[d.sprint]
-            d.stateOrder = dictionaries.devOpsStates.firstOrNull { k -> k.state == d.state }?.order
-                    ?: -1
-            d
-        }
+        return statement.execAndMap(ms) { ExposedTransformations().toDevOpsState(it) }
     }
 
     override fun mergeStates(devOpsBugStates: List<DevOpsBugState>, hook: Hook) {

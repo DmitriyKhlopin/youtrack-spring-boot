@@ -505,7 +505,6 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
         val firstResponseSLA = getCustomFieldValue(queueId, "SLA по первому ответу", "Выполнен")
         val solutionSLA = getCustomFieldValue(queueId, "SLA по решению", "Выполнен")
         val characteristics = getCustomFieldValue(queueId, "Характеристика", "Функциональность")
-        /*val state = getCustomFieldValue(queueId, "State", "Подтверждена")*/
         return YouTrackPostableIssue(
                 project = YouTrackProject(id = projectId),
                 summary = this.title,
@@ -525,9 +524,4 @@ WHERE changeRequest.System_WorkItemType = 'Change Request'
                 )
         )
     }
-
-
-
-
 }
-

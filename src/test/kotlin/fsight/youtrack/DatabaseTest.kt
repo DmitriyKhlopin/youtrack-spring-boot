@@ -6,10 +6,10 @@ import fsight.youtrack.db.exposed.helper.Queries
 import fsight.youtrack.models.DevOpsBugState
 import org.jetbrains.exposed.sql.Database
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Test
 import org.springframework.util.ResourceUtils
 import java.io.File
-import java.sql.Timestamp
 
 
 class DatabaseTest {
@@ -24,11 +24,6 @@ class DatabaseTest {
 
     private val bugIds = listOf(21604, 16684)
 
-    init {
-        test1()
-        getBugsByIdsQueryTest()
-    }
-
     @Test
     fun test1() {
         val result = Queries().getBugsByIdsQuery(bugIds).execAndMap(tfsConnection) { ExposedTransformations().toDevOpsState(it) }
@@ -38,22 +33,24 @@ class DatabaseTest {
                     ?: -1
             d
         }*/
+        println(result)
         val state1 = DevOpsBugState(
-                systemId = "1",
-                state = "State",
-                sprint = "1",
-                sprintDates = Pair(Timestamp(1), Timestamp(1)),
-                stateOrder = 1
+                systemId = "16684",
+                state = "Closed",
+                sprint = "\\AP\\Backlog\\Q3 FY19\\Sprint 6",
+                sprintDates = null,
+                stateOrder = -1
         )
 
         val state2 = DevOpsBugState(
-                systemId = "1",
-                state = "State",
-                sprint = "1",
-                sprintDates = Pair(Timestamp(1), Timestamp(1)),
-                stateOrder = 1
+                systemId = "21604",
+                state = "Closed",
+                sprint = "\\AP\\Backlog\\Q3 FY19\\Sprint 7",
+                sprintDates = null,
+                stateOrder = -1
         )
-        assertEquals(state1, state2, "States are not equal")
+        assertNotEquals(state1, state2, "States are not equal")
+        assertEquals(listOf(state1, state2), result, "Bug lists are not equal")
     }
 
     @Test
@@ -61,8 +58,6 @@ class DatabaseTest {
         val file: File = ResourceUtils.getFile("classpath:test/data.json")
         assert(file.exists())
         val bugsFromJson: List<DevOpsBugState> = Gson().fromJson(String(file.readBytes()), object : TypeToken<List<DevOpsBugState>>() {}.type)
-
-
         val bugsFromDatabase = Queries().getBugsByIdsQuery(bugIds).execAndMap(tfsConnection) { ExposedTransformations().toDevOpsState(it) }
         assertEquals(bugsFromJson, bugsFromDatabase, "List re not equal")
     }

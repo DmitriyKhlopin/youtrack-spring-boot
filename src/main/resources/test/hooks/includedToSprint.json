@@ -1,0 +1,32 @@
+{
+  "subscriptionId": "6c40b626-2d19-4bef-8e20-7d97c3369ff4",
+  "notificationId": 18762,
+  "id": "1983e04a-c435-4b37-8a95-96149147c9e7",
+  "eventType": "workitem.updated",
+  "resource": {
+    "id": 6,
+    "workItemId": 44842,
+    "rev": 6,
+    "revisedBy": {
+      "id": "ab56dd27-18c2-41ee-b3c2-e989b601b5b1",
+      "name": "Серый Александр Павлович \u003cFS\\aleksandr.seryy\u003e",
+      "displayName": "Серый Александр Павлович",
+      "uniqueName": "FS\\aleksandr.seryy"
+    },
+    "fields": {
+      "System.IterationPath": {
+        "oldValue": "AP\\Backlog",
+        "newValue": "AP\\Backlog\\Q4 FY19\\Sprint 15"
+      }
+    },
+    "revision": {
+      "id": 44842,
+      "rev": 6,
+      "fields": {
+        "System.IterationPath": "AP\\Backlog\\Q4 FY19\\Sprint 15",
+        "System.Title": "TEST-2 Тест включения в спринт",
+        "System.State": "Proposed"
+      }
+    }
+  }
+}
