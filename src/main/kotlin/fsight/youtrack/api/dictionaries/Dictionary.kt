@@ -4,6 +4,8 @@ import fsight.youtrack.etl.projects.IProjects
 import fsight.youtrack.generated.jooq.Tables
 import fsight.youtrack.generated.jooq.tables.BundleValues
 import fsight.youtrack.generated.jooq.tables.DevopsStatesOrder.DEVOPS_STATES_ORDER
+import fsight.youtrack.generated.jooq.tables.ProjectType.PROJECT_TYPE
+import fsight.youtrack.generated.jooq.tables.Projects.PROJECTS
 import fsight.youtrack.generated.jooq.tables.Users
 import fsight.youtrack.models.BundleValue
 import fsight.youtrack.models.YouTrackProject
@@ -86,10 +88,10 @@ class Dictionary(private val dsl: DSLContext, private val projectsService: IProj
 
     override fun preloadCommercialProjects() {
         commercialProjects.clear()
-        val i = dsl.select(Tables.PROJECTS.SHORT_NAME)
-                .from(Tables.PROJECTS)
-                .leftJoin(Tables.PROJECT_TYPE).on(Tables.PROJECTS.SHORT_NAME.eq(Tables.PROJECT_TYPE.PROJECT_SHORT_NAME))
-                .where(Tables.PROJECT_TYPE.IS_PUBLIC.eq(true).or(Tables.PROJECT_TYPE.IS_PUBLIC.isNull))
+        val i = dsl.select(PROJECTS.SHORT_NAME)
+                .from(PROJECTS)
+                .leftJoin(PROJECT_TYPE).on(PROJECTS.SHORT_NAME.eq(PROJECT_TYPE.PROJECT_SHORT_NAME))
+                .where(PROJECT_TYPE.IS_PUBLIC.eq(true).or(PROJECT_TYPE.IS_PUBLIC.isNull))
                 .fetchInto(String::class.java)
         commercialProjects.addAll(i)
         println("${commercialProjects.size} commercial projects cached")
@@ -97,10 +99,10 @@ class Dictionary(private val dsl: DSLContext, private val projectsService: IProj
 
     override fun preloadInnerProjects() {
         innerProjects.clear()
-        val i = dsl.select(Tables.PROJECTS.SHORT_NAME)
-                .from(Tables.PROJECTS)
-                .leftJoin(Tables.PROJECT_TYPE).on(Tables.PROJECTS.SHORT_NAME.eq(Tables.PROJECT_TYPE.PROJECT_SHORT_NAME))
-                .where(Tables.PROJECT_TYPE.IS_PUBLIC.eq(false))
+        val i = dsl.select(PROJECTS.SHORT_NAME)
+                .from(PROJECTS)
+                .leftJoin(PROJECT_TYPE).on(Tables.PROJECTS.SHORT_NAME.eq(PROJECT_TYPE.PROJECT_SHORT_NAME))
+                .where(PROJECT_TYPE.IS_PUBLIC.eq(false))
                 .fetchInto(String::class.java)
         innerProjects.addAll(i)
         println("${innerProjects.size} inner projects cached")

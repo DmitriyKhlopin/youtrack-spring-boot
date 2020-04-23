@@ -139,6 +139,24 @@ task copyTest(type: Copy) {
     into file("$buildDir/toArchive")
 }
 
+task deleteReact(type: Delete) {
+    delete 'src/main/resources/static'
+}
+
+task copyReact(type: Copy) {
+    from 'D:\\dev\\yt integrations\\frontend\\build'
+    into 'src/main/resources/static'
+}
+
+task bootJar1 {
+    dependsOn 'deleteReact'
+    dependsOn 'copyReact'
+    dependsOn 'bootJar'
+    tasks.findByName('copyReact').mustRunAfter 'deleteReact'
+    tasks.findByName('bootJar').mustRunAfter 'copyReact'
+
+}
+
 jooq {
     version = jooqVersion
     edition = 'OSS'

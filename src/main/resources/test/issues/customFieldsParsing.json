@@ -1,0 +1,316 @@
+{
+  "idReadable": "TEST-11",
+  "customFields": [
+    {
+      "projectCustomField": {
+        "field": {
+          "name": "Assignee",
+          "$type": "CustomField"
+        },
+        "$type": "UserProjectCustomField"
+      },
+      "value": null,
+      "name": "Assignee",
+      "$type": "SingleUserIssueCustomField"
+    },
+    {
+      "projectCustomField": {
+        "field": {
+          "name": "State",
+          "$type": "CustomField"
+        },
+        "$type": "StateProjectCustomField"
+      },
+      "value": {
+        "name": "Направлена разработчику",
+        "$type": "StateBundleElement"
+      },
+      "name": "State",
+      "$type": "StateMachineIssueCustomField"
+    },
+    {
+      "projectCustomField": {
+        "field": {
+          "name": "Детализированное состояние",
+          "$type": "CustomField"
+        },
+        "$type": "EnumProjectCustomField"
+      },
+      "value": {
+        "name": "Backlog",
+        "$type": "EnumBundleElement"
+      },
+      "name": "Детализированное состояние",
+      "$type": "SingleEnumIssueCustomField"
+    },
+    {
+      "projectCustomField": {
+        "field": {
+          "name": "Заказчик",
+          "$type": "CustomField"
+        },
+        "$type": "EnumProjectCustomField"
+      },
+      "value": {
+        "name": "Проект",
+        "$type": "EnumBundleElement"
+      },
+      "name": "Заказчик",
+      "$type": "SingleEnumIssueCustomField"
+    },
+    {
+      "projectCustomField": {
+        "field": {
+          "name": "Priority",
+          "$type": "CustomField"
+        },
+        "$type": "EnumProjectCustomField"
+      },
+      "value": {
+        "name": "Major",
+        "$type": "EnumBundleElement"
+      },
+      "name": "Priority",
+      "$type": "SingleEnumIssueCustomField"
+    },
+    {
+      "projectCustomField": {
+        "field": {
+          "name": "Обоснование приоритета",
+          "$type": "CustomField"
+        },
+        "$type": "SimpleProjectCustomField"
+      },
+      "value": "Показ заказчику 21.04",
+      "name": "Обоснование приоритета",
+      "$type": "SimpleIssueCustomField"
+    },
+    {
+      "projectCustomField": {
+        "field": {
+          "name": "Type",
+          "$type": "CustomField"
+        },
+        "$type": "EnumProjectCustomField"
+      },
+      "value": {
+        "name": "Консультация",
+        "$type": "EnumBundleElement"
+      },
+      "name": "Type",
+      "$type": "SingleEnumIssueCustomField"
+    },
+    {
+      "projectCustomField": {
+        "field": {
+          "name": "Продукт",
+          "$type": "CustomField"
+        },
+        "$type": "EnumProjectCustomField"
+      },
+      "value": {
+        "name": "FP 9.2",
+        "$type": "EnumBundleElement"
+      },
+      "name": "Продукт",
+      "$type": "SingleEnumIssueCustomField"
+    },
+    {
+      "projectCustomField": {
+        "field": {
+          "name": "Subsystem",
+          "$type": "CustomField"
+        },
+        "$type": "OwnedProjectCustomField"
+      },
+      "value": {
+        "name": "6. Мобильное приложение",
+        "$type": "OwnedBundleElement"
+      },
+      "name": "Subsystem",
+      "$type": "SingleOwnedIssueCustomField"
+    },
+    {
+      "projectCustomField": {
+        "field": {
+          "name": "Affected versions",
+          "$type": "CustomField"
+        },
+        "$type": "VersionProjectCustomField"
+      },
+      "value": [
+        {
+          "name": "8.2.197",
+          "$type": "VersionBundleElement"
+        }
+      ],
+      "name": "Affected versions",
+      "$type": "MultiVersionIssueCustomField"
+    },
+    {
+      "projectCustomField": {
+        "field": {
+          "name": "SLA",
+          "$type": "CustomField"
+        },
+        "$type": "EnumProjectCustomField"
+      },
+      "value": {
+        "name": "Премиальный",
+        "$type": "EnumBundleElement"
+      },
+      "name": "SLA",
+      "$type": "SingleEnumIssueCustomField"
+    },
+    {
+      "projectCustomField": {
+        "field": {
+          "name": "SLA по первому ответу",
+          "$type": "CustomField"
+        },
+        "$type": "EnumProjectCustomField"
+      },
+      "value": {
+        "name": "Выполнен",
+        "$type": "EnumBundleElement"
+      },
+      "name": "SLA по первому ответу",
+      "$type": "SingleEnumIssueCustomField"
+    },
+    {
+      "projectCustomField": {
+        "field": {
+          "name": "Дата первого ответа",
+          "$type": "CustomField"
+        },
+        "$type": "SimpleProjectCustomField"
+      },
+      "value": 1585727998496,
+      "name": "Дата первого ответа",
+      "$type": "SimpleIssueCustomField"
+    },
+    {
+      "projectCustomField": {
+        "field": {
+          "name": "SLA по решению",
+          "$type": "CustomField"
+        },
+        "$type": "EnumProjectCustomField"
+      },
+      "value": {
+        "name": "Выполнен",
+        "$type": "EnumBundleElement"
+      },
+      "name": "SLA по решению",
+      "$type": "SingleEnumIssueCustomField"
+    },
+    {
+      "projectCustomField": {
+        "field": {
+          "name": "Дата решения",
+          "$type": "CustomField"
+        },
+        "$type": "SimpleProjectCustomField"
+      },
+      "value": 1585749598496,
+      "name": "Дата решения",
+      "$type": "SimpleIssueCustomField"
+    },
+    {
+      "projectCustomField": {
+        "field": {
+          "name": "Плановая дата предоставления ответа",
+          "$type": "CustomField"
+        },
+        "$type": "SimpleProjectCustomField"
+      },
+      "value": null,
+      "name": "Плановая дата предоставления ответа",
+      "$type": "SimpleIssueCustomField"
+    },
+    {
+      "projectCustomField": {
+        "field": {
+          "name": "Issue",
+          "$type": "CustomField"
+        },
+        "$type": "SimpleProjectCustomField"
+      },
+      "value": "53316, 54034",
+      "name": "Issue",
+      "$type": "SimpleIssueCustomField"
+    },
+    {
+      "projectCustomField": {
+        "field": {
+          "name": "Requirement",
+          "$type": "CustomField"
+        },
+        "$type": "SimpleProjectCustomField"
+      },
+      "value": null,
+      "name": "Requirement",
+      "$type": "SimpleIssueCustomField"
+    },
+    {
+      "projectCustomField": {
+        "field": {
+          "name": "Источник запроса",
+          "$type": "CustomField"
+        },
+        "$type": "EnumProjectCustomField"
+      },
+      "value": {
+        "name": "YouTrack",
+        "$type": "EnumBundleElement"
+      },
+      "name": "Источник запроса",
+      "$type": "SingleEnumIssueCustomField"
+    },
+    {
+      "projectCustomField": {
+        "field": {
+          "name": "Внутренняя оценка",
+          "$type": "CustomField"
+        },
+        "$type": "EnumProjectCustomField"
+      },
+      "value": [
+        {
+          "name": "Не оценена",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "name": "Внутренняя оценка",
+      "$type": "MultiEnumIssueCustomField"
+    },
+    {
+      "projectCustomField": {
+        "field": {
+          "name": "Дополнительная информация",
+          "$type": "CustomField"
+        },
+        "$type": "TextProjectCustomField"
+      },
+      "value": {
+        "text": "Ссылки на issue",
+        "$type": "TextFieldValue"
+      },
+      "name": "Дополнительная информация",
+      "$type": "TextIssueCustomField"
+    },
+    {
+      "projectCustomField": {
+        "field": {
+          "name": "Дата отслеживания",
+          "$type": "CustomField"
+        },
+        "$type": "SimpleProjectCustomField"
+      },
+      "value": null,
+      "name": "Дата отслеживания",
+      "$type": "SimpleIssueCustomField"
+    }
+  ],
+  "$type": "Issue"
+}

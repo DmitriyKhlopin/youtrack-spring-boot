@@ -1,0 +1,21 @@
+{
+  "priorities": [
+    "high"
+  ],
+  "tags": [
+    "критично"
+  ],
+  "states": [
+    "Направлена разработчику"
+  ],
+  "detailedStates": [
+    "Backlog 2ЛП"
+  ],
+  "projects": [
+    "ACGM"
+  ],
+  "customers": [
+    "ОРВД Проект",
+    "КИС УПП"
+  ]
+}

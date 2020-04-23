@@ -103,7 +103,7 @@ class TFSHooks(private val dsl: DSLContext,
             if (body.isFieldChanged("System.State") && inferredState in arrayOf("Closed", "Proposed", "Resolved")) {
                 fieldState = postCommand(ytId, "Состояние Открыта", "Состояние: {Направлена разработчику}").body.toString()
             }
-            if (inferredState !in arrayOf("Closed", "Resolved") && (body.isFieldChanged("System.State") || body.isFieldChanged("System.IterationPath"))) {
+            if (inferredState !in arrayOf("Closed", "Resolved") && !body.wasExcludedFromSprint() && (body.isFieldChanged("System.State") || body.isFieldChanged("System.IterationPath"))) {
                 fieldDetailedState = postCommand(ytId, "Детализированное состояние $inferredState", "Состояние: {Направлена разработчику}").body.toString()
             }
             val result = JSONObject(mapOf("timestamp" to saveHookToDatabase(body, fieldState, fieldDetailedState, null),

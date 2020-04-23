@@ -140,6 +140,13 @@ fun String.toStartOfDate(): Timestamp =
 fun String.toEndOfDate(): Timestamp =
         Timestamp.valueOf(LocalDate.parse(this, DateTimeFormatter.ofPattern("yyyy-MM-dd")).atTime(23, 59))
 
+fun Timestamp?.toStartOfDate(): Timestamp =
+        Timestamp.valueOf(LocalDate.from(this?.toLocalDateTime()).atStartOfDay())
+
+fun Timestamp?.toEndOfDate(): Timestamp =
+
+        Timestamp.valueOf(LocalDate.from(this?.toLocalDateTime()).atTime(23, 59))
+
 fun String.splitToList(prefix: String = "[", suffix: String = "]", delimiters: String = ",") =
         this.removeSurrounding(prefix, suffix).split(delimiters)
 

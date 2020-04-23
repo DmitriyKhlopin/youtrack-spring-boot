@@ -1,0 +1,104 @@
+{
+  "subscriptionId": "6c40b626-2d19-4bef-8e20-7d97c3369ff4",
+  "notificationId": 19885,
+  "id": "7b377cd7-f3f6-4155-bebd-9ad4d18014f1",
+  "eventType": "workitem.updated",
+  "resource": {
+    "id": 13,
+    "workItemId": 46871,
+    "rev": 11,
+    "fields": {
+      "System.IterationPath": {
+        "oldValue": "AP\\Backlog\\Q4 FY19\\Sprint 16",
+        "newValue": "AP\\Backlog"
+      },
+      "System.CommentCount": {
+        "oldValue": 3.0,
+        "newValue": 4.0
+      },
+      "Microsoft.VSTS.Common.StateChangeDate": {
+        "oldValue": "2020-03-10T08:31:07.627Z",
+        "newValue": "2020-03-11T05:45:24.08Z"
+      },
+      "System.State": {
+        "oldValue": "Active",
+        "newValue": "Proposed"
+      },
+      "System.Watermark": {
+        "oldValue": 433644.0,
+        "newValue": 436739.0
+      },
+      "System.AuthorizedDate": {
+        "oldValue": "2020-03-10T08:31:07.627Z",
+        "newValue": "2020-03-11T05:45:24.08Z"
+      },
+      "System.BoardColumn": {
+        "oldValue": "Active",
+        "newValue": "Proposed"
+      },
+      "Microsoft.VSTS.Common.ActivatedDate": {
+        "oldValue": "2020-03-10T08:31:07.627Z"
+      },
+      "System.PersonId": {
+        "oldValue": 677.0,
+        "newValue": 812.0
+      },
+      "WEF_0E3AA809F1C1469FAE0688706CAA0C90_System.ExtensionMarker": {
+        "newValue": true
+      },
+      "System.AreaPath": {
+        "oldValue": "AP\\Products\\Development\\Products\\Data Entry Forms",
+        "newValue": "AP\\Products\\Development\\Components Library\\TabSheet"
+      },
+      "System.AreaLevel5": {
+        "oldValue": "Data Entry Forms",
+        "newValue": "TabSheet"
+      },
+      "System.AreaLevel4": {
+        "oldValue": "Products",
+        "newValue": "Components Library"
+      },
+      "System.NodeName": {
+        "oldValue": "Data Entry Forms",
+        "newValue": "TabSheet"
+      },
+      "System.RevisedDate": {
+        "oldValue": "2020-03-11T05:45:24.08Z",
+        "newValue": "9999-01-01T00:00:00Z"
+      },
+      "System.IterationId": {
+        "oldValue": 390.0,
+        "newValue": 360.0
+      },
+      "System.Rev": {
+        "oldValue": 10.0,
+        "newValue": 11.0
+      },
+      "System.Reason": {
+        "oldValue": "Approved",
+        "newValue": "Investigation Complete"
+      },
+      "System.ChangedDate": {
+        "oldValue": "2020-03-10T08:31:07.627Z",
+        "newValue": "2020-03-11T05:45:24.08Z"
+      }
+    },
+    "revision": {
+      "id": 46871,
+      "rev": 11,
+      "fields": {
+        "System.IterationPath": "AP\\Backlog",
+        "System.CommentCount": 4.0,
+        "Microsoft.VSTS.Common.StateChangeDate": "2020-03-11T05:45:24.08Z",
+        "Microsoft.VSTS.CMMI.RootCause": "Unknown",
+        "System.Title": "TEST-3 Табличная область стает бесконечной",
+        "System.State": "Proposed",
+        "System.AreaPath": "AP\\Products\\Development\\Components Library\\TabSheet",
+        "Microsoft.VSTS.Common.Severity": "3 - Medium",
+        "System.CreatedDate": "2020-02-27T16:08:18.733Z",
+        "System.WorkItemType": "Bug",
+        "System.ChangedDate": "2020-03-11T05:45:24.08Z"
+      }
+    }
+  }
+}

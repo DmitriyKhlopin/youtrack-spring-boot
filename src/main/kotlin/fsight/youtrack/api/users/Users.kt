@@ -8,13 +8,9 @@ import org.springframework.stereotype.Service
 @Service
 class Users(private val dsl: DSLContext) : IUsers {
     override fun getAll(): List<UserDetails> {
-        val names = listOf(
-            "maltsevav", "khlopinda", "nepomnyasas", "zolotaryevan", "zolotaryova",
-            "antonlykov", "nesterovmv", "maltsevayv", "parkhachens"
-        )
         return dsl.select(
-            ETS_NAMES.FSIGHT_EMAIL.`as`("email"),
-            ETS_NAMES.FULL_NAME.`as`("fullName")
-        ).from(ETS_NAMES).where(ETS_NAMES.ETS_NAME.`in`(names)).fetchInto(UserDetails::class.java)
+                ETS_NAMES.FSIGHT_EMAIL.`as`("email"),
+                ETS_NAMES.FULL_NAME.`as`("fullName")
+        ).from(ETS_NAMES).where(ETS_NAMES.SUPPORT.eq(true)).fetchInto(UserDetails::class.java)
     }
 }

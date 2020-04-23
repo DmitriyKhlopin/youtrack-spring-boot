@@ -77,6 +77,47 @@ internal class TFSHooksTest {
         assertEquals("Proposed", inferredState, "Incorrect inferred state")
         assertFalse(body.isFieldChanged("System.State") && inferredState in arrayOf("Closed", "Proposed", "Resolved"))
         assertTrue(inferredState !in arrayOf("Closed", "Resolved") && (body.isFieldChanged("System.State") || body.isFieldChanged("System.IterationPath")))
+    }
 
+    @Test
+    fun excludedFromSprint() {
+        val bugs = listOf<Int>()
+        val issueService = Issue(db, ImportLog(db), Timeline(db), ETLState())
+        val projectsService = Projects(db)
+        val dictionaryService = Dictionary(db, projectsService)
+        val hooksService = TFSHooks(db, tfsConnection, issueService, dictionaryService)
+        val file: File = ResourceUtils.getFile("classpath:test/hooks/excludedFromSprint.json")
+        assert(file.exists())
+        val body: Hook = Gson().fromJson(String(file.readBytes()), object : TypeToken<Hook>() {}.type)
+        assertTrue(body.wasExcludedFromSprint(), "Bug was not excluded sprint")
+        val ytId = body.getYtId()
+        assertEquals("TEST-3", ytId, "YT ids are not equal")
+        assertTrue(body.wasExcludedFromSprint(), "Bug was not excluede from sprint")
+        val actualIssueState = issueService.search("#$ytId", listOf("idReadable", "customFields(name,value(name))")).firstOrNull()
+        assertNotNull(actualIssueState)
+        val actualIssueFieldState = actualIssueState?.unwrapFieldValue("State")
+        assertEquals("Направлена разработчику", actualIssueFieldState, "YT states are not equal")
+        if (actualIssueFieldState != "Направлена разработчику") return
+        val linkedBugs = if (bugs.isEmpty()) actualIssueState.unwrapFieldValue("Issue").toString().split(",", " ").mapNotNull { it.toIntOrNull() } else bugs
+        val bugStates = hooksService.getDevOpsBugsState(linkedBugs).map {
+            if (it.systemId == body.resource?.workItemId.toString()) {
+                it.state = body.getFieldValue("System.State").toString()
+                it.sprint = body.getFieldValue("System.IterationPath").toString()
+            }
+            it
+        }.map {
+            it.sprintDates = dictionaryService.sprints[it.sprint]
+            it.stateOrder = dictionaryService.devOpsStates.firstOrNull { k -> k.state == it.state }?.order ?: -1
+            it
+        }
+        val inferredState = when {
+            bugStates.any { it.sprint == "\\AP\\Backlog" && it.state == "Proposed" } -> "Backlog"
+            bugStates.any { it.state == "Proposed" } -> "Proposed"
+            bugStates.all { it.state == "Closed" } -> "Closed"
+            bugStates.all { it.state == "Closed" || it.state == "Resolved" } -> "Resolved"
+            else -> bugStates.filter { it.state != "Closed" }.minBy { it.stateOrder }?.state ?: "Closed"
+        }
+        assertEquals("Proposed", inferredState, "Incorrect inferred state")
+        assertTrue(inferredState !in arrayOf("Closed", "Resolved") && (body.isFieldChanged("System.State") || body.isFieldChanged("System.IterationPath")))
     }
 }

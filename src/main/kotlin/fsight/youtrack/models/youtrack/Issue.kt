@@ -113,10 +113,16 @@ data class Issue(
                 val temp = field.value ?: return null
                 (Gson().toJsonTree(temp).asJsonObject).get("login").asString
             }
-            SIMPLE_ISSUE_CUSTOM_FIELD, DATE_ISSUE_CUSTOM_FIELD -> {
+            DATE_ISSUE_CUSTOM_FIELD -> {
                 val t = (Gson().toJsonTree(field).asJsonObject) ?: return null
                 val t2 = t.get("value") ?: return null
                 t2.asLong.toString()
+            }
+            SIMPLE_ISSUE_CUSTOM_FIELD -> {
+                val t = (Gson().toJsonTree(field).asJsonObject) ?: return null
+                val t2 = t.get("value") ?: return null
+                val name = t.get("name") ?: return null
+                if (name.asString == "Дата первого ответа" || name.asString == "Дата решения") t2.asLong.toString() else t2.toString().removeSurrounding(prefix = "\"", suffix = "\"")
             }
             MULTI_VERSION_ISSUE_CUSTOM_FIELD, MULTI_ENUM_ISSUE_CUSTOM_FIELD -> {
                 val temp = field.value ?: return null

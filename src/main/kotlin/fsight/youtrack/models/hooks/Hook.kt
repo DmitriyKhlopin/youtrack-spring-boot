@@ -20,6 +20,12 @@ data class Hook(
         return old == "AP\\Backlog" && new != "AP\\Backlog"
     }
 
+    fun wasExcludedFromSprint(): Boolean {
+        val new = newFieldValue("System.IterationPath")
+        val old = oldFieldValue("System.IterationPath")
+        return old != "AP\\Backlog" && new == "AP\\Backlog"
+    }
+
     fun sprintHasChanged(): Boolean = true
     fun stateHasChanged(): Boolean = true
 }

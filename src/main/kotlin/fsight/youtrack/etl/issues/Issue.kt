@@ -1,5 +1,6 @@
 package fsight.youtrack.etl.issues
 
+import com.google.gson.Gson
 import fsight.youtrack.*
 import fsight.youtrack.api.YouTrackAPI
 import fsight.youtrack.etl.IETLState
@@ -11,7 +12,9 @@ import fsight.youtrack.generated.jooq.tables.IssueComments.ISSUE_COMMENTS
 import fsight.youtrack.generated.jooq.tables.IssueHistory.ISSUE_HISTORY
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
 import fsight.youtrack.generated.jooq.tables.WorkItems.WORK_ITEMS
-import fsight.youtrack.models.*
+import fsight.youtrack.models.ImportLogModel
+import fsight.youtrack.models.loadToDatabase
+import fsight.youtrack.models.toIssueHistoryRecord
 import fsight.youtrack.models.youtrack.Issue
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
@@ -123,6 +126,7 @@ class Issue(
 
     //TODO преобразовать в loadInto
     private fun Issue.saveCustomFields() {
+        this.customFields?.forEach { println(it.toString()) }
         dslContext.deleteFrom(CUSTOM_FIELD_VALUES).where(CUSTOM_FIELD_VALUES.ISSUE_ID.eq(idReadable)).execute()
         customFields?.forEach { field ->
             try {
@@ -229,7 +233,7 @@ class Issue(
     }
 
     override fun findDeletedIssues() {
-        var count = 0
+        /*var count = 0
         val deletedItems = arrayListOf<String>()
         val result = dslContext.select(ISSUES.ID).from(ISSUES).fetchInto(String::class.java)
         val interval = (result.size / 100) + 1
@@ -244,7 +248,7 @@ class Issue(
             if (index % interval == 0) print("Checked ${index * 100 / result.size}% of issues\r")
         }
         println("Found ${deletedItems.size} deleted issues")
-        deleteIssues(deletedItems)
+        deleteIssues(deletedItems)*/
     }
 
     override fun deleteIssues(issues: ArrayList<String>): Int {

@@ -68,7 +68,8 @@ class YouTrackApplication : SpringBootServletInitializer() {
                                 "http://10.9.172.12:3000",
                                 "http://10.9.172.76:3000",
                                 "http://localhost:8080",
-                                "http://10.30.207.22:8080"
+                                "http://10.30.207.22:8080",
+                                "http://10.30.207.22"
                         )
             }
         }

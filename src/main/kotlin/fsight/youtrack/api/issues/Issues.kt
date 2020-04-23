@@ -7,12 +7,12 @@ import fsight.youtrack.splitToList
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jooq.Condition
 import org.jooq.DSLContext
 import org.jooq.Field
 import org.jooq.impl.DSL
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
-import java.sql.Timestamp
 
 @Service
 class Issues(private val dslContext: DSLContext, @Qualifier("tfsDataSource") private val ms: Database) : IIssues {
@@ -24,129 +24,90 @@ class Issues(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pri
     private val issue = CUSTOM_FIELD_VALUES.`as`("issue")
     private val type = CUSTOM_FIELD_VALUES.`as`("type")
     private val comment: Field<Int> = dslContext.select(WORK_ITEMS.DESCRIPTION)
-        .from(WORK_ITEMS)
-        .where(WORK_ITEMS.ISSUE_ID.eq(issues.ID))
-        .and(WORK_ITEMS.WORK_NAME.eq("Анализ сроков выполнения"))
-        .orderBy(WORK_ITEMS.WI_CREATED.desc())
-        .limit(1)
-        .asField()
+            .from(WORK_ITEMS)
+            .where(WORK_ITEMS.ISSUE_ID.eq(issues.ID))
+            .and(WORK_ITEMS.WORK_NAME.eq("Анализ сроков выполнения"))
+            .orderBy(WORK_ITEMS.WI_CREATED.desc())
+            .limit(1)
+            .asField()
 
     private val commentAuthor: Field<Int> = dslContext.select(WORK_ITEMS.AUTHOR_LOGIN)
-        .from(WORK_ITEMS)
-        .where(WORK_ITEMS.ISSUE_ID.eq(issues.ID))
-        .and(WORK_ITEMS.WORK_NAME.eq("Анализ сроков выполнения"))
-        .orderBy(WORK_ITEMS.WI_CREATED.desc())
-        .limit(1)
-        .asField()
+            .from(WORK_ITEMS)
+            .where(WORK_ITEMS.ISSUE_ID.eq(issues.ID))
+            .and(WORK_ITEMS.WORK_NAME.eq("Анализ сроков выполнения"))
+            .orderBy(WORK_ITEMS.WI_CREATED.desc())
+            .limit(1)
+            .asField()
 
-    internal class HighPriorityIssue(
-        var id: String? = null,
-        var project: String? = null,
-        var customer: String? = null,
-        var summary: String? = null,
-        var created: Timestamp? = null,
-        var priority: String? = null,
-        var state: String? = null,
-        var type: String? = null,
-        var assignee: String? = null,
-        var comment: String? = null,
-        var commentAuthor: String? = null,
-        var issue: String? = null,
-        var tfsPlainIssues: ArrayList<IssueTFSData> = arrayListOf(),
-        var tfsData: ArrayList<TFSPlainIssue> = arrayListOf(),
-        var timeUser: Long? = null,
-        var timeAgent: Long? = null,
-        var timeDeveloper: Long? = null
+
+    data class TFSPlainIssue(
+            var issueId: Int? = null,
+            var issueState: String? = null,
+            var issueMergedIn: Int? = null,
+            var issueReason: String? = null,
+            var issueLastUpdate: String? = null,
+            var iterationPath: String? = null,
+            var defects: ArrayList<TFSPlainDefect> = arrayListOf()
     )
 
-
-    internal class IssueTFSData(
-        var issueId: Int? = null,
-        var issueState: String? = null,
-        var issueMergedIn: Int? = null,
-        var issueReason: String? = null,
-        var issueLastUpdate: String? = null,
-        var issueIterationPath: String? = null,
-        var defectId: Int? = null,
-        var defectState: String? = null,
-        var defectReason: String? = null,
-        var defectIterationPath: String? = null,
-        var defectDevelopmentManager: String? = null,
-        var defectDeadline: String? = null,
-        var changeRequestId: Int? = null,
-        var changeRequestMergedIn: String? = null,
-        var iterationPath: String? = null,
-        var changeRequestReason: String? = null
+    data class TFSPlainDefect(
+            var defectId: Int? = null,
+            var defectState: String? = null,
+            var defectReason: String? = null,
+            var iterationPath: String? = null,
+            var developmentManager: String? = null,
+            var defectDeadline: String? = null,
+            var changeRequests: ArrayList<TFSPlainChangeRequest> = arrayListOf()
     )
 
-    internal class TFSPlainIssue(
-        var issueId: Int? = null,
-        var issueState: String? = null,
-        var issueMergedIn: Int? = null,
-        var issueReason: String? = null,
-        var issueLastUpdate: String? = null,
-        var iterationPath: String? = null,
-        var defects: ArrayList<TFSPlainDefect> = arrayListOf()
-    )
-
-    internal class TFSPlainDefect(
-        var defectId: Int? = null,
-        var defectState: String? = null,
-        var defectReason: String? = null,
-        var iterationPath: String? = null,
-        var developmentManager: String? = null,
-        var defectDeadline: String? = null,
-        var changeRequests: ArrayList<TFSPlainChangeRequest> = arrayListOf()
-    )
-
-    internal class TFSPlainChangeRequest(
-        var changeRequestId: Int? = null,
-        var changeRequestMergedIn: String? = null,
-        var iterationPath: String? = null,
-        var changeRequestReason: String? = null
+    data class TFSPlainChangeRequest(
+            var changeRequestId: Int? = null,
+            var changeRequestMergedIn: String? = null,
+            var iterationPath: String? = null,
+            var changeRequestReason: String? = null
     )
 
     internal fun ArrayList<IssueTFSData>.transformToIssues(): ArrayList<TFSPlainIssue> =
-        ArrayList(this.map {
-            TFSPlainIssue(
-                issueId = it.issueId,
-                issueState = it.issueState,
-                issueMergedIn = it.issueMergedIn,
-                issueReason = it.issueReason,
-                issueLastUpdate = it.issueLastUpdate,
-                iterationPath = it.issueIterationPath,
-                defects = this.transformToDefects(it.issueId)
-            )
-        }.distinctBy { it.issueId })
+            ArrayList(this.map {
+                TFSPlainIssue(
+                        issueId = it.issueId,
+                        issueState = it.issueState,
+                        issueMergedIn = it.issueMergedIn,
+                        issueReason = it.issueReason,
+                        issueLastUpdate = it.issueLastUpdate,
+                        iterationPath = it.issueIterationPath,
+                        defects = this.transformToDefects(it.issueId)
+                )
+            }.distinctBy { it.issueId })
 
     internal fun ArrayList<IssueTFSData>.transformToDefects(issueId: Int?): ArrayList<TFSPlainDefect> =
-        ArrayList(this.filter { defect -> defect.defectId != null && defect.issueId == issueId }.map {
-            TFSPlainDefect(
-                defectId = it.defectId,
-                defectState = it.defectState,
-                defectReason = it.defectReason,
-                iterationPath = it.defectIterationPath,
-                developmentManager = it.defectDevelopmentManager,
-                defectDeadline = it.defectDeadline,
-                changeRequests = this.transformToChangeRequests(it.defectId)
-            )
-        }.distinctBy { it.defectId })
+            ArrayList(this.filter { defect -> defect.defectId != null && defect.issueId == issueId }.map {
+                TFSPlainDefect(
+                        defectId = it.defectId,
+                        defectState = it.defectState,
+                        defectReason = it.defectReason,
+                        iterationPath = it.defectIterationPath,
+                        developmentManager = it.defectDevelopmentManager,
+                        defectDeadline = it.defectDeadline,
+                        changeRequests = this.transformToChangeRequests(it.defectId)
+                )
+            }.distinctBy { it.defectId })
 
     internal fun ArrayList<IssueTFSData>.transformToChangeRequests(defectId: Int?): ArrayList<TFSPlainChangeRequest> =
-        ArrayList(this.filter { changeRequest -> changeRequest.changeRequestId != null && changeRequest.defectId == defectId }.map {
-            TFSPlainChangeRequest(
-                changeRequestId = it.changeRequestId,
-                changeRequestMergedIn = it.changeRequestMergedIn,
-                iterationPath = it.iterationPath,
-                changeRequestReason = it.changeRequestReason
-            )
-        }.distinctBy { it.changeRequestId })
+            ArrayList(this.filter { changeRequest -> changeRequest.changeRequestId != null && changeRequest.defectId == defectId }.map {
+                TFSPlainChangeRequest(
+                        changeRequestId = it.changeRequestId,
+                        changeRequestMergedIn = it.changeRequestMergedIn,
+                        iterationPath = it.iterationPath,
+                        changeRequestReason = it.changeRequestReason
+                )
+            }.distinctBy { it.changeRequestId })
 
     override fun getHighPriorityIssuesWithDevOpsDetails(
-        projectsString: String?,
-        customersString: String?,
-        prioritiesString: String?,
-        statesString: String?
+            projectsString: String?,
+            customersString: String?,
+            prioritiesString: String?,
+            statesString: String?
     ): Any {
         val projectsFilter = projectsString?.splitToList().orEmpty()
         val customersFilter = customersString?.splitToList().orEmpty()
@@ -154,45 +115,45 @@ class Issues(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pri
         val statesFilter = statesString?.splitToList().orEmpty()
 
         val statesCondition =
-            when {
-                (statesFilter.contains("Активные") && statesFilter.contains("Завершенные")) || statesFilter.isEmpty() -> {
-                    DSL.trueCondition()
+                when {
+                    (statesFilter.contains("Активные") && statesFilter.contains("Завершенные")) || statesFilter.isEmpty() -> {
+                        DSL.trueCondition()
+                    }
+                    statesFilter.contains("Активные") -> DSL.and(issues.RESOLVED_DATE.isNull)
+                    statesFilter.contains("Завершенные") -> DSL.and(issues.RESOLVED_DATE.isNotNull)
+                    else -> DSL.and(issues.RESOLVED_DATE.isNull)
                 }
-                statesFilter.contains("Активные") -> DSL.and(issues.RESOLVED_DATE.isNull)
-                statesFilter.contains("Завершенные") -> DSL.and(issues.RESOLVED_DATE.isNotNull)
-                else -> DSL.and(issues.RESOLVED_DATE.isNull)
-            }
 
 
         val query = dslContext
-            .select(
-                issues.ID.`as`("id"),
-                issues.PROJECT_SHORT_NAME.`as`("project"),
-                customer.FIELD_VALUE.`as`("customer"),
-                issues.SUMMARY.`as`("summary"),
-                issues.CREATED_DATE_TIME.`as`("created"),
-                issue.FIELD_VALUE.`as`("issue"),
-                state.FIELD_VALUE.`as`("state"),
-                comment.`as`("comment"),
-                commentAuthor.`as`("commentAuthor"),
-                priority.FIELD_VALUE.`as`("priority"),
-                issues.ISSUE_TYPE.`as`("type"),
-                responsible.FIELD_VALUE.`as`("assignee"),
-                issues.TIME_USER.`as`("timeUser"),
-                issues.TIME_AGENT.`as`("timeAgent"),
-                issues.TIME_DEVELOPER.`as`("timeDeveloper")
-            )
-            .from(issues)
-            .leftJoin(priority).on(issues.ID.eq(priority.ISSUE_ID)).and(priority.FIELD_NAME.eq("Priority"))
-            .leftJoin(customer).on(issues.ID.eq(customer.ISSUE_ID)).and(customer.FIELD_NAME.eq("Заказчик"))
-            .leftJoin(responsible).on(issues.ID.eq(responsible.ISSUE_ID)).and(responsible.FIELD_NAME.eq("Assignee"))
-            .leftJoin(issue).on(issues.ID.eq(issue.ISSUE_ID)).and(issue.FIELD_NAME.eq("Issue"))
-            .leftJoin(type).on(issues.ID.eq(type.ISSUE_ID)).and(type.FIELD_NAME.eq("Type"))
-            .leftJoin(state).on(issues.ID.eq(state.ISSUE_ID)).and(state.FIELD_NAME.eq("State"))
-            .where(issues.PROJECT_SHORT_NAME.`in`(projectsFilter))
-            .and(customer.FIELD_VALUE.`in`(customersFilter))
-            .and(priority.FIELD_VALUE.`in`(prioritiesFilter))
-            .and(statesCondition)
+                .select(
+                        issues.ID.`as`("id"),
+                        issues.PROJECT_SHORT_NAME.`as`("project"),
+                        customer.FIELD_VALUE.`as`("customer"),
+                        issues.SUMMARY.`as`("summary"),
+                        issues.CREATED_DATE_TIME.`as`("created"),
+                        issue.FIELD_VALUE.`as`("issue"),
+                        state.FIELD_VALUE.`as`("state"),
+                        comment.`as`("comment"),
+                        commentAuthor.`as`("commentAuthor"),
+                        priority.FIELD_VALUE.`as`("priority"),
+                        issues.ISSUE_TYPE.`as`("type"),
+                        responsible.FIELD_VALUE.`as`("assignee"),
+                        issues.TIME_USER.`as`("timeUser"),
+                        issues.TIME_AGENT.`as`("timeAgent"),
+                        issues.TIME_DEVELOPER.`as`("timeDeveloper")
+                )
+                .from(issues)
+                .leftJoin(priority).on(issues.ID.eq(priority.ISSUE_ID)).and(priority.FIELD_NAME.eq("Priority"))
+                .leftJoin(customer).on(issues.ID.eq(customer.ISSUE_ID)).and(customer.FIELD_NAME.eq("Заказчик"))
+                .leftJoin(responsible).on(issues.ID.eq(responsible.ISSUE_ID)).and(responsible.FIELD_NAME.eq("Assignee"))
+                .leftJoin(issue).on(issues.ID.eq(issue.ISSUE_ID)).and(issue.FIELD_NAME.eq("Issue"))
+                .leftJoin(type).on(issues.ID.eq(type.ISSUE_ID)).and(type.FIELD_NAME.eq("Type"))
+                .leftJoin(state).on(issues.ID.eq(state.ISSUE_ID)).and(state.FIELD_NAME.eq("State"))
+                .where(issues.PROJECT_SHORT_NAME.`in`(projectsFilter))
+                .and(customer.FIELD_VALUE.`in`(customersFilter))
+                .and(priority.FIELD_VALUE.`in`(prioritiesFilter))
+                .and(statesCondition)
         val result = query.fetchInto(HighPriorityIssue::class.java)
         result.forEachIndexed { index, item ->
             val issueIds = item.issue?.split(",")?.joinToString("','", prefix = "'", postfix = "'")
@@ -238,22 +199,22 @@ WHERE issue.System_Id IN ($issueIds)
                     TransactionManager.current().exec(statement) { rs ->
                         while (rs.next()) {
                             val i = IssueTFSData(
-                                issueId = rs.getString("issue_id").toInt(),
-                                issueState = rs.getString("issue_state"),
-                                issueMergedIn = rs.getString("issue_merged_in")?.toInt(),
-                                issueReason = rs.getString("issue_reason"),
-                                issueLastUpdate = rs.getString("issue_last_update"),
-                                issueIterationPath = rs.getString("issue_iteration_path"),
-                                defectId = rs.getString("defect_id")?.toInt(),
-                                defectState = rs.getString("defect_state"),
-                                defectReason = rs.getString("defect_reason"),
-                                defectIterationPath = rs.getString("issue_iteration_path"),
-                                defectDevelopmentManager = rs.getString("defect_development_manager"),
-                                defectDeadline = rs.getString("defect_deadline"),
-                                changeRequestId = rs.getString("change_request_id")?.toInt(),
-                                changeRequestMergedIn = rs.getString("changed_request_merged_in"),
-                                iterationPath = rs.getString("iteration_path"),
-                                changeRequestReason = rs.getString("change_request_reason")
+                                    issueId = rs.getString("issue_id").toInt(),
+                                    issueState = rs.getString("issue_state"),
+                                    issueMergedIn = rs.getString("issue_merged_in")?.toInt(),
+                                    issueReason = rs.getString("issue_reason"),
+                                    issueLastUpdate = rs.getString("issue_last_update"),
+                                    issueIterationPath = rs.getString("issue_iteration_path"),
+                                    defectId = rs.getString("defect_id")?.toInt(),
+                                    defectState = rs.getString("defect_state"),
+                                    defectReason = rs.getString("defect_reason"),
+                                    defectIterationPath = rs.getString("issue_iteration_path"),
+                                    defectDevelopmentManager = rs.getString("defect_development_manager"),
+                                    defectDeadline = rs.getString("defect_deadline"),
+                                    changeRequestId = rs.getString("change_request_id")?.toInt(),
+                                    changeRequestMergedIn = rs.getString("changed_request_merged_in"),
+                                    iterationPath = rs.getString("iteration_path"),
+                                    changeRequestReason = rs.getString("change_request_reason")
                             )
                             result[index].tfsPlainIssues.add(i)
                         }
@@ -267,4 +228,108 @@ WHERE issue.System_Id IN ($issueIds)
         }
         return result
     }
+
+    fun getProjectsCondition(issueFilter: IssueFilter): Condition = if (issueFilter.projects.isEmpty()) DSL.and(DSL.trueCondition()) else DSL.and(issues.PROJECT_SHORT_NAME.`in`(issueFilter.projects))
+    fun getPrioritiesCondition(issueFilter: IssueFilter): Condition = if (issueFilter.priorities.isEmpty()) DSL.and(DSL.trueCondition()) else DSL.and(issues.PRIORITY.`in`(issueFilter.priorities))
+    fun getStatesCondition(issueFilter: IssueFilter): Condition = if (issueFilter.states.isEmpty()) DSL.and(DSL.trueCondition()) else DSL.and(issues.STATE.`in`(issueFilter.states))
+    fun getCustomersCondition(issueFilter: IssueFilter): Condition = if (issueFilter.customers.isEmpty()) DSL.and(DSL.trueCondition()) else DSL.and(issues.CUSTOMER.`in`(issueFilter.customers))
+
+    fun getYouTrackIssuesQuery(issueFilter: IssueFilter): List<HighPriorityIssue> {
+        val query = dslContext
+                .select(
+                        issues.ID.`as`("id"),
+                        issues.PROJECT_SHORT_NAME.`as`("project"),
+                        customer.FIELD_VALUE.`as`("customer"),
+                        issues.SUMMARY.`as`("summary"),
+                        issues.CREATED_DATE_TIME.`as`("created"),
+                        issue.FIELD_VALUE.`as`("issue"),
+                        state.FIELD_VALUE.`as`("state"),
+                        comment.`as`("comment"),
+                        commentAuthor.`as`("commentAuthor"),
+                        priority.FIELD_VALUE.`as`("priority"),
+                        issues.ISSUE_TYPE.`as`("type"),
+                        responsible.FIELD_VALUE.`as`("assignee"),
+                        issues.TIME_USER.`as`("timeUser"),
+                        issues.TIME_AGENT.`as`("timeAgent"),
+                        issues.TIME_DEVELOPER.`as`("timeDeveloper")
+                )
+                .from(issues)
+                .leftJoin(priority).on(issues.ID.eq(priority.ISSUE_ID)).and(priority.FIELD_NAME.eq("Priority"))
+                .leftJoin(customer).on(issues.ID.eq(customer.ISSUE_ID)).and(customer.FIELD_NAME.eq("Заказчик"))
+                .leftJoin(responsible).on(issues.ID.eq(responsible.ISSUE_ID)).and(responsible.FIELD_NAME.eq("Assignee"))
+                .leftJoin(issue).on(issues.ID.eq(issue.ISSUE_ID)).and(issue.FIELD_NAME.eq("Issue"))
+                .leftJoin(type).on(issues.ID.eq(type.ISSUE_ID)).and(type.FIELD_NAME.eq("Type"))
+                .leftJoin(state).on(issues.ID.eq(state.ISSUE_ID)).and(state.FIELD_NAME.eq("State"))
+                .where()
+                .and(getProjectsCondition(issueFilter))
+                .and(getPrioritiesCondition(issueFilter))
+                .and(getStatesCondition(issueFilter))
+                .and(getCustomersCondition(issueFilter))
+                .limit(issueFilter.limit)
+        return query.fetchInto(HighPriorityIssue::class.java)
+    }
+
+    fun getDevOpsBugs(bugs: List<Int>): List<DevOpsBug> {
+        val statement = """
+            SELECT 
+                issue.system_id                             AS id,
+                issue.System_State                          AS state,
+                issue.System_Reason                         AS reason,
+                issue.System_ChangedDate                    AS last_update,
+                issue.IterationPath                         AS iteration,
+                issue.System_ChangedBy                      as changed_by,
+                issue.System_AssignedTo                     as responsible,
+                issue.Microsoft_VSTS_Common_ResolvedReason  as resolved_reason,
+                issue.Microsoft_VSTS_Common_Priority        as priority,
+                issue.Microsoft_VSTS_Build_FoundIn          as found_in,
+                issue.Microsoft_VSTS_Build_IntegrationBuild as integrated_in,
+                issue.Microsoft_VSTS_Common_Severity        as severity,
+                issue.AreaPath                              as area
+            FROM CurrentWorkItemView issue
+            WHERE
+                issue.System_Id IN (${bugs.joinToString("','", prefix = "'", postfix = "'")})
+                AND issue.System_WorkItemType = 'Bug'
+                AND issue.TeamProjectCollectionSK = 37
+      """
+
+        val a = arrayListOf<DevOpsBug>()
+        transaction(ms) {
+            TransactionManager.current().exec(statement) { rs ->
+                while (rs.next()) {
+                    val j = rs
+                    val i = DevOpsBug(
+                            id = rs.getString("id").toInt(),
+                            state = rs.getString("state"),
+                            reason = rs.getString("reason"),
+                            lastUpdate = rs.getString("last_update"),
+                            iteration = rs.getString("iteration"),
+                            changedBy = rs.getString("changed_by"),
+                            responsible = rs.getString("responsible"),
+                            resolvedReason = rs.getString("resolved_reason"),
+                            priority = rs.getString("priority").toInt(),
+                            foundIn = rs.getString("found_in"),
+                            integratedIn = rs.getString("integrated_in"),
+                            severity = rs.getString("severity"),
+                            area = rs.getString("area")
+                    )
+                    a.add(i)
+                }
+            }
+        }
+        return a.toList()
+    }
+
+
+    override fun getIssuesWithTFSDetails(issueFilter: IssueFilter): Any {
+        val issues = getYouTrackIssuesQuery(issueFilter)
+        /*println(issues.first { it.id == "ACGM-11" })
+        println(issues.first { it.id == "ACGM-11" }.getBugs())*/
+        val bugs = issues.getBugs()
+
+        val bugsDetails = getDevOpsBugs(bugs)
+        /**Merging issues with bugs*/
+        issues.forEach { j -> j.devOpsBugs.addAll(j.getBugs().mapNotNull { b -> bugsDetails.firstOrNull { e -> e.id == b } }) }
+        return issues
+    }
 }
+
