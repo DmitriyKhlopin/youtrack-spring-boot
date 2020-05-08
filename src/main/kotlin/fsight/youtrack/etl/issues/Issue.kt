@@ -1,6 +1,5 @@
 package fsight.youtrack.etl.issues
 
-import com.google.gson.Gson
 import fsight.youtrack.*
 import fsight.youtrack.api.YouTrackAPI
 import fsight.youtrack.etl.IETLState
@@ -10,8 +9,12 @@ import fsight.youtrack.generated.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALU
 import fsight.youtrack.generated.jooq.tables.ErrorLog.ERROR_LOG
 import fsight.youtrack.generated.jooq.tables.IssueComments.ISSUE_COMMENTS
 import fsight.youtrack.generated.jooq.tables.IssueHistory.ISSUE_HISTORY
+import fsight.youtrack.generated.jooq.tables.IssueTags.ISSUE_TAGS
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
 import fsight.youtrack.generated.jooq.tables.WorkItems.WORK_ITEMS
+import fsight.youtrack.generated.jooq.tables.records.IssueCommentsRecord
+import fsight.youtrack.generated.jooq.tables.records.IssueTagsRecord
+import fsight.youtrack.generated.jooq.tables.records.WorkItemsRecord
 import fsight.youtrack.models.ImportLogModel
 import fsight.youtrack.models.loadToDatabase
 import fsight.youtrack.models.toIssueHistoryRecord
@@ -26,31 +29,32 @@ import java.time.LocalDateTime
 
 @Service
 class Issue(
-        private val dslContext: DSLContext,
-        private val importLogService: IImportLog,
-        private val timelineService: ITimeline,
-        private val etlStateService: IETLState
+    private val dslContext: DSLContext,
+    private val importLogService: IImportLog,
+    private val timelineService: ITimeline,
+    private val etlStateService: IETLState
 ) : IIssue {
-    override fun getIssues(customFilter: String?): Int {
-        val issueIds = arrayListOf<String?>()
+    override fun getIssues(customFilter: String?): ArrayList<String> {
+        val issueIds = arrayListOf<String>()
 
         val fields =
-                listOf(
-                        "idReadable",
-                        "reporter(login,name)",
-                        "updater(login,name)",
-                        "summary",
-                        "description",
-                        "project(shortName)",
-                        "created",
-                        "updated",
-                        "resolved",
-                        "votes",
-                        "comments(id,author(login,fullName),text,created,updated,deleted)",
-                        "customFields(\$type,name,projectCustomField(\$type,field(name)),value(\$type,avatarUrl,buildLink,fullName,id,isResolved,localizedName,login,minutes,name,presentation,ringId,text))",
-                        "visibility(permittedGroups(name),permittedUsers(name,login))",
-                        "deleted"
-                ).joinToString(",")
+            listOf(
+                "idReadable",
+                "reporter(login,name)",
+                "updater(login,name)",
+                "summary",
+                "description",
+                "project(shortName)",
+                "created",
+                "updated",
+                "resolved",
+                "votes",
+                "tags(name)",
+                "comments(id,author(login,fullName),text,created,updated,deleted)",
+                "customFields(\$type,name,projectCustomField(\$type,field(name)),value(\$type,avatarUrl,buildLink,fullName,id,isResolved,localizedName,login,minutes,name,presentation,ringId,text))",
+                "visibility(permittedGroups(name),permittedUsers(name,login))",
+                "deleted"
+            ).joinToString(",")
         val top = 40
         var skip = 0
         var stored = 0
@@ -77,28 +81,31 @@ class Issue(
             result?.forEach {
                 it.saveComments()
                 it.saveCustomFields()
+                it.saveTags()
             }
             println("Loaded ${issueIds.size} issues, stored $stored\r")
         } while (result?.size ?: 0 > 0)
 
-        //TODO оптимизировать импорт истории для проблемных запросов
-        issueIds.filterNot { it in listOf("SIGMA-17") }.filterNotNull().forEach {
-            getIssueHistory(it)
-            getTimeAccounting(it)
-        }
         println("Loaded $skip issues\r")
         importLogService.saveLog(
-                ImportLogModel(
-                        timestamp = Timestamp(System.currentTimeMillis()),
-                        source = "issues (filtered by '$customFilter')",
-                        table = "issues",
-                        items = skip
-                )
+            ImportLogModel(
+                timestamp = Timestamp(System.currentTimeMillis()),
+                source = "issues (filtered by '$customFilter')",
+                table = "issues",
+                items = skip
+            )
         )
-        issueIds.filterNot { it in listOf("SIGMA-17") }.filterNotNull().forEach { timelineService.calculateForId(it) }
-        return skip
+        return issueIds
     }
 
+
+    override fun getIssuesHistory(ids: ArrayList<String>) {
+        ids.forEach { getSingleIssueHistory(it) }
+    }
+
+    override fun getWorkItems(ids: ArrayList<String>) {
+        ids.forEach { getSingleIssueWorkItems(it) }
+    }
 
     private fun getFilter(): String? {
         return try {
@@ -107,15 +114,15 @@ class Issue(
             val mode = if (issuesCount == 0) IssueRequestMode.ALL else IssueRequestMode.TODAY
             if (mode == 1) {
                 val maxUpdateDate =
-                        dslContext.select(DSL.max(ISSUES.UPDATED_DATE)).from(ISSUES).fetchOneInto(Timestamp::class.java)
+                    dslContext.select(DSL.max(ISSUES.UPDATED_DATE)).from(ISSUES).fetchOneInto(Timestamp::class.java)
                 val dateFrom =
-                        "${maxUpdateDate.toLocalDateTime().year}-${if (maxUpdateDate.toLocalDateTime().monthValue < 10) "0" else ""}${maxUpdateDate.toLocalDateTime().monthValue}-${if (maxUpdateDate.toLocalDateTime().dayOfMonth < 10) "0" else ""}${maxUpdateDate.toLocalDateTime().dayOfMonth}"
+                    "${maxUpdateDate.toLocalDateTime().year}-${if (maxUpdateDate.toLocalDateTime().monthValue < 10) "0" else ""}${maxUpdateDate.toLocalDateTime().monthValue}-${if (maxUpdateDate.toLocalDateTime().dayOfMonth < 10) "0" else ""}${maxUpdateDate.toLocalDateTime().dayOfMonth}"
                 val dateTo =
-                        "${LocalDate.now().plusDays(1).year}-${if (LocalDate.now().plusDays(1).monthValue < 10) "0" else ""}${LocalDate.now().plusDays(
-                                1
-                        ).monthValue}-${if (LocalDate.now().plusDays(1).dayOfMonth < 10) "0" else ""}${LocalDate.now().plusDays(
-                                1
-                        ).dayOfMonth}"
+                    "${LocalDate.now().plusDays(1).year}-${if (LocalDate.now().plusDays(1).monthValue < 10) "0" else ""}${LocalDate.now().plusDays(
+                        1
+                    ).monthValue}-${if (LocalDate.now().plusDays(1).dayOfMonth < 10) "0" else ""}${LocalDate.now().plusDays(
+                        1
+                    ).dayOfMonth}"
                 "updated: $dateFrom .. $dateTo"
             } else null
         } catch (e: Exception) {
@@ -126,16 +133,15 @@ class Issue(
 
     //TODO преобразовать в loadInto
     private fun Issue.saveCustomFields() {
-        this.customFields?.forEach { println(it.toString()) }
         dslContext.deleteFrom(CUSTOM_FIELD_VALUES).where(CUSTOM_FIELD_VALUES.ISSUE_ID.eq(idReadable)).execute()
         customFields?.forEach { field ->
             try {
                 dslContext
-                        .insertInto(CUSTOM_FIELD_VALUES)
-                        .set(CUSTOM_FIELD_VALUES.ISSUE_ID, idReadable)
-                        .set(CUSTOM_FIELD_VALUES.FIELD_NAME, field.projectCustomField?.field?.name)
-                        .set(CUSTOM_FIELD_VALUES.FIELD_VALUE, this.unwrapFieldValue(field.projectCustomField?.field?.name))
-                        .execute()
+                    .insertInto(CUSTOM_FIELD_VALUES)
+                    .set(CUSTOM_FIELD_VALUES.ISSUE_ID, idReadable)
+                    .set(CUSTOM_FIELD_VALUES.FIELD_NAME, field.projectCustomField?.field?.name)
+                    .set(CUSTOM_FIELD_VALUES.FIELD_VALUE, this.unwrapFieldValue(field.projectCustomField?.field?.name))
+                    .execute()
             } catch (e: Exception) {
                 etlStateService.state = ETLState.DONE
                 writeError(field.toString(), e.message ?: "")
@@ -146,21 +152,35 @@ class Issue(
     //TODO преобразовать в loadInto
     private fun Issue.saveComments() {
         dslContext.deleteFrom(ISSUE_COMMENTS).where(ISSUE_COMMENTS.ISSUE_ID.eq(idReadable)).execute()
-        //TODO аменить на loadInto
+        val records = this.comments?.map {
+            IssueCommentsRecord()
+                .setId(it.id)
+                .setIssueId(this.idReadable)
+                .setDeleted(it.deleted)
+                .setAuthor(it.author?.login)
+                .setAuthorFullName(it.author?.fullName)
+                .setCommentText(it.text)
+                .setCreated(it.created?.toTimestamp())
+                .setUpdated(it.updated?.toTimestamp())
+        }
         this.comments?.forEach { comment ->
-            dslContext
-                    .insertInto(ISSUE_COMMENTS)
-                    .set(ISSUE_COMMENTS.ID, comment.id)
-                    .set(ISSUE_COMMENTS.ISSUE_ID, this.idReadable)
-                    .set(ISSUE_COMMENTS.DELETED, comment.deleted)
-                    .set(ISSUE_COMMENTS.AUTHOR, comment.author?.login)
-                    .set(ISSUE_COMMENTS.AUTHOR_FULL_NAME, comment.author?.fullName)
-                    .set(ISSUE_COMMENTS.COMMENT_TEXT, comment.text)
-                    .set(ISSUE_COMMENTS.CREATED, comment.created?.toTimestamp())
-                    .set(ISSUE_COMMENTS.UPDATED, comment.updated?.toTimestamp())
-                    .execute()
             try {
-
+                dslContext.loadInto(ISSUE_COMMENTS).loadRecords(records)
+                    .fields(
+                        ISSUE_COMMENTS.ID,
+                        ISSUE_COMMENTS.ISSUE_ID,
+                        ISSUE_COMMENTS.PARENT_ID,
+                        ISSUE_COMMENTS.DELETED,
+                        ISSUE_COMMENTS.SHOWN_FOR_ISSUE_AUTHOR,
+                        ISSUE_COMMENTS.AUTHOR,
+                        ISSUE_COMMENTS.AUTHOR_FULL_NAME,
+                        ISSUE_COMMENTS.COMMENT_TEXT,
+                        ISSUE_COMMENTS.CREATED,
+                        ISSUE_COMMENTS.UPDATED,
+                        ISSUE_COMMENTS.PERMITTED_GROUP,
+                        ISSUE_COMMENTS.REPLIES
+                    )
+                    .execute()
             } catch (e: Exception) {
                 etlStateService.state = ETLState.DONE
                 writeError(comment.toString(), e.message ?: "")
@@ -168,72 +188,110 @@ class Issue(
         }
     }
 
-    private fun getTimeAccounting(idReadable: String) {
-        println("Loading time units of $idReadable")
+    private fun Issue.saveTags() {
+        dslContext.deleteFrom(ISSUE_TAGS).where(ISSUE_TAGS.ISSUE_ID.eq(idReadable)).execute()
+        val tags = this.tags?.map { item -> IssueTagsRecord().setIssueId(this.idReadable).setTag(item.name) }
+        try {
+            dslContext.loadInto(ISSUE_TAGS).loadRecords(tags).fields(ISSUE_TAGS.ISSUE_ID, ISSUE_TAGS.TAG).execute()
+        } catch (e: Exception) {
+            etlStateService.state = ETLState.DONE
+            writeError("Can't save tags for issue ${this.idReadable}", e.message ?: "")
+        }
+    }
+
+    private fun getSingleIssueWorkItems(idReadable: String) {
         dslContext.deleteFrom(WORK_ITEMS).where(WORK_ITEMS.ISSUE_ID.eq(idReadable)).execute()
         //TODO заменить на loadInto
-        YouTrackAPI.create(Converter.GSON).getWorkItems(AUTH, idReadable).execute().body()?.forEach {
-            dslContext
-                    .insertInto(WORK_ITEMS)
-                    .set(WORK_ITEMS.ISSUE_ID, idReadable)
-                    .set(WORK_ITEMS.WI_ID, it.id)
-                    .set(WORK_ITEMS.WI_DATE, it.date?.toDate())
-                    .set(WORK_ITEMS.WI_CREATED, it.created?.toTimestamp())
-                    .set(WORK_ITEMS.WI_UPDATED, it.updated?.toTimestamp())
-                    .set(WORK_ITEMS.WI_DURATION, it.duration?.minutes)
-                    .set(WORK_ITEMS.AUTHOR_LOGIN, it.author?.login)
-                    .set(WORK_ITEMS.WORK_NAME, it.type?.name)
-                    .set(WORK_ITEMS.WORK_TYPE_ID, it.type?.id)
-                    .set(WORK_ITEMS.WORK_TYPE_AUTO_ATTACHED, it.type?.autoAttached)
-                    .set(WORK_ITEMS.DESCRIPTION, it.text)
-                    .execute()
+        val items = YouTrackAPI.create(Converter.GSON).getWorkItems(AUTH, idReadable).execute().body()?.map {
+            println(it)
+            WorkItemsRecord()
+                .setIssueId(idReadable)
+                .setWiId(it.id)
+                .setWiDate(it.date?.toDate())
+                .setWiCreated(it.created?.toTimestamp())
+                .setWiUpdated(it.updated?.toTimestamp())
+                .setWiDuration(it.duration?.minutes)
+                .setAuthorLogin(it.author?.login)
+                .setWorkName(it.type?.name)
+                .setWorkTypeId(it.type?.id)
+                .setWorkTypeAutoAttached(it.type?.autoAttached)
+                .setDescription(it.text)
+        }
+        if (items?.size ?: 0 > 0) {
             try {
+                dslContext
+                    .loadInto(WORK_ITEMS)
+                    .loadRecords(items)
+                    .fields(
+                        WORK_ITEMS.ISSUE_ID,
+                        WORK_ITEMS.WI_URL,
+                        WORK_ITEMS.WI_ID,
+                        WORK_ITEMS.WI_DATE,
+                        WORK_ITEMS.WI_CREATED,
+                        WORK_ITEMS.WI_UPDATED,
+                        WORK_ITEMS.WI_DURATION,
+                        WORK_ITEMS.AUTHOR_LOGIN,
+                        WORK_ITEMS.AUTHOR_RING_ID,
+                        WORK_ITEMS.AUTHOR_URL,
+                        WORK_ITEMS.WORK_NAME,
+                        WORK_ITEMS.WORK_TYPE_ID,
+                        WORK_ITEMS.WORK_TYPE_AUTO_ATTACHED,
+                        WORK_ITEMS.WORK_TYPE_URL,
+                        WORK_ITEMS.DESCRIPTION
+                    )
+                    .execute()
             } catch (e: java.lang.Exception) {
                 etlStateService.state = ETLState.DONE
-                writeError(it.toString(), e.message ?: "")
+                writeError("Can't save work items for issue $idReadable", e.message ?: "")
             }
         }
     }
 
-    override fun getIssueHistory(idReadable: String) {
+    override fun getSingleIssueHistory(idReadable: String) {
         println("Loading history of $idReadable")
-        var hasAfter: Boolean? = true
-        dslContext.deleteFrom(ISSUE_HISTORY).where(ISSUE_HISTORY.ISSUE_ID.eq(idReadable)).execute()
-        var offset = 100
-        while (hasAfter == true) {
-            val issueActivities =
+        try {
+            var hasAfter: Boolean? = true
+            dslContext.deleteFrom(ISSUE_HISTORY).where(ISSUE_HISTORY.ISSUE_ID.eq(idReadable)).execute()
+            var offset = 100
+            while (hasAfter == true) {
+                val issueActivities =
                     YouTrackAPI.create(Converter.GSON)
-                            .getCustomFieldsHistory(auth = AUTH, issueId = idReadable, top = offset)
-                            .execute()
-            val items = issueActivities.body()?.activities?.map { it.toIssueHistoryRecord(idReadable) }
-            val stored = dslContext.loadInto(ISSUE_HISTORY)
+                        .getCustomFieldsHistory(auth = AUTH, issueId = idReadable, top = offset)
+                        .execute()
+                val items = issueActivities.body()?.activities?.map { it.toIssueHistoryRecord(idReadable) }
+                val stored = dslContext.loadInto(ISSUE_HISTORY)
                     .onDuplicateKeyUpdate()
                     .loadRecords(items)
                     .fields(
-                            ISSUE_HISTORY.ISSUE_ID,
-                            ISSUE_HISTORY.AUTHOR,
-                            ISSUE_HISTORY.UPDATE_DATE_TIME,
-                            ISSUE_HISTORY.FIELD_NAME,
-                            ISSUE_HISTORY.VALUE_TYPE,
-                            ISSUE_HISTORY.OLD_VALUE_INT,
-                            ISSUE_HISTORY.NEW_VALUE_INT,
-                            ISSUE_HISTORY.OLD_VALUE_STRING,
-                            ISSUE_HISTORY.NEW_VALUE_STRING,
-                            ISSUE_HISTORY.OLD_VALUE_DATE_TIME,
-                            ISSUE_HISTORY.NEW_VALUE_DATE_TIME,
-                            ISSUE_HISTORY.UPDATE_WEEK
+                        ISSUE_HISTORY.ISSUE_ID,
+                        ISSUE_HISTORY.AUTHOR,
+                        ISSUE_HISTORY.UPDATE_DATE_TIME,
+                        ISSUE_HISTORY.FIELD_NAME,
+                        ISSUE_HISTORY.VALUE_TYPE,
+                        ISSUE_HISTORY.OLD_VALUE_INT,
+                        ISSUE_HISTORY.NEW_VALUE_INT,
+                        ISSUE_HISTORY.OLD_VALUE_STRING,
+                        ISSUE_HISTORY.NEW_VALUE_STRING,
+                        ISSUE_HISTORY.OLD_VALUE_DATE_TIME,
+                        ISSUE_HISTORY.NEW_VALUE_DATE_TIME,
+                        ISSUE_HISTORY.UPDATE_WEEK
                     )
                     .execute()
                     .stored()
-            offset += issueActivities.body()?.activities?.size ?: 0
-            hasAfter = issueActivities.body()?.hasAfter
-            println("$idReadable: stored $stored history items")
-        }
+                offset += issueActivities.body()?.activities?.size ?: 0
+                hasAfter = issueActivities.body()?.hasAfter
+                println("$idReadable: stored $stored history items")
+            }
 
+
+        } catch (e: java.lang.Exception) {
+            etlStateService.state = ETLState.DONE
+            writeError("Can't save work items for issue $idReadable", e.message ?: "")
+        }
     }
 
     override fun findDeletedIssues() {
-        /*var count = 0
+        var count = 0
         val deletedItems = arrayListOf<String>()
         val result = dslContext.select(ISSUES.ID).from(ISSUES).fetchInto(String::class.java)
         val interval = (result.size / 100) + 1
@@ -248,7 +306,7 @@ class Issue(
             if (index % interval == 0) print("Checked ${index * 100 / result.size}% of issues\r")
         }
         println("Found ${deletedItems.size} deleted issues")
-        deleteIssues(deletedItems)*/
+        deleteIssues(deletedItems)
     }
 
     override fun deleteIssues(issues: ArrayList<String>): Int {
@@ -267,13 +325,13 @@ class Issue(
     override fun checkPendingIssues() {
         try {
             val i = dslContext
-                    .select(ISSUES.ID)
-                    .from(ISSUES)
-                    .leftJoin(CUSTOM_FIELD_VALUES)
-                    .on(ISSUES.ID.eq(CUSTOM_FIELD_VALUES.ISSUE_ID).and(CUSTOM_FIELD_VALUES.FIELD_NAME.eq("State")))
-                    .where(CUSTOM_FIELD_VALUES.FIELD_VALUE.`in`(listOf("Ожидает ответа", "Ожидает подтверждения")))
-                    /*.and(ISSUES.PROJECT_SHORT_NAME.notIn(listOf("TC")))*/
-                    .fetchInto(String::class.java)
+                .select(ISSUES.ID)
+                .from(ISSUES)
+                .leftJoin(CUSTOM_FIELD_VALUES)
+                .on(ISSUES.ID.eq(CUSTOM_FIELD_VALUES.ISSUE_ID).and(CUSTOM_FIELD_VALUES.FIELD_NAME.eq("State")))
+                .where(CUSTOM_FIELD_VALUES.FIELD_VALUE.`in`(listOf("Ожидает ответа", "Ожидает подтверждения")))
+                /*.and(ISSUES.PROJECT_SHORT_NAME.notIn(listOf("TC")))*/
+                .fetchInto(String::class.java)
             println("Found ${i.size} pending issues")
             i.forEach { getIssues(it) }
         } catch (e: Exception) {
@@ -284,11 +342,11 @@ class Issue(
     private fun writeError(item: String, message: String) {
         try {
             dslContext
-                    .insertInto(ERROR_LOG)
-                    .set(ERROR_LOG.DATE, Timestamp.valueOf(LocalDateTime.now()))
-                    .set(ERROR_LOG.ITEM, item)
-                    .set(ERROR_LOG.ERROR, message)
-                    .execute()
+                .insertInto(ERROR_LOG)
+                .set(ERROR_LOG.DATE, Timestamp.valueOf(LocalDateTime.now()))
+                .set(ERROR_LOG.ITEM, item)
+                .set(ERROR_LOG.ERROR, message)
+                .execute()
         } catch (e: Exception) {
             etlStateService.state = ETLState.DONE
         }

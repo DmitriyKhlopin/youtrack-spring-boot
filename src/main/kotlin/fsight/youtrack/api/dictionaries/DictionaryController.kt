@@ -8,4 +8,7 @@ class DictionaryController(private val service: IDictionary) {
 
     @GetMapping("/api/dictionary/devOpsStates")
     fun getDevOpsStates() = service.devOpsStates
+
+    @GetMapping("/api/dictionary/tags")
+    fun getTags() = service.getTags()
 }

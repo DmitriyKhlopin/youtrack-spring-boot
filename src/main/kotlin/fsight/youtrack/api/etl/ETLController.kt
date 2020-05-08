@@ -17,17 +17,19 @@ class ETLController {
 
     @GetMapping("/api/etl")
     fun loadData(
-            @RequestParam("dateFrom", required = false) dateFrom: String? = "",
-            @RequestParam("dateTo", required = false) dateTo: String? = "",
-            @RequestParam("parameters", required = false) parameters: String = ""
+        @RequestParam("dateType", required = false) dateType: String? = "",
+        @RequestParam("dateFrom", required = false) dateFrom: String? = "",
+        @RequestParam("dateTo", required = false) dateTo: String? = "",
+        @RequestParam("parameters", required = false) parameters: String = ""
     ) =
-            if (dateFrom != null && dateTo != null)
-                service.loadDataFromYT(
-                        manual = true,
-                        customFilter = "updated: $dateFrom .. $dateTo",
-                        parameters = parameters
-                ) else
-                service.loadDataFromYT(manual = true, parameters = parameters)
+        if (dateFrom != null && dateTo != null)
+            service.runManualExport(
+                customFilter = "$dateType: $dateFrom .. $dateTo",
+                parameters = parameters,
+                dateFrom = dateFrom,
+                dateTo = dateTo
+            ) else
+            service.runManualExport(parameters = parameters)
 
     @GetMapping("/api/etl/state")
     fun getCurrentState() = etlStateService.state

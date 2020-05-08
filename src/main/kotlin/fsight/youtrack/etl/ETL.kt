@@ -15,18 +15,23 @@ import java.util.*
 
 @Service
 class ETL(
-        private val projects: IProjects,
-        private val issue: IIssue,
-        private val users: UsersETL,
-        private val timeline: ITimeline,
-        private val bundle: Bundle
+    private val projects: IProjects,
+    private val issue: IIssue,
+    private val users: UsersETL,
+    private val timeline: ITimeline,
+    private val bundle: Bundle,
+    private val etlStateService: IETLState
 ) : IETL {
 
-    override fun loadDataFromYT(manual: Boolean, customFilter: String?, parameters: String): ETLResult? {
-        printlnIf(customFilter != null, "Custom filter: $customFilter with parameters: $parameters")
-        val p = parameters.split(delimiters = *arrayOf(","))
+    override fun runScheduledExport(): ETLResult? {
         val time = GregorianCalendar.getInstance().also { it.time = Date() }
-        if (time.get(Calendar.MINUTE) == 30 && time.get(Calendar.HOUR) == 0 && !manual) {
+        val issuesCount = if (time.get(Calendar.HOUR) in (5..23)) {
+            val ids = issue.getIssues(null)
+            issue.getIssuesHistory(ids)
+            issue.getWorkItems(ids)
+            ids.size
+        } else 0
+        if (time.get(Calendar.MINUTE) == 30 && time.get(Calendar.HOUR) == 0) {
             projects.saveProjects()
             bundle.getBundles()
             users.getUsers()
@@ -34,23 +39,37 @@ class ETL(
             issue.checkPendingIssues()
             timeline.launchCalculation()
         }
-        val issuesCount = when {
-            !manual -> issue.getIssues(customFilter)
-            manual && p.contains("issues") -> issue.getIssues(customFilter)
-            else -> 0
-        }
-        if (manual) p.forEach {
+        lastResult = ETLResult(state = ETLState.DONE, issues = issuesCount, timeUnit = 0)
+        return lastResult
+    }
+
+    override fun runManualExport(customFilter: String?, parameters: String, dateFrom: String?, dateTo: String?): Any {
+        if (etlStateService.state == ETLState.RUNNING) return "ETL is already running"
+        printlnIf(customFilter != null, "Custom filter: $customFilter with parameters: $parameters")
+        val p = parameters.split(delimiters = *arrayOf(","))
+        var ids: ArrayList<String> = arrayListOf()
+        p.forEach {
             when (it) {
+                "issues" -> ids = issue.getIssues(customFilter)
+                "work" -> {
+                    if (ids.size == 0) ids = issue.getIssues(customFilter)
+                    issue.getWorkItems(ids)
+                }
+                "history" -> {
+                    if (ids.size == 0) ids = issue.getIssues(customFilter)
+                    issue.getIssuesHistory(ids)
+                }
                 "bundles" -> bundle.getBundles()
                 "users" -> users.getUsers()
                 "timeline" -> timeline.launchCalculation()
+                "timelineAll" -> timeline.launchCalculationForPeriod(dateFrom, dateTo)
                 "check" -> issue.findDeletedIssues()
                 "projects" -> projects.saveProjects()
                 "pending" -> issue.checkPendingIssues()
             }
         }
-        lastResult = ETLResult(state = ETLState.DONE, issues = issuesCount, timeUnit = 0)
-        return lastResult
+
+        return ids.size
     }
 
     override fun getBundles() {
@@ -66,7 +85,7 @@ class ETL(
     }
 
     override fun getIssueHistory(idReadable: String) {
-        issue.getIssueHistory(idReadable)
+        issue.getSingleIssueHistory(idReadable)
     }
 
     companion object {
@@ -74,6 +93,6 @@ class ETL(
     }
 
     override fun getTimelineById(idReadable: String): ResponseEntity<Any> {
-        return ResponseEntity.ok(timeline.calculateForId(idReadable))
+        return ResponseEntity.ok(timeline.calculateForId(idReadable, 1, 1))
     }
 }

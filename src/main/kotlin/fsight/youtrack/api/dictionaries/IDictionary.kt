@@ -22,4 +22,5 @@ interface IDictionary {
     fun preloadCommercialProjects()
     fun preloadInnerProjects()
     fun preloadDevOpsStates()
+    fun getTags(): List<String>
 }

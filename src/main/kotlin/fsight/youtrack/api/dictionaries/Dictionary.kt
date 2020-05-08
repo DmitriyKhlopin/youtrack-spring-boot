@@ -4,6 +4,7 @@ import fsight.youtrack.etl.projects.IProjects
 import fsight.youtrack.generated.jooq.Tables
 import fsight.youtrack.generated.jooq.tables.BundleValues
 import fsight.youtrack.generated.jooq.tables.DevopsStatesOrder.DEVOPS_STATES_ORDER
+import fsight.youtrack.generated.jooq.tables.IssueTags.ISSUE_TAGS
 import fsight.youtrack.generated.jooq.tables.ProjectType.PROJECT_TYPE
 import fsight.youtrack.generated.jooq.tables.Projects.PROJECTS
 import fsight.youtrack.generated.jooq.tables.Users
@@ -11,6 +12,7 @@ import fsight.youtrack.models.BundleValue
 import fsight.youtrack.models.YouTrackProject
 import fsight.youtrack.models.YouTrackUser
 import fsight.youtrack.models.sql.DevOpsStateOrder
+import fsight.youtrack.models.youtrack.IssueTag
 import fsight.youtrack.toStartOfDate
 import org.jooq.DSLContext
 import org.springframework.stereotype.Service
@@ -51,24 +53,24 @@ class Dictionary(private val dsl: DSLContext, private val projectsService: IProj
     override val projects: List<YouTrackProject> by lazy { projectsService.getProjects() }
     override val users: List<YouTrackUser> by lazy {
         dsl.select(Users.USERS.ID.`as`("id"), Users.USERS.FULL_NAME.`as`("fullName"), Users.USERS.EMAIL.`as`("email"))
-                .from(Users.USERS)
-                .where(Users.USERS.EMAIL.isNotNull)
-                .fetchInto(YouTrackUser::class.java)
+            .from(Users.USERS)
+            .where(Users.USERS.EMAIL.isNotNull)
+            .fetchInto(YouTrackUser::class.java)
     }
 
     override val customFieldValues: List<BundleValue> by lazy {
         dsl
-                .select(
-                        BundleValues.BUNDLE_VALUES.ID.`as`("id"),
-                        BundleValues.BUNDLE_VALUES.NAME.`as`("name"),
-                        BundleValues.BUNDLE_VALUES.PROJECT_ID.`as`("projectId"),
-                        BundleValues.BUNDLE_VALUES.PROJECT_NAME.`as`("projectName"),
-                        BundleValues.BUNDLE_VALUES.FIELD_ID.`as`("fieldId"),
-                        BundleValues.BUNDLE_VALUES.FIELD_NAME.`as`("fieldName"),
-                        BundleValues.BUNDLE_VALUES.TYPE.`as`("\$type")
-                )
-                .from(BundleValues.BUNDLE_VALUES)
-                .fetchInto(BundleValue::class.java)
+            .select(
+                BundleValues.BUNDLE_VALUES.ID.`as`("id"),
+                BundleValues.BUNDLE_VALUES.NAME.`as`("name"),
+                BundleValues.BUNDLE_VALUES.PROJECT_ID.`as`("projectId"),
+                BundleValues.BUNDLE_VALUES.PROJECT_NAME.`as`("projectName"),
+                BundleValues.BUNDLE_VALUES.FIELD_ID.`as`("fieldId"),
+                BundleValues.BUNDLE_VALUES.FIELD_NAME.`as`("fieldName"),
+                BundleValues.BUNDLE_VALUES.TYPE.`as`("\$type")
+            )
+            .from(BundleValues.BUNDLE_VALUES)
+            .fetchInto(BundleValue::class.java)
     }
 
     override val sprints: HashMap<String, Pair<Timestamp, Timestamp>> by lazy {
@@ -89,10 +91,10 @@ class Dictionary(private val dsl: DSLContext, private val projectsService: IProj
     override fun preloadCommercialProjects() {
         commercialProjects.clear()
         val i = dsl.select(PROJECTS.SHORT_NAME)
-                .from(PROJECTS)
-                .leftJoin(PROJECT_TYPE).on(PROJECTS.SHORT_NAME.eq(PROJECT_TYPE.PROJECT_SHORT_NAME))
-                .where(PROJECT_TYPE.IS_PUBLIC.eq(true).or(PROJECT_TYPE.IS_PUBLIC.isNull))
-                .fetchInto(String::class.java)
+            .from(PROJECTS)
+            .leftJoin(PROJECT_TYPE).on(PROJECTS.SHORT_NAME.eq(PROJECT_TYPE.PROJECT_SHORT_NAME))
+            .where(PROJECT_TYPE.IS_PUBLIC.eq(true).or(PROJECT_TYPE.IS_PUBLIC.isNull))
+            .fetchInto(String::class.java)
         commercialProjects.addAll(i)
         println("${commercialProjects.size} commercial projects cached")
     }
@@ -100,10 +102,10 @@ class Dictionary(private val dsl: DSLContext, private val projectsService: IProj
     override fun preloadInnerProjects() {
         innerProjects.clear()
         val i = dsl.select(PROJECTS.SHORT_NAME)
-                .from(PROJECTS)
-                .leftJoin(PROJECT_TYPE).on(Tables.PROJECTS.SHORT_NAME.eq(PROJECT_TYPE.PROJECT_SHORT_NAME))
-                .where(PROJECT_TYPE.IS_PUBLIC.eq(false))
-                .fetchInto(String::class.java)
+            .from(PROJECTS)
+            .leftJoin(PROJECT_TYPE).on(Tables.PROJECTS.SHORT_NAME.eq(PROJECT_TYPE.PROJECT_SHORT_NAME))
+            .where(PROJECT_TYPE.IS_PUBLIC.eq(false))
+            .fetchInto(String::class.java)
         innerProjects.addAll(i)
         println("${innerProjects.size} inner projects cached")
     }
@@ -111,9 +113,13 @@ class Dictionary(private val dsl: DSLContext, private val projectsService: IProj
     override fun preloadDevOpsStates() {
         devOpsStates.clear()
         val i = dsl.select(DEVOPS_STATES_ORDER.STATE.`as`("state"), DEVOPS_STATES_ORDER.ORD.`as`("order"))
-                .from(DEVOPS_STATES_ORDER)
-                .fetchInto(DevOpsStateOrder::class.java)
+            .from(DEVOPS_STATES_ORDER)
+            .fetchInto(DevOpsStateOrder::class.java)
         devOpsStates.addAll(i)
         println("${devOpsStates.size} DevOps states cached")
+    }
+
+    override fun getTags(): List<String> {
+        return dsl.selectDistinct(ISSUE_TAGS.TAG).from(ISSUE_TAGS).fetchInto(String::class.java)
     }
 }

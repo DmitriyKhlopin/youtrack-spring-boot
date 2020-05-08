@@ -4,5 +4,6 @@ import fsight.youtrack.models.IssueTimelineItem
 
 interface ITimeline {
     fun launchCalculation()
-    fun calculateForId(issueId: String): List<IssueTimelineItem>
+    fun launchCalculationForPeriod(dateFrom: String?, dateTo: String?)
+    fun calculateForId(issueId: String, currentIndex: Int, issuesSize: Int): List<IssueTimelineItem>
 }

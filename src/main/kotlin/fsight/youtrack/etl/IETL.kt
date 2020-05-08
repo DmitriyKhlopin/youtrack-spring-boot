@@ -4,7 +4,8 @@ import fsight.youtrack.models.ETLResult
 import fsight.youtrack.models.youtrack.Issue
 
 interface IETL {
-    fun loadDataFromYT(manual: Boolean, customFilter: String? = null, parameters: String = ""): ETLResult?
+    fun runScheduledExport(): ETLResult?
+    fun runManualExport(customFilter: String? = null, parameters: String = "", dateFrom: String? = null, dateTo: String? =null): Any?
     fun getBundles()
     fun getUsers()
     fun getIssueById(id: String): Issue

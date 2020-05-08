@@ -7,85 +7,80 @@ import java.sql.Timestamp
 import java.time.LocalDateTime
 
 data class Issue(
-        var idReadable: String? = null,
-        var created: Long? = null,
-        var updated: Long? = null,
-        var resolved: Long? = null,
-        var numberInProject: Long? = null,
-        var project: Project? = null,
-        var summary: String? = null,
-        var description: String? = null,
-        var usesMarkdown: Boolean? = null,
-        var wikifiedDescription: String? = null,
-        var reporter: User? = null,
-        var updater: User? = null,
-        var draftOwner: User? = null,
-        var isDraft: Boolean? = null,
-        var visibility: Visibility? = null,
-        var votes: Int? = null,
-        var comments: Array<IssueComment>? = null,
-        var commentsCount: Long? = null,
-        var tags: Array<IssueTag>? = null,
-        var links: Array<IssueLink>? = null,
-        var externalIssue: ExternalIssue? = null,
-        var customFields: Array<SimpleIssueCustomField>? = null,
-        var voters: IssueVoters? = null,
-        var watchers: Array<IssueWatcher>? = null,
-        /*var attachments: Array<Any>?,*/
-        var subtasks: Array<IssueLink>? = null,
-        var parent: Array<IssueLink>? = null
+    var idReadable: String? = null,
+    var created: Long? = null,
+    var updated: Long? = null,
+    var resolved: Long? = null,
+    var numberInProject: Long? = null,
+    var project: Project? = null,
+    var summary: String? = null,
+    var description: String? = null,
+    var usesMarkdown: Boolean? = null,
+    var wikifiedDescription: String? = null,
+    var reporter: User? = null,
+    var updater: User? = null,
+    var draftOwner: User? = null,
+    var isDraft: Boolean? = null,
+    var visibility: Visibility? = null,
+    var votes: Int? = null,
+    var comments: Array<IssueComment>? = null,
+    var commentsCount: Long? = null,
+    var tags: Array<IssueTag>? = null,
+    var links: Array<IssueLink>? = null,
+    var externalIssue: ExternalIssue? = null,
+    var customFields: Array<SimpleIssueCustomField>? = null,
+    var voters: IssueVoters? = null,
+    var watchers: Array<IssueWatcher>? = null,
+    /*var attachments: Array<Any>?,*/
+    var subtasks: Array<IssueLink>? = null,
+    var parent: Array<IssueLink>? = null
 ) {
     fun toIssueRecord(): IssuesRecord {
         //TODO исправить, не работает
         val firstResponseDate = this.unwrapLongValue("Дата первого ответа")
         val solutionDate = this.unwrapLongValue("Дата решения")
-        if (this.idReadable == "ITS-44") {
-            println(this.customFields)
-            println(firstResponseDate)
-            println(solutionDate)
-        }
         return IssuesRecord(
-                idReadable,
-                idReadable,
-                summary,
-                created?.toTimestamp(),
-                created?.toDate(),
-                created?.toDate(toStartOfTheWeek = true),
-                updated?.toTimestamp(),
-                updated.toDate(),
-                updated.toDate(toStartOfTheWeek = true),
-                resolved?.toTimestamp(),
-                resolved?.toDate(),
-                resolved?.toDate(toStartOfTheWeek = true),
-                reporter?.login,
-                comments?.size,
-                votes,
-                unwrapFieldValue("subsystem"),
-                unwrapFieldValue("SLA"),
-                unwrapFieldValue("SLA по первому ответу"),
-                firstResponseDate?.toTimestamp(),
-                firstResponseDate?.toDate(),
-                firstResponseDate?.toDate(toStartOfTheWeek = true),
-                unwrapFieldValue("SLA по решению"),
-                solutionDate?.toTimestamp(),
-                solutionDate?.toDate(),
-                solutionDate?.toDate(toStartOfTheWeek = true),
-                project?.name,
-                unwrapFieldValue("Type"),
-                unwrapFieldValue("State"),
-                unwrapFieldValue("Priority"),
-                unwrapFieldValue("Версия Prognoz Platform"),
-                unwrapFieldValue("Оценка"),
-                null,
-                null,
-                null,
-                Timestamp.valueOf(LocalDateTime.now()),
-                null,
-                null,
-                null,
-                unwrapFieldValue("Проект (ETS)"),
-                project?.shortName,
-                unwrapFieldValue("Заказчик")
+            idReadable,
+            idReadable,
+            summary,
+            created?.toTimestamp(),
+            created?.toDate(),
+            created?.toDate(toStartOfTheWeek = true),
+            updated?.toTimestamp(),
+            updated.toDate(),
+            updated.toDate(toStartOfTheWeek = true),
+            resolved?.toTimestamp(),
+            resolved?.toDate(),
+            resolved?.toDate(toStartOfTheWeek = true),
+            reporter?.login,
+            comments?.size,
+            votes,
+            unwrapFieldValue("subsystem"),
+            unwrapFieldValue("SLA"),
+            unwrapFieldValue("SLA по первому ответу"),
+            firstResponseDate?.toTimestamp(),
+            firstResponseDate?.toDate(),
+            firstResponseDate?.toDate(toStartOfTheWeek = true),
+            unwrapFieldValue("SLA по решению"),
+            solutionDate?.toTimestamp(),
+            solutionDate?.toDate(),
+            solutionDate?.toDate(toStartOfTheWeek = true),
+            project?.name,
+            unwrapFieldValue("Type"),
+            unwrapFieldValue("State"),
+            unwrapFieldValue("Priority"),
+            unwrapFieldValue("Версия Prognoz Platform"),
+            unwrapFieldValue("Оценка"),
+            null,
+            null,
+            null,
+            Timestamp.valueOf(LocalDateTime.now()),
+            null,
+            null,
+            null,
+            unwrapFieldValue("Проект (ETS)"),
+            project?.shortName,
+            unwrapFieldValue("Заказчик")
         )
     }
 
@@ -139,7 +134,7 @@ data class Issue(
                 (Gson().toJsonTree(temp).asJsonObject).get("minutes").asInt.toString()
             }
             else -> {
-                println("${field.`$type`} - ${field.projectCustomField?.field?.name}")
+                /*println("${field.`$type`} - ${field.projectCustomField?.field?.name}")*/
                 field.value.toString()
             }
         }
