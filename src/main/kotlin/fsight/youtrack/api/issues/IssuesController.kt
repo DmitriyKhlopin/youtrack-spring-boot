@@ -9,18 +9,18 @@ import org.springframework.web.bind.annotation.*
 class IssuesController(private val service: IIssues, private val service2: ILicensingReport) {
     @GetMapping("/api/issues/high_priority")
     fun getHighPriorityIssuesWithTFSDetails(
-            @RequestParam("projects", required = false) projects: String? = null,
-            @RequestParam("customers", required = false) customers: String? = null,
-            @RequestParam("priorities", required = false) priorities: String? = null,
-            @RequestParam("states", required = false) states: String? = null
+        @RequestParam("projects", required = false) projects: String? = null,
+        @RequestParam("customers", required = false) customers: String? = null,
+        @RequestParam("priorities", required = false) priorities: String? = null,
+        @RequestParam("states", required = false) states: String? = null
     ): ResponseEntity<Any> {
         return ResponseEntity.ok(
-                service.getHighPriorityIssuesWithDevOpsDetails(
-                        projects,
-                        customers,
-                        priorities,
-                        states
-                )
+            service.getHighPriorityIssuesWithDevOpsDetails(
+                projects,
+                customers,
+                priorities,
+                states
+            )
         )
     }
 
@@ -29,4 +29,13 @@ class IssuesController(private val service: IIssues, private val service2: ILice
         return ResponseEntity.ok(service.getIssuesWithTFSDetails(issueFilter))
     }
 
+
+    @PostMapping("/api/issues/sigma")
+    fun getIssuesBySigmaValue(
+        @RequestParam("days", required = false) days: Int? = null,
+        @RequestBody issueFilter: IssueFilter
+    ): ResponseEntity<Any> {
+        return ResponseEntity.ok(service.getIssuesBySigmaValue(days ?: 1, issueFilter))
+        /*return ResponseEntity.ok().body(days)*/
+    }
 }

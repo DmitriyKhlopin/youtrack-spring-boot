@@ -8,5 +8,7 @@ data class IssueFilter(
     val detailedStates: List<String> = listOf(),
     val projects: List<String> = listOf(),
     val customers: List<String> = listOf(),
-    val limit: Int = Int.MAX_VALUE
+    val limit: Int = Int.MAX_VALUE,
+    var dateFrom: String? = null,
+    var dateTo: String? = null
 )

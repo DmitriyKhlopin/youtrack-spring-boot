@@ -48,12 +48,13 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
         val i: List<String> = dsl
             .select(ISSUES.ID)
             .from(ISSUES)
-            .where(ISSUES.LOADED_DATE.ge(Timestamp.valueOf(LocalDateTime.now().toLocalDate().atStartOfDay())).or(ISSUES.RESOLVED_DATE_TIME.isNull))
-            .and(ISSUES.PROJECT_SHORT_NAME.notIn(listOf("SD", "TC", "SPAM", "PO")))
+            .where(ISSUES.UPDATED_DATE_TIME.ge(Timestamp.valueOf(LocalDateTime.now().toLocalDate().atStartOfDay())).or(ISSUES.RESOLVED_DATE_TIME.isNull))
+            .and(ISSUES.PROJECT_SHORT_NAME.notIn(listOf("SD", "TC", "SPAM", "PO", "TEST")))
             .fetchInto(String::class.java)
         println("Need to calculate timelines for ${i.size} items.")
         val size = i.size
-        i.asSequence().forEachIndexed { index, s -> calculateForId(s, index, size) }
+        i.asSequence().forEachIndexed { index, s -> calculateForId(s, index, size, false) }
+        updateIssueSpentTime()
     }
 
     override fun launchCalculationForPeriod(dateFrom: String?, dateTo: String?) {
@@ -65,11 +66,27 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
             .fetchInto(String::class.java)
         println("Need to calculate timelines for ${i.size} items.")
         val size = i.size
-        i.asSequence().forEachIndexed { index, s -> calculateForId(s, index, size) }
+        i.asSequence().forEachIndexed { index, s -> calculateForId(s, index, size, true) }
     }
 
     fun updateIssueSpentTime() {
-        dsl.update(ISSUES)
+        dsl.execute(
+            """
+                update issues
+                set time_user     = a.time_user
+                  , time_agent    = a.time_agent
+                  , time_developer= a.time_developer
+                from (select sum(case when transition_owner = 'YouTrackUser' then time_spent else 0 end)          as time_user
+                           , sum(case when transition_owner in ('Agent', 'Undefined') then time_spent else 0 end) as time_agent
+                           , sum(case when transition_owner = 'Developer' then time_spent else 0 end)             as time_developer
+                           , issue_id
+                      from issue_timeline
+                      group by issue_id
+                     ) a
+                where issues.id = a.issue_id
+            """.trimIndent()
+        )
+        /*dsl.update(ISSUES)
             .set(
                 ISSUES.TIME_USER,
                 DSL.select(DSL.sum(ISSUE_TIMELINE.TIME_SPENT)).from(ISSUE_TIMELINE).where(
@@ -90,12 +107,12 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
                     ISSUE_TIMELINE.TRANSITION_OWNER.eq("Developer").and(ISSUE_TIMELINE.ISSUE_ID.eq(ISSUES.ID))
                 ).asField<Long>()
             )
-            .execute()
+            .execute()*/
     }
 
     fun updateIssueSpentTimeById(issueId: String) {
         try {
-            dsl.update(ISSUES)
+            /*dsl.update(ISSUES)
                 .set(
                     ISSUES.TIME_USER,
                     DSL.select(DSL.sum(ISSUE_TIMELINE.TIME_SPENT)).from(ISSUE_TIMELINE).where(
@@ -117,13 +134,42 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
                     ).asField<Long>()
                 )
                 .where(ISSUES.ID.eq(issueId))
-                .execute()
+                .execute()*/
+
+            dsl.execute(
+                """
+                update issues
+                set time_user     = a.time_user
+                  , time_agent    = a.time_agent
+                  , time_developer= a.time_developer
+                from (select sum(case when transition_owner = 'YouTrackUser' then time_spent else 0 end)          as time_user
+                           , sum(case when transition_owner in ('Agent', 'Undefined') then time_spent else 0 end) as time_agent
+                           , sum(case when transition_owner = 'Developer' then time_spent else 0 end)             as time_developer
+                           , issue_id
+                      from issue_timeline
+                      group by issue_id
+                     ) a
+                where issues.id = a.issue_id
+                and issues.id = '$issueId'
+            """.trimIndent()
+            )
+
+            /*dsl.update(ISSUES)
+                .set(ISSUES.TIME_USER,)
+                .set(ISSUES.TIME_USER,)
+                .set(ISSUES.TIME_USER,)
+                .from(
+                    DSL.select(DSL.sum(ISSUE_TIMELINE.TIME_SPENT))
+                        .from(ISSUE_TIMELINE)
+                        .where(ISSUE_TIMELINE.ISSUE_ID.eq(ISSUES.ID))
+                        .groupBy(ISSUE_TIMELINE.TRANSITION_OWNER)
+                )*/
         } catch (e: Exception) {
             println(e.message)
         }
     }
 
-    override fun calculateForId(issueId: String, currentIndex: Int, issuesSize: Int): List<IssueTimelineItem> {
+    override fun calculateForId(issueId: String, currentIndex: Int, issuesSize: Int, update: Boolean): List<IssueTimelineItem> {
         println("Calculating timeline for $issueId")
         dsl.deleteFrom(ISSUE_TIMELINE).where(ISSUE_TIMELINE.ISSUE_ID.eq(issueId)).execute()
         val i: List<IssueTimelineItem> = dsl

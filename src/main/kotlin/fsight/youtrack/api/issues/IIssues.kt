@@ -9,4 +9,6 @@ interface IIssues {
     ): Any
 
     fun getIssuesWithTFSDetails(issueFilter: IssueFilter): Any
+
+    fun getIssuesBySigmaValue(days: Int, issueFilter: IssueFilter): Any
 }

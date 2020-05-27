@@ -5,6 +5,7 @@ import fsight.youtrack.generated.jooq.tables.IssueTags.ISSUE_TAGS
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
 import fsight.youtrack.generated.jooq.tables.WorkItems.WORK_ITEMS
 import fsight.youtrack.splitToList
+import fsight.youtrack.toStartOfDate
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -361,6 +362,25 @@ WHERE issue.System_Id IN ($issueIds)
             j.plainTags?.removeSurrounding("{", "}")?.split(",")?.let { j.tags.addAll(it) }
         }
         return issues
+    }
+
+
+    override fun getIssuesBySigmaValue(days: Int, issueFilter: IssueFilter): Any {
+        val dt = issueFilter.dateTo
+        val dateCondition = if (dt == null) {
+            DSL.condition(true)
+        } else {
+            DSL.and(issues.CREATED_DATE.lessOrEqual(dt.toStartOfDate()))
+        }
+        val ids = dslContext.select(issues.ID)
+            .from(issues)
+            .where()
+            .and(dateCondition)
+            .and(issues.RESOLVED_DATE.isNull)
+            .and(getProjectsCondition(issueFilter))
+            .and((((DSL.coalesce(issues.TIME_AGENT, 0) + DSL.coalesce(issues.TIME_DEVELOPER, 0)) / 32400) + 1).eq(days.toLong()))
+            .fetchInto(String::class.java)
+        return ids
     }
 }
 

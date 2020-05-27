@@ -1,8 +1,7 @@
 package fsight.youtrack.api.projects
 
-import org.springframework.web.bind.annotation.CrossOrigin
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.*
 
 
 @CrossOrigin
@@ -15,4 +14,12 @@ class ProjectController(private val service: IProject) {
     @Deprecated("Use /dictionaries/partner_customers")
     @GetMapping("/api/partner_customers")
     fun getPartnerCustomers() = service.getPartnerCustomers()
+
+
+    @PostMapping("/api/projects/workflows")
+    fun attachWorkflow(@RequestBody data: ProjectWorkflow): ResponseEntity<Any> {
+        return ResponseEntity.ok(service.attachWorkflow(data))
+    }
 }
+
+

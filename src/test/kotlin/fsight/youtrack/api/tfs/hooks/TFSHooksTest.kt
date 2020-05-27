@@ -92,7 +92,7 @@ internal class TFSHooksTest {
         assertTrue(body.wasExcludedFromSprint(), "Bug was not excluded sprint")
         val ytId = body.getYtId()
         assertEquals("TEST-3", ytId, "YT ids are not equal")
-        assertTrue(body.wasExcludedFromSprint(), "Bug was not excluede from sprint")
+        assertTrue(body.wasExcludedFromSprint(), "Bug was not excluded from sprint")
         val actualIssueState = issueService.search("#$ytId", listOf("idReadable", "customFields(name,value(name))")).firstOrNull()
         assertNotNull(actualIssueState)
         val actualIssueFieldState = actualIssueState?.unwrapFieldValue("State")

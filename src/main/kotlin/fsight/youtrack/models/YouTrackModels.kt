@@ -126,7 +126,7 @@ data class YouTrackActivity(
 
 
 fun List<IssuesRecord>.loadToDatabase(dslContext: DSLContext): Int {
-    dslContext.deleteFrom(ISSUES).where(ISSUES.ID.`in`(this.map { it.id })).execute()
+    /*dslContext.deleteFrom(ISSUES).where(ISSUES.ID.`in`(this.map { it.id })).execute()*/
     return dslContext.loadInto(ISSUES).onDuplicateKeyUpdate().loadRecords(this).fields(
             ISSUES.ID,
             ISSUES.ENTITY_ID,

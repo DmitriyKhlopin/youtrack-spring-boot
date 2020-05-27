@@ -12,6 +12,7 @@ import fsight.youtrack.generated.jooq.tables.IssueHistory.ISSUE_HISTORY
 import fsight.youtrack.generated.jooq.tables.IssueTags.ISSUE_TAGS
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
 import fsight.youtrack.generated.jooq.tables.WorkItems.WORK_ITEMS
+import fsight.youtrack.generated.jooq.tables.records.CustomFieldValuesRecord
 import fsight.youtrack.generated.jooq.tables.records.IssueCommentsRecord
 import fsight.youtrack.generated.jooq.tables.records.IssueTagsRecord
 import fsight.youtrack.generated.jooq.tables.records.WorkItemsRecord
@@ -34,6 +35,8 @@ class Issue(
     private val timelineService: ITimeline,
     private val etlStateService: IETLState
 ) : IIssue {
+    private val jsonApi: YouTrackAPI by lazy { YouTrackAPI.create(Converter.GSON) }
+
     override fun getIssues(customFilter: String?): ArrayList<String> {
         val issueIds = arrayListOf<String>()
 
@@ -62,9 +65,9 @@ class Issue(
         println("Loading issues with actual filter: $filter")
         do {
             val request = if (filter == null)
-                YouTrackAPI.create(Converter.GSON).getIssueList(auth = AUTH, fields = fields, top = top, skip = skip)
+                jsonApi.getIssueList(auth = AUTH, fields = fields, top = top, skip = skip)
             else
-                YouTrackAPI.create(Converter.GSON).getIssueList(auth = AUTH, fields = fields, top = top, skip = skip, query = filter)
+                jsonApi.getIssueList(auth = AUTH, fields = fields, top = top, skip = skip, query = filter)
             var result: List<Issue>?
             try {
                 val t = request.execute()
@@ -90,7 +93,7 @@ class Issue(
         importLogService.saveLog(
             ImportLogModel(
                 timestamp = Timestamp(System.currentTimeMillis()),
-                source = "issues (filtered by '$customFilter')",
+                source = "issues (filtered by '$filter')",
                 table = "issues",
                 items = skip
             )
@@ -109,7 +112,6 @@ class Issue(
 
     private fun getFilter(): String? {
         return try {
-            debugPrint("waiting for filter")
             val issuesCount = dslContext.selectCount().from(ISSUES).fetchOneInto(Int::class.java)
             val mode = if (issuesCount == 0) IssueRequestMode.ALL else IssueRequestMode.TODAY
             if (mode == 1) {
@@ -131,27 +133,35 @@ class Issue(
         }
     }
 
-    //TODO преобразовать в loadInto
     private fun Issue.saveCustomFields() {
-        dslContext.deleteFrom(CUSTOM_FIELD_VALUES).where(CUSTOM_FIELD_VALUES.ISSUE_ID.eq(idReadable)).execute()
-        customFields?.forEach { field ->
-            try {
-                dslContext
-                    .insertInto(CUSTOM_FIELD_VALUES)
-                    .set(CUSTOM_FIELD_VALUES.ISSUE_ID, idReadable)
-                    .set(CUSTOM_FIELD_VALUES.FIELD_NAME, field.projectCustomField?.field?.name)
-                    .set(CUSTOM_FIELD_VALUES.FIELD_VALUE, this.unwrapFieldValue(field.projectCustomField?.field?.name))
-                    .execute()
-            } catch (e: Exception) {
-                etlStateService.state = ETLState.DONE
-                writeError(field.toString(), e.message ?: "")
-            }
+        val records = customFields?.map { field ->
+            CustomFieldValuesRecord()
+                .setIssueId(idReadable)
+                .setFieldName(field.projectCustomField?.field?.name)
+                .setFieldValue(this.unwrapFieldValue(field.projectCustomField?.field?.name))
+        }
+        try {
+            dslContext.loadInto(CUSTOM_FIELD_VALUES)
+                .onDuplicateKeyUpdate()
+                .loadRecords(records)
+                .fields(
+                    CUSTOM_FIELD_VALUES.ISSUE_ID,
+                    CUSTOM_FIELD_VALUES.FIELD_NAME,
+                    CUSTOM_FIELD_VALUES.FIELD_VALUE
+                )
+                .execute()
+
+            dslContext.deleteFrom(CUSTOM_FIELD_VALUES)
+                .where(CUSTOM_FIELD_VALUES.ISSUE_ID.eq(idReadable))
+                .and(CUSTOM_FIELD_VALUES.FIELD_NAME.notIn(customFields?.mapNotNull { field -> field.projectCustomField?.field?.name }))
+                .executeAsync()
+        } catch (e: Exception) {
+            etlStateService.state = ETLState.DONE
+            writeError("Custom fields", e.message ?: "")
         }
     }
 
-    //TODO преобразовать в loadInto
     private fun Issue.saveComments() {
-        dslContext.deleteFrom(ISSUE_COMMENTS).where(ISSUE_COMMENTS.ISSUE_ID.eq(idReadable)).execute()
         val records = this.comments?.map {
             IssueCommentsRecord()
                 .setId(it.id)
@@ -163,29 +173,37 @@ class Issue(
                 .setCreated(it.created?.toTimestamp())
                 .setUpdated(it.updated?.toTimestamp())
         }
-        this.comments?.forEach { comment ->
-            try {
-                dslContext.loadInto(ISSUE_COMMENTS).loadRecords(records)
-                    .fields(
-                        ISSUE_COMMENTS.ID,
-                        ISSUE_COMMENTS.ISSUE_ID,
-                        ISSUE_COMMENTS.PARENT_ID,
-                        ISSUE_COMMENTS.DELETED,
-                        ISSUE_COMMENTS.SHOWN_FOR_ISSUE_AUTHOR,
-                        ISSUE_COMMENTS.AUTHOR,
-                        ISSUE_COMMENTS.AUTHOR_FULL_NAME,
-                        ISSUE_COMMENTS.COMMENT_TEXT,
-                        ISSUE_COMMENTS.CREATED,
-                        ISSUE_COMMENTS.UPDATED,
-                        ISSUE_COMMENTS.PERMITTED_GROUP,
-                        ISSUE_COMMENTS.REPLIES
-                    )
-                    .execute()
-            } catch (e: Exception) {
-                etlStateService.state = ETLState.DONE
-                writeError(comment.toString(), e.message ?: "")
-            }
+        try {
+            dslContext.loadInto(ISSUE_COMMENTS)
+                .onDuplicateKeyUpdate()
+                .loadRecords(records)
+                .fields(
+                    ISSUE_COMMENTS.ID,
+                    ISSUE_COMMENTS.ISSUE_ID,
+                    ISSUE_COMMENTS.PARENT_ID,
+                    ISSUE_COMMENTS.DELETED,
+                    ISSUE_COMMENTS.SHOWN_FOR_ISSUE_AUTHOR,
+                    ISSUE_COMMENTS.AUTHOR,
+                    ISSUE_COMMENTS.AUTHOR_FULL_NAME,
+                    ISSUE_COMMENTS.COMMENT_TEXT,
+                    ISSUE_COMMENTS.CREATED,
+                    ISSUE_COMMENTS.UPDATED,
+                    ISSUE_COMMENTS.PERMITTED_GROUP,
+                    ISSUE_COMMENTS.REPLIES
+                )
+                .execute()
+            /**
+             * Подчищаем удалённые комментарии
+             * */
+            dslContext.deleteFrom(ISSUE_COMMENTS)
+                .where(ISSUE_COMMENTS.ISSUE_ID.eq(idReadable))
+                .and(ISSUE_COMMENTS.ID.notIn(this.comments?.mapNotNull { c -> c.id }))
+                .executeAsync()
+        } catch (e: Exception) {
+            etlStateService.state = ETLState.DONE
+            writeError("Comments", e.message ?: "")
         }
+
     }
 
     private fun Issue.saveTags() {
@@ -195,15 +213,14 @@ class Issue(
             dslContext.loadInto(ISSUE_TAGS).loadRecords(tags).fields(ISSUE_TAGS.ISSUE_ID, ISSUE_TAGS.TAG).execute()
         } catch (e: Exception) {
             etlStateService.state = ETLState.DONE
-            writeError("Can't save tags for issue ${this.idReadable}", e.message ?: "")
+            writeError("Tags for issue ${this.idReadable}", e.message ?: "")
         }
     }
 
     private fun getSingleIssueWorkItems(idReadable: String) {
         dslContext.deleteFrom(WORK_ITEMS).where(WORK_ITEMS.ISSUE_ID.eq(idReadable)).execute()
         //TODO заменить на loadInto
-        val items = YouTrackAPI.create(Converter.GSON).getWorkItems(AUTH, idReadable).execute().body()?.map {
-            println(it)
+        val items = jsonApi.getWorkItems(AUTH, idReadable).execute().body()?.map {
             WorkItemsRecord()
                 .setIssueId(idReadable)
                 .setWiId(it.id)
@@ -221,6 +238,7 @@ class Issue(
             try {
                 dslContext
                     .loadInto(WORK_ITEMS)
+                    .onDuplicateKeyUpdate()
                     .loadRecords(items)
                     .fields(
                         WORK_ITEMS.ISSUE_ID,
@@ -251,13 +269,12 @@ class Issue(
         println("Loading history of $idReadable")
         try {
             var hasAfter: Boolean? = true
-            dslContext.deleteFrom(ISSUE_HISTORY).where(ISSUE_HISTORY.ISSUE_ID.eq(idReadable)).execute()
+            /*dslContext.deleteFrom(ISSUE_HISTORY).where(ISSUE_HISTORY.ISSUE_ID.eq(idReadable)).execute()*/
             var offset = 100
             while (hasAfter == true) {
-                val issueActivities =
-                    YouTrackAPI.create(Converter.GSON)
-                        .getCustomFieldsHistory(auth = AUTH, issueId = idReadable, top = offset)
-                        .execute()
+                val issueActivities = jsonApi
+                    .getCustomFieldsHistory(auth = AUTH, issueId = idReadable, top = offset)
+                    .execute()
                 val items = issueActivities.body()?.activities?.map { it.toIssueHistoryRecord(idReadable) }
                 val stored = dslContext.loadInto(ISSUE_HISTORY)
                     .onDuplicateKeyUpdate()
@@ -282,8 +299,6 @@ class Issue(
                 hasAfter = issueActivities.body()?.hasAfter
                 println("$idReadable: stored $stored history items")
             }
-
-
         } catch (e: java.lang.Exception) {
             etlStateService.state = ETLState.DONE
             writeError("Can't save work items for issue $idReadable", e.message ?: "")
@@ -291,22 +306,27 @@ class Issue(
     }
 
     override fun findDeletedIssues() {
-        var count = 0
-        val deletedItems = arrayListOf<String>()
-        val result = dslContext.select(ISSUES.ID).from(ISSUES).fetchInto(String::class.java)
-        val interval = (result.size / 100) + 1
-        result.forEachIndexed { index, issueId ->
-            val requestResult = YouTrackAPI.create(Converter.GSON).getIssueProject(AUTH, issueId).execute()
-            val currentProject = requestResult.body()?.project?.shortName
-            val prevProject = issueId.substringBefore("-")
-            if (currentProject != prevProject) {
-                count += 1
-                deletedItems.add(issueId)
+        try {
+            var count = 0
+            val deletedItems = arrayListOf<String>()
+            val result = dslContext.select(ISSUES.ID).from(ISSUES).fetchInto(String::class.java)
+            val interval = (result.size / 100) + 1
+            result.forEachIndexed { index, issueId ->
+                val requestResult = jsonApi.getIssueProject(AUTH, issueId).execute()
+                val currentProject = requestResult.body()?.project?.shortName
+                val prevProject = issueId.substringBefore("-")
+                if (currentProject != prevProject) {
+                    count += 1
+                    deletedItems.add(issueId)
+                }
+                if (index % interval == 0) print("Checked ${index * 100 / result.size}% of issues\r")
             }
-            if (index % interval == 0) print("Checked ${index * 100 / result.size}% of issues\r")
+            println("Found ${deletedItems.size} deleted issues")
+            deleteIssues(deletedItems)
+        } catch (e: Exception) {
+            etlStateService.state = ETLState.DONE
+            writeError("Deleted and moved issues search", e.message ?: "")
         }
-        println("Found ${deletedItems.size} deleted issues")
-        deleteIssues(deletedItems)
     }
 
     override fun deleteIssues(issues: ArrayList<String>): Int {
