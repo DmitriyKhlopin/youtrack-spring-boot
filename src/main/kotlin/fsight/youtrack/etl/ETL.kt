@@ -30,15 +30,21 @@ class ETL(
             println(ids)
             issue.getIssuesHistory(ids)
             issue.getWorkItems(ids)
-            timeline.launchCalculation()
+            issue.updateCumulativeFlowToday()
             ids.size
         } else 0
+
+        if (time.get(Calendar.MINUTE) == 0 &&time.get(Calendar.HOUR_OF_DAY) in (5..23)) {
+            timeline.launchCalculation()
+        }
+
         if (time.get(Calendar.MINUTE) == 30 && time.get(Calendar.HOUR_OF_DAY) == 0) {
             projects.saveProjects()
             bundle.getBundles()
             users.getUsers()
             issue.findDeletedIssues()
             issue.checkPendingIssues()
+            issue.updateCumulativeFlow()
         }
         lastResult = ETLResult(state = ETLState.DONE, issues = issuesCount, timeUnit = 0)
         return lastResult

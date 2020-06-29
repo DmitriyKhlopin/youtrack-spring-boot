@@ -14,4 +14,6 @@ interface IIssue {
     fun checkIfIssueExists(id: String, filter: String): JSONObject
     fun getIssueById(id: String): Issue
     fun search(filter: String, fields: List<String>): List<Issue>
+    fun updateCumulativeFlow()
+    fun updateCumulativeFlowToday()
 }

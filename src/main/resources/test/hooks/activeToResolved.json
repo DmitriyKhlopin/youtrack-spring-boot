@@ -1,0 +1,49 @@
+{
+  "subscriptionId": "6c40b626-2d19-4bef-8e20-7d97c3369ff4",
+  "notificationId": 26994,
+  "id": "2085295e-73d2-45f7-b22f-eee18ed0c583",
+  "eventType": "workitem.updated",
+  "resource": {
+    "workItemId": 60116,
+    "fields": {
+      "System.State": {
+        "oldValue": "Active",
+        "newValue": "Resolved"
+      },
+      "System.RevisedDate": {
+        "oldValue": "2020-06-26T07:58:22.987Z",
+        "newValue": "9999-01-01T00:00:00Z"
+      },
+      "Microsoft.VSTS.Common.ResolvedDate": {
+        "newValue": "2020-06-26T07:58:22.987Z"
+      },
+      "WEF_4EFECB41816D45249204D7C272A4F5D2_Kanban.Column": {
+        "oldValue": "Active",
+        "newValue": "Resolved"
+      },
+      "Microsoft.VSTS.Common.ResolvedReason": {
+        "newValue": "Fixed"
+      },
+      "System.Reason": {
+        "oldValue": "Approved",
+        "newValue": "Fixed"
+      }
+    },
+    "revision": {
+      "id": 60116,
+      "rev": 56,
+      "fields": {
+        "System.IterationPath": "AP\\Backlog\\Q1 FY20\\Sprint 23",
+        "System.CommentCount": 21.0,
+        "Microsoft.VSTS.Common.StateChangeDate": "2020-06-26T07:58:22.987Z",
+        "System.Title": "TEST-11 Active to Resolved",
+        "System.State": "Resolved",
+        "System.AreaPath": "AP\\Products\\Development\\Reporting",
+        "Microsoft.VSTS.Common.Severity": "3 - Medium",
+        "Microsoft.VSTS.Common.Priority": 1.0,
+        "System.WorkItemType": "Bug",
+        "System.Reason": "Fixed"
+      }
+    }
+  }
+}

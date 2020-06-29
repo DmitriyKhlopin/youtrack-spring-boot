@@ -46,7 +46,7 @@ class TFSHooksController(private val service: ITFSHooks) {
 
     @GetMapping("/api/tfs/serviceHooks/post/{id}")
     fun postCommand(@PathVariable("id") id: String? = null): ResponseEntity<Any> {
-        return service.postCommand(id, "Состояние Открыта", "#{Направлена разработчику}")
+        return service.postCommand(id, "Состояние Открыта")
     }
 
 }

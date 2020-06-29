@@ -269,7 +269,6 @@ class Issue(
         println("Loading history of $idReadable")
         try {
             var hasAfter: Boolean? = true
-            /*dslContext.deleteFrom(ISSUE_HISTORY).where(ISSUE_HISTORY.ISSUE_ID.eq(idReadable)).execute()*/
             var offset = 100
             while (hasAfter == true) {
                 val issueActivities = jsonApi
@@ -390,5 +389,36 @@ class Issue(
         val fieldsString = (if (fields.isEmpty()) listOf("idReadable", "customFields(name,value)") else fields).joinToString(",")
         val request = YouTrackAPI.create(Converter.GSON).getIssueList(auth = AUTH, fields = fieldsString, top = 100, skip = 0, query = filter)
         return request.execute().body().orEmpty()
+    }
+
+    override fun updateCumulativeFlow() {
+        try {
+            dslContext.execute(
+                """
+                insert into cumulative_flow_data (d, id, state)
+                    select d, id, new_value_string as state
+                from cumulative_flow
+                    on conflict (d, id) do update set state = excluded.state
+            """.trimIndent()
+            )
+        } catch (e: Exception) {
+            writeError("Cumulative flow: today", e.message ?: "")
+        }
+    }
+
+
+    override fun updateCumulativeFlowToday() {
+        try {
+            dslContext.execute(
+                """
+                insert into cumulative_flow_data (d, id, state)
+                    select d, id, new_value_string as state
+                from cumulative_flow_today
+                    on conflict (d, id) do update set state = excluded.state;
+            """.trimIndent()
+            )
+        } catch (e: Exception) {
+            writeError("Cumulative flow: today", e.message ?: "")
+        }
     }
 }

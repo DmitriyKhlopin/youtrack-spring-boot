@@ -8,13 +8,18 @@ import org.springframework.web.bind.annotation.RestController
 class IssueController(private val service: IIssue) {
     @GetMapping("/api/etl/issue/search")
     fun search(
-            @RequestParam("filter", required = true) filter: String,
-            @RequestParam("fields", required = true) fields: String
+        @RequestParam("filter", required = true) filter: String,
+        @RequestParam("fields", required = true) fields: String
     ) = service.search(filter, fields.split(","))
 
     @GetMapping("/api/etl/issue/check")
     fun check(
-            @RequestParam("id", required = true) id: String,
-            @RequestParam("filter", required = false) filter: String?
+        @RequestParam("id", required = true) id: String,
+        @RequestParam("filter", required = false) filter: String?
     ) = service.checkIfIssueExists(id, filter ?: "")
+
+    @GetMapping("/api/etl/issue/history")
+    fun getSingleIssueHistory(
+        @RequestParam("id", required = true) id: String
+    ) = service.getSingleIssueHistory(id)
 }

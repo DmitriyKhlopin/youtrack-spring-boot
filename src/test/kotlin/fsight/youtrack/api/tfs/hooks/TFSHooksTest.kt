@@ -104,8 +104,6 @@ internal class TFSHooksTest {
                 it.state = body.getFieldValue("System.State").toString()
                 it.sprint = body.getFieldValue("System.IterationPath").toString()
             }
-            it
-        }.map {
             it.sprintDates = dictionaryService.sprints[it.sprint]
             it.stateOrder = dictionaryService.devOpsStates.firstOrNull { k -> k.state == it.state }?.order ?: -1
             it
@@ -119,5 +117,41 @@ internal class TFSHooksTest {
         }
         assertEquals("Proposed", inferredState, "Incorrect inferred state")
         assertTrue(inferredState !in arrayOf("Closed", "Resolved") && (body.isFieldChanged("System.State") || body.isFieldChanged("System.IterationPath")))
+    }
+
+
+    @Test
+    fun activeToResolved() {
+        val oldValue = "Active"
+        val newValue = "Resolved"
+        val bugs = listOf<Int>()
+        val issueService = Issue(db, ImportLog(db), Timeline(db), ETLState())
+        val projectsService = Projects(db)
+        val dictionaryService = Dictionary(db, projectsService)
+        val hooksService = TFSHooks(db, tfsConnection, issueService, dictionaryService)
+        val file: File = ResourceUtils.getFile("classpath:test/hooks/activeToResolved.json")
+        assert(file.exists())
+        val body: Hook = Gson().fromJson(String(file.readBytes()), object : TypeToken<Hook>() {}.type)
+        assertTrue(body.oldFieldValue("System.State") == oldValue, "Previous state is not \"$oldValue\"")
+        assertTrue(body.newFieldValue("System.State") == newValue, "New state is not \"$newValue\"")
+        val ytId = body.getYtId()
+        assertEquals("TEST-11", ytId, "YT ids are not equal")
+        val actualIssueState = issueService.search("#$ytId", listOf("idReadable", "customFields(name,value(name))")).firstOrNull()
+        assertNotNull(actualIssueState)
+        val actualIssueFieldState = actualIssueState?.unwrapFieldValue("State")
+        assertEquals("Направлена разработчику", actualIssueFieldState, "YT states are not equal")
+        if (actualIssueFieldState != "Направлена разработчику") return
+        val linkedBugs = if (bugs.isEmpty()) actualIssueState.unwrapFieldValue("Issue").toString().split(",", " ").mapNotNull { it.toIntOrNull() } else bugs
+        val bugStates = hooksService.getDevOpsBugsState(linkedBugs).map {
+            if (it.systemId == body.resource?.workItemId.toString()) {
+                it.state = body.getFieldValue("System.State").toString()
+                it.sprint = body.getFieldValue("System.IterationPath").toString()
+            }
+            it.sprintDates = dictionaryService.sprints[it.sprint]
+            it.stateOrder = dictionaryService.devOpsStates.firstOrNull { k -> k.state == it.state }?.order ?: -1
+            it
+        }
+        val inferredState = hooksService.getInferredState(bugStates)
+        assertEquals("Resolved",inferredState)
     }
 }

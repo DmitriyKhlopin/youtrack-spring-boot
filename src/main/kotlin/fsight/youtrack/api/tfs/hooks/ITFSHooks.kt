@@ -10,9 +10,10 @@ interface ITFSHooks {
     fun getHook(limit: Int): ResponseEntity<Any>
     fun getPostableHooks(limit: Int): ResponseEntity<Any>
     fun postHook(body: Hook?, bugs: List<Int>): ResponseEntity<Any>
-    fun postCommand(id: String?, command: String, filter: String): ResponseEntity<Any>
+    fun postCommand(id: String?, command: String): ResponseEntity<Any>
     fun getAssociatedBugsState(id: String): JsonObject?
     fun getDevOpsBugsState(ids: List<Int>): List<DevOpsBugState>
-    fun mergeStates(devOpsBugStates: List<DevOpsBugState>, hook: Hook)
-    fun saveHookToDatabase(body: Hook?, fieldState: String?, fieldDetailedState: String?, errorMessage: String?): Timestamp
+    fun getInferredState(bugStates: List<DevOpsBugState>): String
+    fun mergeStates(devOpsBugStates: List<DevOpsBugState>, hook: Hook): List<DevOpsBugState>
+    fun saveHookToDatabase(body: Hook?, fieldState: String?, fieldDetailedState: String?, errorMessage: String?, inferredState: String?): Timestamp
 }
