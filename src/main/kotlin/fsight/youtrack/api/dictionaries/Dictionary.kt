@@ -12,15 +12,18 @@ import fsight.youtrack.models.BundleValue
 import fsight.youtrack.models.YouTrackProject
 import fsight.youtrack.models.YouTrackUser
 import fsight.youtrack.models.sql.DevOpsStateOrder
-import fsight.youtrack.models.youtrack.IssueTag
 import fsight.youtrack.toStartOfDate
 import org.jooq.DSLContext
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.sql.Timestamp
 import java.util.*
 
 @Service
-class Dictionary(private val dsl: DSLContext, private val projectsService: IProjects) : IDictionary {
+class Dictionary(private val dsl: DSLContext) : IDictionary {
+    @Autowired
+    private lateinit var projectsService: IProjects
+
     override val commercialProjects: ArrayList<String> = arrayListOf()
     override val innerProjects: ArrayList<String> = arrayListOf()
     override val devOpsStates: ArrayList<DevOpsStateOrder> = arrayListOf()
@@ -88,7 +91,7 @@ class Dictionary(private val dsl: DSLContext, private val projectsService: IProj
     }
 
 
-    override fun preloadCommercialProjects() {
+    final override fun preloadCommercialProjects() {
         commercialProjects.clear()
         val i = dsl.select(PROJECTS.SHORT_NAME)
             .from(PROJECTS)
@@ -99,7 +102,7 @@ class Dictionary(private val dsl: DSLContext, private val projectsService: IProj
         println("${commercialProjects.size} commercial projects cached")
     }
 
-    override fun preloadInnerProjects() {
+    final override fun preloadInnerProjects() {
         innerProjects.clear()
         val i = dsl.select(PROJECTS.SHORT_NAME)
             .from(PROJECTS)
@@ -110,7 +113,7 @@ class Dictionary(private val dsl: DSLContext, private val projectsService: IProj
         println("${innerProjects.size} inner projects cached")
     }
 
-    override fun preloadDevOpsStates() {
+    final override fun preloadDevOpsStates() {
         devOpsStates.clear()
         val i = dsl.select(DEVOPS_STATES_ORDER.STATE.`as`("state"), DEVOPS_STATES_ORDER.ORD.`as`("order"))
             .from(DEVOPS_STATES_ORDER)
@@ -121,5 +124,11 @@ class Dictionary(private val dsl: DSLContext, private val projectsService: IProj
 
     override fun getTags(): List<String> {
         return dsl.selectDistinct(ISSUE_TAGS.TAG).from(ISSUE_TAGS).fetchInto(String::class.java)
+    }
+
+    init {
+        preloadDevOpsStates()
+        preloadCommercialProjects()
+        preloadInnerProjects()
     }
 }

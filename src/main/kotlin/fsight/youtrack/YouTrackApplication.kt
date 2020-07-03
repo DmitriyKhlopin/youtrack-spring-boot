@@ -75,12 +75,13 @@ class YouTrackApplication : SpringBootServletInitializer() {
         }
     }
 
-    @Bean
+    /**Инициализация перенесена в сервис*/
+    /*@Bean
     fun initProjects(service: IDictionary) = CommandLineRunner {
         service.preloadCommercialProjects()
         service.preloadInnerProjects()
         service.preloadDevOpsStates()
-    }
+    }*/
 
     /*@Bean
     fun restTemplate(): RestTemplate {

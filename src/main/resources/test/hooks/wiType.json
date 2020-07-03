@@ -1,0 +1,18 @@
+{
+  "subscriptionId": "6c40b626-2d19-4bef-8e20-7d97c3369ff4",
+  "notificationId": 27705,
+  "id": "02e0b01d-c788-48aa-92e3-f74a78b9a350",
+  "eventType": "workitem.updated",
+  "resource": {
+    "id": 7,
+    "workItemId": 66931,
+    "rev": 7,
+    "revision": {
+      "id": 66931,
+      "rev": 7,
+      "fields": {
+        "System.WorkItemType": "Bug"
+      }
+    }
+  }
+}

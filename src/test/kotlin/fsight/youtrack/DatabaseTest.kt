@@ -35,7 +35,7 @@ class DatabaseTest {
         }*/
         println(result)
         val state1 = DevOpsBugState(
-                systemId = "16684",
+                systemId = 16684,
                 state = "Closed",
                 sprint = "\\AP\\Backlog\\Q3 FY19\\Sprint 6",
                 sprintDates = null,
@@ -43,7 +43,7 @@ class DatabaseTest {
         )
 
         val state2 = DevOpsBugState(
-                systemId = "21604",
+                systemId = 21604,
                 state = "Closed",
                 sprint = "\\AP\\Backlog\\Q3 FY19\\Sprint 7",
                 sprintDates = null,

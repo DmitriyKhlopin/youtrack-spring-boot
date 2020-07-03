@@ -5,7 +5,7 @@ import java.sql.Timestamp
 
 data class DevOpsBugState(
         @SerializedName("System_Id")
-        var systemId: String,
+        var systemId: Int,
         @SerializedName("System_State")
         var state: String,
         @SerializedName("IterationPath")

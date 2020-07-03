@@ -9,11 +9,11 @@ import java.sql.Timestamp
 interface ITFSHooks {
     fun getHook(limit: Int): ResponseEntity<Any>
     fun getPostableHooks(limit: Int): ResponseEntity<Any>
-    fun postHook(body: Hook?, bugs: List<Int>): ResponseEntity<Any>
+    fun postHook(body: Hook?): ResponseEntity<Any>
     fun postCommand(id: String?, command: String): ResponseEntity<Any>
     fun getAssociatedBugsState(id: String): JsonObject?
     fun getDevOpsBugsState(ids: List<Int>): List<DevOpsBugState>
     fun getInferredState(bugStates: List<DevOpsBugState>): String
-    fun mergeStates(devOpsBugStates: List<DevOpsBugState>, hook: Hook): List<DevOpsBugState>
     fun saveHookToDatabase(body: Hook?, fieldState: String?, fieldDetailedState: String?, errorMessage: String?, inferredState: String?): Timestamp
+    fun getIssuesByWIId(id: Int): List<String>
 }

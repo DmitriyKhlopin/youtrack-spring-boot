@@ -139,6 +139,12 @@ data class Issue(
             }
         }
     }
+
+    fun bugsAndFeatures(): List<Int> {
+        val devOpsBugsIds = this.customFields?.firstOrNull { f -> f.name == "Issue" }?.value.toString().split(",", " ").mapNotNull { v -> v.toIntOrNull() }
+        val devOpsFeaturesIds = this.customFields?.firstOrNull { f -> f.name == "Requirement" }?.value.toString().split(",", " ").mapNotNull { v -> v.toIntOrNull() }
+        return devOpsBugsIds.plus(devOpsFeaturesIds).distinct()
+    }
 }
 
 

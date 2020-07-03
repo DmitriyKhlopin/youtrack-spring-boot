@@ -28,7 +28,7 @@ class TFSHooksController(private val service: ITFSHooks) {
     ): ResponseEntity<Any> {
         return try {
             val jsonBody = Gson().fromJson(body, Hook::class.java)
-            service.postHook(jsonBody, bugs ?: listOf())
+            service.postHook(jsonBody)
             /*return if (InetAddress.getLocalHost().hostName != "SPB-FSIGHT11") {
                 println("*** Checking server ***")
                 val status = API.create(environment = "TEST", converter = Converter.GSON).getStatus().execute()

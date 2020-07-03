@@ -12,6 +12,9 @@ import fsight.youtrack.db.exposed.pg.TimeAccountingExtendedView
 import fsight.youtrack.generated.jooq.tables.records.BundleValuesRecord
 import fsight.youtrack.models.BundleValue
 import fsight.youtrack.models.DevOpsBugState
+import fsight.youtrack.models.hooks.Hook
+import fsight.youtrack.models.sql.DevOpsStateOrder
+import fsight.youtrack.models.youtrack.Issue
 import okhttp3.OkHttpClient
 import org.jetbrains.exposed.sql.ColumnType
 import org.jetbrains.exposed.sql.Database
@@ -39,43 +42,57 @@ import java.util.concurrent.TimeUnit
     if (print) println(message)
 }*/
 
+fun List<Issue>.getBugsAndFeatures(): List<Int> = this.map { it.bugsAndFeatures() }.flatten().distinct()
+
+fun List<DevOpsBugState>.mergeWithHookData(hook: Hook, states: List<DevOpsStateOrder>): List<DevOpsBugState> {
+    return this.map {
+        if (it.systemId == hook.resource?.workItemId) {
+            it.state = hook.getFieldValue("System.State").toString()
+            it.sprint = hook.getFieldValue("System.IterationPath").toString()
+        }
+        /*it.sprintDates = dictionaries.sprints[it.sprint]*/
+        it.stateOrder = states.firstOrNull { k -> k.state == it.state }?.order ?: -1
+        it
+    }
+}
+
 fun ResultRow.toWorkHoursModel(): WorkHoursModel {
     return WorkHoursModel(
-            id = this[WorkHoursTable.id],
-            user = this[WorkHoursTable.user],
-            dateIn = this[WorkHoursTable.dateIn].millis,
-            dateOut = this[WorkHoursTable.dateOut].millis,
-            timeSourceId = this[WorkHoursTable.timeSourceId],
-            cityId = this[WorkHoursTable.cityId]
+        id = this[WorkHoursTable.id],
+        user = this[WorkHoursTable.user],
+        dateIn = this[WorkHoursTable.dateIn].millis,
+        dateOut = this[WorkHoursTable.dateOut].millis,
+        timeSourceId = this[WorkHoursTable.timeSourceId],
+        cityId = this[WorkHoursTable.cityId]
     )
 }
 
 fun ResultRow.toTimeAccountingExtendedModel() = TimeAccountingExtendedModel(
-        this[TimeAccountingExtendedView.createDate].millis,
-        this[TimeAccountingExtendedView.units],
-        this[TimeAccountingExtendedView.agent],
-        this[TimeAccountingExtendedView.changedDate].millis,
-        this[TimeAccountingExtendedView.server],
-        this[TimeAccountingExtendedView.projects],
-        this[TimeAccountingExtendedView.teamProject],
-        this[TimeAccountingExtendedView.id],
-        this[TimeAccountingExtendedView.discipline],
-        this[TimeAccountingExtendedView.person],
-        this[TimeAccountingExtendedView.wit],
-        this[TimeAccountingExtendedView.title],
-        this[TimeAccountingExtendedView.iterationPath],
-        this[TimeAccountingExtendedView.role],
-        this[TimeAccountingExtendedView.projectType]
+    this[TimeAccountingExtendedView.createDate].millis,
+    this[TimeAccountingExtendedView.units],
+    this[TimeAccountingExtendedView.agent],
+    this[TimeAccountingExtendedView.changedDate].millis,
+    this[TimeAccountingExtendedView.server],
+    this[TimeAccountingExtendedView.projects],
+    this[TimeAccountingExtendedView.teamProject],
+    this[TimeAccountingExtendedView.id],
+    this[TimeAccountingExtendedView.discipline],
+    this[TimeAccountingExtendedView.person],
+    this[TimeAccountingExtendedView.wit],
+    this[TimeAccountingExtendedView.title],
+    this[TimeAccountingExtendedView.iterationPath],
+    this[TimeAccountingExtendedView.role],
+    this[TimeAccountingExtendedView.projectType]
 )
 
 fun ResultRow.toScheduleTimeIntervalModel(): ScheduleTimeIntervalModel {
     return ScheduleTimeIntervalModel(
-            id = this[ScheduleTimeIntervalTable.id],
-            userSchedule = this[ScheduleTimeIntervalTable.userSchedule],
-            week = this[ScheduleTimeIntervalTable.week],
-            day = this[ScheduleTimeIntervalTable.day],
-            dateBegin = this[ScheduleTimeIntervalTable.dateBegin],
-            dateEnd = this[ScheduleTimeIntervalTable.dateEnd]
+        id = this[ScheduleTimeIntervalTable.id],
+        userSchedule = this[ScheduleTimeIntervalTable.userSchedule],
+        week = this[ScheduleTimeIntervalTable.week],
+        day = this[ScheduleTimeIntervalTable.day],
+        dateBegin = this[ScheduleTimeIntervalTable.dateBegin],
+        dateEnd = this[ScheduleTimeIntervalTable.dateEnd]
     )
 }
 
@@ -91,14 +108,14 @@ fun Int?.toWorkTime(): String {
 }
 
 fun BundleValue.toDatabaseRecord(): BundleValuesRecord =
-        BundleValuesRecord()
-                .setId(this.id)
-                .setName(this.name)
-                .setProjectId(this.projectId)
-                .setProjectName(this.projectName)
-                .setFieldId(this.fieldId)
-                .setFieldName(this.fieldName)
-                .setType(this.`$type`)
+    BundleValuesRecord()
+        .setId(this.id)
+        .setName(this.name)
+        .setProjectId(this.projectId)
+        .setProjectName(this.projectName)
+        .setFieldId(this.fieldId)
+        .setFieldName(this.fieldName)
+        .setType(this.`$type`)
 
 fun Boolean.invert() = !this
 
@@ -119,8 +136,8 @@ fun Long?.toDate(toStartOfTheWeek: Boolean = false): Timestamp? {
         cal.set(Calendar.SECOND, 0)
         cal.set(Calendar.MILLISECOND, 0)
         if (toStartOfTheWeek) cal.set(
-                Calendar.DAY_OF_MONTH,
-                cal.get(Calendar.DAY_OF_MONTH) - cal.get(Calendar.DAY_OF_WEEK) + cal.firstDayOfWeek
+            Calendar.DAY_OF_MONTH,
+            cal.get(Calendar.DAY_OF_MONTH) - cal.get(Calendar.DAY_OF_WEEK) + cal.firstDayOfWeek
         )
         val time = cal.timeInMillis
         time.toTimestamp()
@@ -128,27 +145,27 @@ fun Long?.toDate(toStartOfTheWeek: Boolean = false): Timestamp? {
 }
 
 fun String.toStartOfWeek(): Timestamp =
-        Timestamp.valueOf(
-                LocalDate.parse(this, DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay().minusDays(
-                        LocalDate.parse(this, DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay().dayOfWeek.value.toLong() - 1
-                )
+    Timestamp.valueOf(
+        LocalDate.parse(this, DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay().minusDays(
+            LocalDate.parse(this, DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay().dayOfWeek.value.toLong() - 1
         )
+    )
 
 fun String.toStartOfDate(): Timestamp =
-        Timestamp.valueOf(LocalDate.parse(this, DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay())
+    Timestamp.valueOf(LocalDate.parse(this, DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay())
 
 fun String.toEndOfDate(): Timestamp =
-        Timestamp.valueOf(LocalDate.parse(this, DateTimeFormatter.ofPattern("yyyy-MM-dd")).atTime(23, 59))
+    Timestamp.valueOf(LocalDate.parse(this, DateTimeFormatter.ofPattern("yyyy-MM-dd")).atTime(23, 59))
 
 fun Timestamp?.toStartOfDate(): Timestamp =
-        Timestamp.valueOf(LocalDate.from(this?.toLocalDateTime()).atStartOfDay())
+    Timestamp.valueOf(LocalDate.from(this?.toLocalDateTime()).atStartOfDay())
 
 fun Timestamp?.toEndOfDate(): Timestamp =
 
-        Timestamp.valueOf(LocalDate.from(this?.toLocalDateTime()).atTime(23, 59))
+    Timestamp.valueOf(LocalDate.from(this?.toLocalDateTime()).atTime(23, 59))
 
 fun String.splitToList(prefix: String = "[", suffix: String = "]", delimiters: String = ",") =
-        this.removeSurrounding(prefix, suffix).split(delimiters)
+    this.removeSurrounding(prefix, suffix).split(delimiters)
 
 fun debugPrint(message: String) {
     if (InetAddress.getLocalHost().hostName == "hlopind") {
@@ -166,10 +183,10 @@ fun printInLine(message: String) {
 }
 
 fun getOkhttpClient(timeout: Long = 30) = OkHttpClient().newBuilder()
-        .connectTimeout(timeout, TimeUnit.SECONDS)
-        .readTimeout(timeout, TimeUnit.SECONDS)
-        .writeTimeout(timeout, TimeUnit.SECONDS)
-        .build()
+    .connectTimeout(timeout, TimeUnit.SECONDS)
+    .readTimeout(timeout, TimeUnit.SECONDS)
+    .writeTimeout(timeout, TimeUnit.SECONDS)
+    .build()
 
 fun getConverterFactory(converter: Converter = Converter.SCALAR) = when (converter) {
     Converter.SCALAR -> {
@@ -210,10 +227,10 @@ class ExposedTransformations {
 
     val toDevOpsState: (ResultSet) -> DevOpsBugState = { rs ->
         DevOpsBugState(
-                systemId = rs.getString("System_Id"),
-                state = rs.getString("System_State"),
-                sprint = rs.getString("IterationPath"),
-                sprintDates = null
+            systemId = rs.getString("System_Id").toInt(),
+            state = rs.getString("System_State"),
+            sprint = rs.getString("IterationPath"),
+            sprintDates = null
         )
     }
 }
@@ -261,5 +278,10 @@ fun Timestamp.toDateRanges(rangesCount: Int, rangeLength: Int): List<Pair<Timest
     if (rangeLength < 0) return listOf()
     val month = Date(this.time).toLocalDate().monthValue
     val i = Date(this.time).toLocalDate().plusMonths((rangeLength - if (month % rangeLength == 0) rangeLength else month % rangeLength).toLong()).with(ChronoField.DAY_OF_MONTH, 1)
-    return (0 until rangesCount).mapIndexed { index, _ -> Pair(i.minusMonths(rangeLength.toLong() * (index + 1) - 1).toTimestamp(), i.minusMonths(rangeLength.toLong() * index - 1).minusDays(1).toTimestamp()) }
+    return (0 until rangesCount).mapIndexed { index, _ ->
+        Pair(
+            i.minusMonths(rangeLength.toLong() * (index + 1) - 1).toTimestamp(),
+            i.minusMonths(rangeLength.toLong() * index - 1).minusDays(1).toTimestamp()
+        )
+    }
 }
