@@ -84,14 +84,17 @@ class TFSHooks(
                 return ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, null, null, "Bug state and sprint didn't change", null))
             }
             /**
-             * Получаем номера issuе, связанные с work item'ом
+             * Получаем номер WI из хука
              * */
             val hookWIId = body.getDevOpsId() ?: return ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, null, null, "Unable to parse WI ID", null))
             /*
             * Получаем список issue, в которые указан id WI в полях "Issue" и "Requirement"
             * */
             val issues = getIssuesByWIId(hookWIId)
-
+            /**
+             * Выходим, если не найдены связанные issue
+             * */
+            if (issues.isEmpty()) return ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, null, null, "No issues are associated with WI", null))
             /**
              * Получаем информацию из YT по номерам issue
              * */
