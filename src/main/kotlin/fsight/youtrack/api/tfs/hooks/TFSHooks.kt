@@ -110,6 +110,7 @@ class TFSHooks(
 
             var fieldState: String? = null
             var fieldDetailedState: String? = null
+            var errorMessage: String? = null
 
             /*
             * Для каждого issue получаем выведенное состояние и отправляем команды в YT на его основании
@@ -125,19 +126,41 @@ class TFSHooks(
                 * Получаем выведенное состояние
                 * */
                 val inferredState = getInferredState(wi)
-
+                val issueState = ai.unwrapFieldValue("State")
+                val issueDetailedState = ai.unwrapFieldValue("Детализированное состояние")
+                /*if (actualIssueFieldState != "Направлена разработчику") return ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, actualIssueFieldState, null, "Issue with id $ytId is not on 3rd line"))*/
                 /**
                  * Отправляем команду в YT на основании выведенного состояния и прочих значений
                  * */
                 when {
+                    /**
+                     * Issue закрыт либо ожидает закрытия
+                     * */
+                    issueState in listOf("Ожидает ответа", "Ожидает подтверждения", "Incomplete", "Подтверждена", "Без подтверждения") -> {
+                        errorMessage = "Нельзя применить изменения к issue в состоянии $issueState"
+                    }
+                    issueDetailedState in listOf("Ожидает сборку")->{
+                        errorMessage = "Нельзя применить изменения к issue в детализированном состоянии $issueDetailedState"
+                    }
                     /*
-                    * Если выведенное состояние входит в ["Closed", "Resolved"], было изменено сосстояние и причина закрытия заявки = Fixed, то issue должен вернуться в состояние "Открыта", а в детализированное состояние должно записаться выведенное состояние
+                    * Если выведенное состояние входит в ["Closed", "Resolved"], было изменено сосстояние и причина закрытия заявки входит в ["Fixed", "Verified"], то issue должен вернуться в состояние "Открыта", а детализированное состояние должно перейти в "Backlog проверки"
                     * */
-                    inferredState in arrayOf("Closed", "Resolved") && body.isFieldChanged("System.State")
-                            && body.getFieldValue("Microsoft.VSTS.Common.ResolvedReason") == "Fixed"
+                    inferredState in arrayOf("Closed", "Resolved")
+                            && body.isFieldChanged("System.State")
+                            && body.getFieldValue("Microsoft.VSTS.Common.ResolvedReason") in listOf("Fixed", "Verified")
+
                     -> {
                         fieldState = postCommand(ai.idReadable, "Состояние Открыта").body.toString()
                         fieldDetailedState = postCommand(ai.idReadable, "Детализированное состояние Backlog проверки").body.toString()
+                    }
+                    /**
+                     * Если выведенное состояние входит в ["Closed", "Resolved"], было изменено сосстояние и причина закрытия заявки = Rejected, то issue должен вернуться в состояние "Открыта", а детализированное состояние должно перейти в "Backlog 2ЛП"
+                     * */
+                    inferredState in arrayOf("Closed", "Resolved") && body.isFieldChanged("System.State")
+                            && body.getFieldValue("Microsoft.VSTS.Common.ResolvedReason") == "Rejected"
+                    -> {
+                        fieldState = postCommand(ai.idReadable, "Состояние Открыта").body.toString()
+                        fieldDetailedState = postCommand(ai.idReadable, "Детализированное состояние Backlog 2ЛП").body.toString()
                     }
                     /*
                     * //TODO Нужно изменить доску!!! Статус "Resolved" должен быть перенесён к "Closed"
@@ -161,7 +184,7 @@ class TFSHooks(
                 /**
                  * Сохраняем информацию об изменениях на основе хука для последующего анализа
                  * */
-                saveHookToDatabase(body, fieldState, fieldDetailedState, null, inferredState)
+                saveHookToDatabase(body, fieldState, fieldDetailedState, errorMessage, inferredState)
             }
 
             /*
