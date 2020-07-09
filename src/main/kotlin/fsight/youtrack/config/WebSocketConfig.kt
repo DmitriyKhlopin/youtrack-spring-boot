@@ -1,4 +1,4 @@
-package fsight.youtrack
+package fsight.youtrack.config
 
 import org.springframework.context.annotation.Configuration
 import org.springframework.messaging.simp.config.MessageBrokerRegistry
