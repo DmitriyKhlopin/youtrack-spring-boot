@@ -27,7 +27,8 @@ data class Hook(
         return old != "AP\\Backlog" && new == "AP\\Backlog"
     }
 
-    fun sprintHasChanged(): Boolean = true
+    fun sprintHasChanged(): Boolean = this.resource?.fields?.get("System.IterationPath") != null
+    fun newSprint(): String = this.resource?.revision?.fields?.get("System.IterationPath").toString()
     fun stateHasChanged(): Boolean = true
     fun isBug(): Boolean = this.resource?.revision?.fields?.get("System.WorkItemType").toString() == "Bug"
     fun isFeature(): Boolean = this.resource?.revision?.fields?.get("System.WorkItemType").toString() == "Feature"

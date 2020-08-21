@@ -11,7 +11,7 @@ import fsight.youtrack.db.exposed.pg.TimeAccountingExtendedModel
 import fsight.youtrack.db.exposed.pg.TimeAccountingExtendedView
 import fsight.youtrack.generated.jooq.tables.records.BundleValuesRecord
 import fsight.youtrack.models.BundleValue
-import fsight.youtrack.models.DevOpsBugState
+import fsight.youtrack.models.DevOpsWorkItem
 import fsight.youtrack.models.hooks.Hook
 import fsight.youtrack.models.sql.DevOpsStateOrder
 import fsight.youtrack.models.youtrack.Issue
@@ -42,9 +42,12 @@ import java.util.concurrent.TimeUnit
     if (print) println(message)
 }*/
 
+fun getDevOpsUrl(systemId: Int): String = "<a href=\"https://tfsprod.fsight.ru/Foresight/AP/_workitems/edit/${systemId}\">${systemId}</a>"
+fun getYouTrackUrl(issueId: String?): String = "<a href=\"https://support.fsight.ru/issue/${issueId}\">${issueId}</a>"
+
 fun List<Issue>.getBugsAndFeatures(): List<Int> = this.map { it.bugsAndFeatures() }.flatten().distinct()
 
-fun List<DevOpsBugState>.mergeWithHookData(hook: Hook, states: List<DevOpsStateOrder>): List<DevOpsBugState> {
+fun List<DevOpsWorkItem>.mergeWithHookData(hook: Hook, states: List<DevOpsStateOrder>): List<DevOpsWorkItem> {
     return this.map {
         if (it.systemId == hook.resource?.workItemId) {
             it.state = hook.getFieldValue("System.State").toString()
@@ -55,6 +58,19 @@ fun List<DevOpsBugState>.mergeWithHookData(hook: Hook, states: List<DevOpsStateO
         it
     }
 }
+
+fun List<DevOpsWorkItem>.getSprints(): List<String> = this.map { it.sprint.substringAfterLast("\\") }.filterNot { it.contains("FY") }
+
+fun List<DevOpsWorkItem>.getLastSprint(): String? {
+    var sprint: String? = null
+    try {
+        sprint = this.map { it.sprint.substringAfterLast("\\") }.filterNot { it.contains("FY") }.maxBy { if (it == "Backlog") Int.MAX_VALUE else it.substringAfterLast(" ").toInt() }
+    } catch (e: Exception) {
+
+    }
+    return sprint
+}
+
 
 fun ResultRow.toWorkHoursModel(): WorkHoursModel {
     return WorkHoursModel(
@@ -225,12 +241,19 @@ class ExposedTransformations {
         j
     }
 
-    val toDevOpsState: (ResultSet) -> DevOpsBugState = { rs ->
-        DevOpsBugState(
+    val toDevOpsWorkItem: (ResultSet) -> DevOpsWorkItem = { rs ->
+        DevOpsWorkItem(
             systemId = rs.getString("System_Id").toInt(),
             state = rs.getString("System_State"),
             sprint = rs.getString("IterationPath"),
-            sprintDates = null
+            sprintDates = null,
+            priority = rs.getString("Microsoft_VSTS_Common_Priority"),
+            createdDate = rs.getTimestamp("System_CreatedDate"),
+            assignee = rs.getString("System_AssignedTo"),
+            type = rs.getString("System_WorkItemType"),
+            area = rs.getString("AreaPath"),
+            title = rs.getString("System_Title"),
+            author = rs.getString("System_CreatedBy")
         )
     }
 }

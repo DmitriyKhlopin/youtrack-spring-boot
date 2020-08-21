@@ -1,4 +1,4 @@
-package fsight.youtrack.api.tfs.hooks
+package fsight.youtrack.integrations.devops.hooks
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject
@@ -9,7 +9,7 @@ import fsight.youtrack.etl.issues.IIssue
 import fsight.youtrack.generated.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALUES
 import fsight.youtrack.generated.jooq.tables.Hooks
 import fsight.youtrack.generated.jooq.tables.Hooks.HOOKS
-import fsight.youtrack.models.DevOpsBugState
+import fsight.youtrack.models.DevOpsWorkItem
 import fsight.youtrack.models.hooks.Hook
 import fsight.youtrack.models.youtrack.Command
 import fsight.youtrack.models.youtrack.Issue
@@ -80,7 +80,12 @@ class TFSHooks(
             /**
              * Выходим если не менялись состояние и не было включения/исключения из спринта
              * */
-            if (body?.isFieldChanged("System.State") != true && body?.wasIncludedToSprint() != true && body?.wasExcludedFromSprint() != true) {
+            /*if (body?.sprintHasChanged()==true){
+                postCommand()
+                saveHookToDatabase(body, null, null, "Bug state and sprint didn't change", null)
+            }*/
+
+            if (body?.isFieldChanged("System.State") != true && body?.wasIncludedToSprint() != true && body?.wasExcludedFromSprint() != true && body?.sprintHasChanged() != true) {
                 return ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, null, null, "Bug state and sprint didn't change", null))
             }
             /**
@@ -125,10 +130,20 @@ class TFSHooks(
                 /*
                 * Получаем выведенное состояние
                 * */
+                //TODO выведение состояния должно учитывать поле Reason
                 val inferredState = getInferredState(wi)
                 val issueState = ai.unwrapFieldValue("State")
                 val issueDetailedState = ai.unwrapFieldValue("Детализированное состояние")
                 /*if (actualIssueFieldState != "Направлена разработчику") return ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, actualIssueFieldState, null, "Issue with id $ytId is not on 3rd line"))*/
+                val sprint = wi.getLastSprint()
+                when {
+                    body.sprintHasChanged() && ai.idReadable?.contains("SA-") == true && sprint != null -> {
+                        wi.getLastSprint()
+                        val s = postCommand(ai.idReadable, "Sprints $sprint").body.toString()
+                        saveHookToDatabase(body, s, null, null, null)
+                    }
+                }
+
                 /**
                  * Отправляем команду в YT на основании выведенного состояния и прочих значений
                  * */
@@ -139,7 +154,7 @@ class TFSHooks(
                     issueState in listOf("Ожидает ответа", "Ожидает подтверждения", "Incomplete", "Подтверждена", "Без подтверждения") -> {
                         errorMessage = "Нельзя применить изменения к issue в состоянии $issueState"
                     }
-                    issueDetailedState in listOf("Ожидает сборку")->{
+                    issueDetailedState in listOf("Ожидает сборку") -> {
                         errorMessage = "Нельзя применить изменения к issue в детализированном состоянии $issueDetailedState"
                     }
                     /*
@@ -163,11 +178,22 @@ class TFSHooks(
                         fieldDetailedState = postCommand(ai.idReadable, "Детализированное состояние Backlog 2ЛП").body.toString()
                     }
                     /*
-                    * //TODO Нужно изменить доску!!! Статус "Resolved" должен быть перенесён к "Closed"
+                    * Если в хуке менялось состояние и выведенное состояние входит в ["Closed", "Proposed", "Resolved"] и причине изменение входит в ["Rejected", "As Designed", "Cannot Reproduce"],
+                    * то issue должен вернуться в состояние "Открыта", а в детализированное состояние должно записаться выведенное состояние
+                    * Пример: FSC-972, изменение от 14 июл. 2020 10:38
+                    * */
+                    body.isFieldChanged("System.State")
+                            && inferredState in arrayOf("Closed", "Proposed", "Resolved")
+                            && body.getFieldValue("Microsoft.VSTS.Common.ResolvedReason") in listOf("Rejected", "As Designed", "Cannot Reproduce")
+                    -> {
+                        fieldState = postCommand(ai.idReadable, "Состояние Открыта").body.toString()
+                        fieldDetailedState = postCommand(ai.idReadable, "Детализированное состояние $inferredState").body.toString()
+                    }
+                    /*
                     * Если в хуке менялось состояние и выведенное состояние входит в ["Closed", "Proposed", "Resolved"], то issue должен вернуться в состояние "Открыта", а в детализированное состояние должно записаться выведенное состояние
                     * */
                     body.isFieldChanged("System.State") && inferredState in arrayOf("Closed", "Proposed", "Resolved") -> {
-                        fieldState = postCommand(ai.idReadable, "Состояние Открыта").body.toString()
+                        /*fieldState = postCommand(ai.idReadable, "Состояние Открыта").body.toString()*/
                         fieldDetailedState = postCommand(ai.idReadable, "Детализированное состояние $inferredState").body.toString()
                     }
                     /*
@@ -228,20 +254,26 @@ class TFSHooks(
             .fetchOne().recordDateTime
     }
 
-    override fun getDevOpsBugsState(ids: List<Int>): List<DevOpsBugState> {
-        val statement = """select System_Id, System_State, IterationPath from CurrentWorkItemView where System_Id in (${ids.joinToString(",")}) and TeamProjectCollectionSK = 37"""
-        return statement.execAndMap(ms) { ExposedTransformations().toDevOpsState(it) }
+    override fun getDevOpsBugsState(ids: List<Int>): List<DevOpsWorkItem> {
+        val statement =
+            """select System_Id, System_State, IterationPath, Microsoft_VSTS_Common_Priority, System_CreatedDate, System_AssignedTo, System_WorkItemType, AreaPath, System_Title from CurrentWorkItemView where System_Id in (${ids.joinToString(
+                ","
+            )}) and TeamProjectCollectionSK = 37"""
+        return statement.execAndMap(ms) { ExposedTransformations().toDevOpsWorkItem(it) }
     }
 
-    override fun getInferredState(bugStates: List<DevOpsBugState>): String {
+    override fun getInferredState(bugStates: List<DevOpsWorkItem>): String {
         return when {
             bugStates.any { it.sprint == "\\AP\\Backlog" && it.state == "Proposed" } -> "Backlog"
             bugStates.any { it.state == "Proposed" } -> "Proposed"
-            //TODO FSC-951
             bugStates.all { it.state == "Closed" } -> "Closed"
             bugStates.all { it.state == "Closed" || it.state == "Resolved" } -> "Resolved"
             else -> bugStates.filter { it.state != "Closed" }.minBy { it.stateOrder }?.state ?: "Closed"
         }
+    }
+
+    override fun getInferredSprint(bugStates: List<DevOpsWorkItem>): String {
+        return ""
     }
 
     override fun getAssociatedBugsState(id: String): JsonObject? {

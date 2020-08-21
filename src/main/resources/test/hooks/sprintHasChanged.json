@@ -1,0 +1,26 @@
+{
+  "subscriptionId": "6c40b626-2d19-4bef-8e20-7d97c3369ff4",
+  "notificationId": 30243,
+  "id": "3c52e533-c25b-47fe-a618-ea00b6e035c5",
+  "eventType": "workitem.updated",
+  "resource": {
+    "id": 6,
+    "workItemId": 71595,
+    "rev": 6,
+    "fields": {
+      "System.IterationPath": {
+        "oldValue": "AP\\Backlog",
+        "newValue": "AP\\Backlog\\Q2 FY20\\Sprint 28"
+      }
+    },
+    "revision": {
+      "id": 71595,
+      "rev": 6,
+      "fields": {
+        "System.IterationPath": "AP\\Backlog\\Q2 FY20\\Sprint 28",
+        "System.Title": "Изменение спринта",
+        "System.WorkItemType": "Bug"
+      }
+    }
+  }
+}

@@ -3,6 +3,8 @@ package fsight.youtrack.scheduler
 import fsight.youtrack.ETLState
 import fsight.youtrack.etl.IETL
 import fsight.youtrack.etl.IETLState
+import fsight.youtrack.integrations.devops.revisions.IDevOpsRevisions
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.CommandLineRunner
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
@@ -11,6 +13,9 @@ import java.net.InetAddress
 
 @Service
 class ScheduledTasks(private val service: IETL, private val state: IETLState) : CommandLineRunner {
+    @Autowired
+    lateinit var devOpsRevisions: IDevOpsRevisions
+
     private val runOnStartup = false
     private val testServers = listOf(
         "SPB-FSIGHT11",
@@ -34,6 +39,14 @@ class ScheduledTasks(private val service: IETL, private val state: IETLState) : 
             }
             else -> println("Service is running in dev mode, ETL will not be launched")
         }
+    }
+
+    /**
+     * ПН-ПТ в 10 утра
+     * */
+    @Scheduled(cron = "0 0 10 * * MON-FRI")
+    fun notifyProjectOwners() {
+        devOpsRevisions.startRevision()
     }
 
     override fun run(vararg args: String?) {

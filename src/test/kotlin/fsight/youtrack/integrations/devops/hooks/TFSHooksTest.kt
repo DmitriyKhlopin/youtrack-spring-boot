@@ -1,4 +1,4 @@
-package fsight.youtrack.api.tfs.hooks
+package fsight.youtrack.integrations.devops.hooks
 
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -8,7 +8,6 @@ import fsight.youtrack.etl.ETLState
 import fsight.youtrack.etl.issues.Issue
 import fsight.youtrack.etl.logs.ImportLog
 import fsight.youtrack.etl.projects.Projects
-import fsight.youtrack.etl.timeline.Timeline
 import fsight.youtrack.models.hooks.Hook
 import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.exposed.sql.Database
@@ -31,7 +30,7 @@ internal class TFSHooksTest {
     @Test
     fun includedToSprint() {
         val bugs = listOf<Int>()
-        val issueService = Issue(db, ImportLog(db), Timeline(db), ETLState())
+        val issueService = Issue(db, ImportLog(db), ETLState())
         val dictionaryService = Dictionary(db)
         /*val hooksService = TFSHooks(*//*db, tfsConnection, issueService, dictionaryService*//*)*/
         val hooksService = TFSHooks(db, tfsConnection/*, issueService, dictionaryService*/)
@@ -80,7 +79,7 @@ internal class TFSHooksTest {
     @Test
     fun excludedFromSprint() {
         val bugs = listOf<Int>()
-        val issueService = Issue(db, ImportLog(db), Timeline(db), ETLState())
+        val issueService = Issue(db, ImportLog(db), ETLState())
         val dictionaryService = Dictionary(db)
         val hooksService = TFSHooks(db, tfsConnection)
         val file: File = ResourceUtils.getFile("classpath:test/hooks/excludedFromSprint.json")
@@ -122,7 +121,7 @@ internal class TFSHooksTest {
         val oldValue = "Active"
         val newValue = "Resolved"
         val bugs = listOf<Int>()
-        val issueService = Issue(db, ImportLog(db), Timeline(db), ETLState())
+        val issueService = Issue(db, ImportLog(db), ETLState())
         val projectsService = Projects(db)
         val dictionaryService = Dictionary(db)
         val hooksService = TFSHooks(db, tfsConnection/*, issueService, dictionaryService*/)
@@ -163,7 +162,7 @@ internal class TFSHooksTest {
 
     @Test
     fun getDevOpsBugsState() {
-        val issueService = Issue(db, ImportLog(db), Timeline(db), ETLState())
+        val issueService = Issue(db, ImportLog(db), ETLState())
         val dictionaryService = Dictionary(db)
         val issues = listOf("TEST-12", "TEST-13")
         val actualIssues = issueService.search(issues.joinToString(separator = " ") { "#$it" }, listOf("idReadable", "customFields(name,value(name))"))
@@ -174,5 +173,27 @@ internal class TFSHooksTest {
         val a = hooksService.getDevOpsBugsState(actualIssues.getBugsAndFeatures()).mergeWithHookData(hook, dictionaryService.devOpsStates)
         a.forEach { println(it) }
         assertEquals(3, a.size, "Wrong number of work items")
+    }
+
+    @Test
+    fun sprintHasChanged() {
+        val oldValue = "AP\\Backlog"
+        val newValue = "AP\\Backlog\\Q2 FY20\\Sprint 28"
+        val file: File = ResourceUtils.getFile("classpath:test/hooks/sprintHasChanged.json")
+        assert(file.exists())
+        val body: Hook = Gson().fromJson(String(file.readBytes()), object : TypeToken<Hook>() {}.type)
+        assertTrue(body.oldFieldValue("System.IterationPath") == oldValue, "Previous sprint is not \"$oldValue\"")
+        assertTrue(body.newFieldValue("System.IterationPath") == newValue, "New sprint is not \"$newValue\"")
+        assertTrue(body.sprintHasChanged(), "Sprint didn't change")
+        assertTrue(body.newSprint() == newValue, "New sprint form revision is not \"$newValue\"")
+    }
+
+    @Test
+    fun getInferredState() {
+        val ids = listOf(22132, 25601, 25600, 59612, 60280, 67174, 44249)
+        val hooksService = TFSHooks(db, tfsConnection)
+        val r = hooksService.getDevOpsBugsState(ids)
+        r.getSprints().forEach { println(it) }
+        println("Last = ${r.getLastSprint()}")
     }
 }

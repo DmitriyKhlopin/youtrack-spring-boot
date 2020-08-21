@@ -2,10 +2,6 @@ package fsight.youtrack.models.hooks
 
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import fsight.youtrack.ExposedTransformations
-import fsight.youtrack.db.exposed.helper.Queries
-import fsight.youtrack.execAndMap
-import fsight.youtrack.models.DevOpsBugState
 import org.junit.jupiter.api.Test
 
 import org.junit.jupiter.api.Assertions.*

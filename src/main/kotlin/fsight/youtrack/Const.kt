@@ -55,3 +55,38 @@ const val defaultUsersWithLeads =
         "iana.maltseva@fsight.ru,viktoriya.zolotaryova@fsight.ru,artem.maltsev@fsight.ru,dmitriy.khlopin@fsight.ru,andrey.zolotaryev@fsight.ru,anton.lykov@fsight.ru,andrey.nepomnyashchiy@fsight.ru,nikolai.parkhachev@fsight.ru"
 const val defaultUsers =
         "iana.maltseva@fsight.ru,dmitriy.khlopin@fsight.ru,andrey.zolotaryev@fsight.ru,anton.lykov@fsight.ru,nikolai.parkhachev@fsight.ru,olga.subbotina@fsight.ru"
+
+val htmlHead = """
+         <head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style type="text/css">
+        body {
+            font-family: Verdana, Arial, Helvetica, sans-serif;
+            color: #1f2326;
+        }
+
+        table {
+            border-collapse: collapse;
+            border: 1px solid black;
+        }
+
+        th, td {
+            padding: 6px 12px;
+            text-align: left;
+            border: 1px solid black;
+        }
+
+        tr {
+            padding: 0
+        }
+    </style>
+</head>
+    """.trimIndent()
+
+val errorsTableHeader = """
+        <tr>
+            <th>Ошибка</th>
+            <th>Причина</th>
+        </tr>
+        """.trimIndent()

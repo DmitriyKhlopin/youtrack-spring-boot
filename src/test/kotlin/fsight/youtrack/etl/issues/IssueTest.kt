@@ -19,7 +19,7 @@ class IssueTest {
     @Test
     fun checkIfIssueExists() {
         println("this is a test")
-        val service: IIssue = Issue(db, ImportLog(db), Timeline(db), ETLState())
+        val service: IIssue = Issue(db, ImportLog(db),   ETLState())
 
         service.checkIfIssueExists("TC-599", "TN")
         service.getIssues("#ACGM-11")

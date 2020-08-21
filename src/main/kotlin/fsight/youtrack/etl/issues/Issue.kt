@@ -32,7 +32,6 @@ import java.time.LocalDateTime
 class Issue(
     private val dslContext: DSLContext,
     private val importLogService: IImportLog,
-    private val timelineService: ITimeline,
     private val etlStateService: IETLState
 ) : IIssue {
     private val jsonApi: YouTrackAPI by lazy { YouTrackAPI.create(Converter.GSON) }

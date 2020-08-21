@@ -53,7 +53,10 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
             .fetchInto(String::class.java)
         println("Need to calculate timelines for ${i.size} items.")
         val size = i.size
-        i.asSequence().forEachIndexed { index, s -> calculateForId(s, index, size, false) }
+        i.asSequence().forEachIndexed { index, s ->
+            calculateForId(s, index, size, false)
+            print("Calculated timeline for ${index * 100 / size}% of issues\r")
+        }
         updateIssueSpentTime()
     }
 
@@ -66,7 +69,10 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
             .fetchInto(String::class.java)
         println("Need to calculate timelines for ${i.size} items.")
         val size = i.size
-        i.asSequence().forEachIndexed { index, s -> calculateForId(s, index, size, true) }
+        i.asSequence().forEachIndexed { index, s ->
+            calculateForId(s, index, size, true)
+            print("Calculated timeline for ${index * 100 / size}% of issues\r")
+        }
     }
 
     fun updateIssueSpentTime() {
@@ -86,56 +92,10 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
                 where issues.id = a.issue_id
             """.trimIndent()
         )
-        /*dsl.update(ISSUES)
-            .set(
-                ISSUES.TIME_USER,
-                DSL.select(DSL.sum(ISSUE_TIMELINE.TIME_SPENT)).from(ISSUE_TIMELINE).where(
-                    ISSUE_TIMELINE.TRANSITION_OWNER.eq("YouTrackUser").and(ISSUE_TIMELINE.ISSUE_ID.eq(ISSUES.ID))
-                ).asField<Long>()
-            )
-            .set(
-                ISSUES.TIME_AGENT,
-                DSL.select(DSL.sum(ISSUE_TIMELINE.TIME_SPENT)).from(ISSUE_TIMELINE).where(
-                    ISSUE_TIMELINE.TRANSITION_OWNER.`in`(listOf("Agent", "Undefined")).and(
-                        ISSUE_TIMELINE.ISSUE_ID.eq(ISSUES.ID)
-                    )
-                ).asField<Long>()
-            )
-            .set(
-                ISSUES.TIME_DEVELOPER,
-                DSL.select(DSL.sum(ISSUE_TIMELINE.TIME_SPENT)).from(ISSUE_TIMELINE).where(
-                    ISSUE_TIMELINE.TRANSITION_OWNER.eq("Developer").and(ISSUE_TIMELINE.ISSUE_ID.eq(ISSUES.ID))
-                ).asField<Long>()
-            )
-            .execute()*/
     }
 
     fun updateIssueSpentTimeById(issueId: String) {
         try {
-            /*dsl.update(ISSUES)
-                .set(
-                    ISSUES.TIME_USER,
-                    DSL.select(DSL.sum(ISSUE_TIMELINE.TIME_SPENT)).from(ISSUE_TIMELINE).where(
-                        ISSUE_TIMELINE.TRANSITION_OWNER.eq("YouTrackUser").and(ISSUE_TIMELINE.ISSUE_ID.eq(ISSUES.ID))
-                    ).asField<Long>()
-                )
-                .set(
-                    ISSUES.TIME_AGENT,
-                    DSL.select(DSL.sum(ISSUE_TIMELINE.TIME_SPENT)).from(ISSUE_TIMELINE).where(
-                        ISSUE_TIMELINE.TRANSITION_OWNER.`in`(listOf("Agent", "Undefined")).and(
-                            ISSUE_TIMELINE.ISSUE_ID.eq(ISSUES.ID)
-                        )
-                    ).asField<Long>()
-                )
-                .set(
-                    ISSUES.TIME_DEVELOPER,
-                    DSL.select(DSL.sum(ISSUE_TIMELINE.TIME_SPENT)).from(ISSUE_TIMELINE).where(
-                        ISSUE_TIMELINE.TRANSITION_OWNER.eq("Developer").and(ISSUE_TIMELINE.ISSUE_ID.eq(ISSUES.ID))
-                    ).asField<Long>()
-                )
-                .where(ISSUES.ID.eq(issueId))
-                .execute()*/
-
             dsl.execute(
                 """
                 update issues
@@ -153,17 +113,6 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
                 and issues.id = '$issueId'
             """.trimIndent()
             )
-
-            /*dsl.update(ISSUES)
-                .set(ISSUES.TIME_USER,)
-                .set(ISSUES.TIME_USER,)
-                .set(ISSUES.TIME_USER,)
-                .from(
-                    DSL.select(DSL.sum(ISSUE_TIMELINE.TIME_SPENT))
-                        .from(ISSUE_TIMELINE)
-                        .where(ISSUE_TIMELINE.ISSUE_ID.eq(ISSUES.ID))
-                        .groupBy(ISSUE_TIMELINE.TRANSITION_OWNER)
-                )*/
         } catch (e: Exception) {
             println(e.message)
         }
