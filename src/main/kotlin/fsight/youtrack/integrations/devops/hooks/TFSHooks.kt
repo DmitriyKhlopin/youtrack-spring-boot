@@ -9,6 +9,7 @@ import fsight.youtrack.etl.issues.IIssue
 import fsight.youtrack.generated.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALUES
 import fsight.youtrack.generated.jooq.tables.Hooks
 import fsight.youtrack.generated.jooq.tables.Hooks.HOOKS
+import fsight.youtrack.mail.IMailSender
 import fsight.youtrack.models.DevOpsWorkItem
 import fsight.youtrack.models.hooks.Hook
 import fsight.youtrack.models.youtrack.Command
@@ -34,6 +35,9 @@ class TFSHooks(
 
     @Autowired
     lateinit var dictionaries: IDictionary
+
+    @Autowired
+    lateinit var mailSender: IMailSender
 
     /**
      * Получение [limit] последних хуков из лога.
@@ -137,13 +141,12 @@ class TFSHooks(
                 /*if (actualIssueFieldState != "Направлена разработчику") return ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, actualIssueFieldState, null, "Issue with id $ytId is not on 3rd line"))*/
                 val sprint = wi.getLastSprint()
                 when {
-                    body.sprintHasChanged() && ai.idReadable?.contains("SA-") == true && sprint != null -> {
+                    body.sprintHasChanged() /*&& ai.idReadable?.contains("SA-") == true*/ && sprint != null -> {
                         wi.getLastSprint()
                         val s = postCommand(ai.idReadable, "Sprints $sprint").body.toString()
                         saveHookToDatabase(body, s, null, null, null)
                     }
                 }
-
                 /**
                  * Отправляем команду в YT на основании выведенного состояния и прочих значений
                  * */
@@ -229,6 +232,7 @@ class TFSHooks(
             )*/
             ResponseEntity.status(HttpStatus.CREATED).body(null)
         } catch (e: Error) {
+            mailSender.sendHtmlMessage(TEST_MAIL_RECEIVER, "Ошибка при обработке хука", e.localizedMessage)
             ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, null, null, e.localizedMessage, null))
         }
     }
@@ -256,7 +260,7 @@ class TFSHooks(
 
     override fun getDevOpsBugsState(ids: List<Int>): List<DevOpsWorkItem> {
         val statement =
-            """select System_Id, System_State, IterationPath, Microsoft_VSTS_Common_Priority, System_CreatedDate, System_AssignedTo, System_WorkItemType, AreaPath, System_Title from CurrentWorkItemView where System_Id in (${ids.joinToString(
+            """select System_Id, System_State, IterationPath, Microsoft_VSTS_Common_Priority, System_CreatedDate, System_AssignedTo, System_WorkItemType, AreaPath, System_Title, System_CreatedBy from CurrentWorkItemView where System_Id in (${ids.joinToString(
                 ","
             )}) and TeamProjectCollectionSK = 37"""
         return statement.execAndMap(ms) { ExposedTransformations().toDevOpsWorkItem(it) }

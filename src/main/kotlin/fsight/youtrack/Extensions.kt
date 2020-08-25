@@ -253,7 +253,7 @@ class ExposedTransformations {
             type = rs.getString("System_WorkItemType"),
             area = rs.getString("AreaPath"),
             title = rs.getString("System_Title"),
-            author = rs.getString("System_CreatedBy")
+            author = rs.getString("System_CreatedBy") ?: null
         )
     }
 }

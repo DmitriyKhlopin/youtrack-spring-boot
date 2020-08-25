@@ -29,7 +29,7 @@ class MailSender : IMailSender {
         logger.info { "Отправлено уведомление получателю $to с темой \"$subject\" и текстом \"$text\"" };
     }
 
-    override fun sendErrorWarning(to: String, subject: String, text: String) {
+    override fun sendHtmlMessage(to: String, subject: String, text: String) {
         val mailSender = JavaMailSenderImpl()
         mailSender.host = MAIL_SERVER_ADDRESS
         mailSender.port = MAIL_SERVER_PORT

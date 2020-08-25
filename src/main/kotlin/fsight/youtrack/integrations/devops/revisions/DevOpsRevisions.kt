@@ -23,7 +23,7 @@ class DevOpsRevisions(private val dsl: DSLContext, @Qualifier("tfsDataSource") p
 
     override fun startRevision() {
         mailSender.sendMail(DEFAULT_MAIL_SENDER, TEST_MAIL_RECEIVER, "Запущена проверка багов", "Выполняется поиска багов, не взятых в спринт.")
-        getActiveBugsAndFeatures(5, null, null)
+        getActiveBugsAndFeatures(9, null, null)
         mailSender.sendMail(DEFAULT_MAIL_SENDER, TEST_MAIL_RECEIVER, "Проверка багов завершена", "Проверка багов завершена")
     }
 
@@ -36,7 +36,6 @@ class DevOpsRevisions(private val dsl: DSLContext, @Qualifier("tfsDataSource") p
     }
 
     override fun getActiveBugsAndFeatures(stage: Int?, limit: Int?, offset: Int?): List<Any> {
-        /*mailSender.sendMail(DEFAULT_MAIL_SENDER, TEST_MAIL_RECEIVER, "Запущена проверка багов", "Выполняется поиска багов, не взятых в спринт.")*/
         val a = getYTWorkItems(limit, offset)
         val b = a.map { it.toT2() }
         if (stage == 1) return b
@@ -48,14 +47,18 @@ class DevOpsRevisions(private val dsl: DSLContext, @Qualifier("tfsDataSource") p
         b.forEach { t2 -> t2.wiDetails.addAll(devOpsWorkItems.filter { wi -> t2.bugs.contains(wi.systemId) || t2.features.contains(wi.systemId) }) }
         if (stage == 3) return b
         val errors = b.map { it.check() }.filter { it.errors.isNotEmpty() }
-        if (stage == 4) return errors
-        if (stage == 5) return errors.mapNotNull { it.agent }.distinct()
-        if (stage == 6) return errors.groupBy { it.agent }.toList()
-        if (stage == 7) return errors.toT4List()
-        if (stage == 8 && limit != null) errors.forEachIndexed { index, t3 -> if (index < limit) notify(t3.source, t3.body) }
-        /*if (stage == 8 && limit == null) errors.forEach { t3 -> notify(t3.source, t3.body) }*/
-        if (stage == 8 && limit == null) errors.toT4List().forEach { mailSender.sendErrorWarning(TEST_MAIL_RECEIVER, "Автоматическая провека заявок (${it.errors.size})", it.body) }
-        return errors
+        return when (stage) {
+            4 -> errors
+            5 -> errors.mapNotNull { it.agent }.distinct()
+            6 -> errors.groupBy { it.agent }.toList()
+            7 -> errors.toT4List()
+            8 -> errors.toT4List().map { it.recipient }.distinct()
+            9 -> {
+                errors.toT4List().forEach { mailSender.sendHtmlMessage(/*TEST_MAIL_RECEIVER*/it.recipient, "Автоматическая провека заявок (${it.errors.size})", it.body) }
+                errors
+            }
+            else -> errors
+        }
     }
 
     fun getYTWorkItems(limit: Int?, offset: Int?): MutableList<T1> {
@@ -68,7 +71,9 @@ class DevOpsRevisions(private val dsl: DSLContext, @Qualifier("tfsDataSource") p
                            users.email  as agent,
                            row_number() over (partition by issue_id order by wi_created desc ) as rn
                     from work_items
-                    left join users on work_items.author_login=users.user_login)
+                        left join users on work_items.author_login=users.user_login
+                        left join ets_names en on users.email = en.fsight_email
+                    where en.support = true)
         """.trimIndent()
         ).asTable().`as`("agents")
         val bugsTable = CUSTOM_FIELD_VALUES.`as`("bugs")
@@ -112,7 +117,7 @@ class DevOpsRevisions(private val dsl: DSLContext, @Qualifier("tfsDataSource") p
     }
 
     fun notify(subject: String, body: String) {
-        mailSender.sendErrorWarning(to = TEST_MAIL_RECEIVER, subject = subject, text = body)
+        mailSender.sendHtmlMessage(to = TEST_MAIL_RECEIVER, subject = subject, text = body)
     }
 
     /**
@@ -210,7 +215,7 @@ class DevOpsRevisions(private val dsl: DSLContext, @Qualifier("tfsDataSource") p
                             <p>Добрый день</p>
                             <p>В задаче <a href="https://support.fsight.ru/issue/${this.source}">${this.source}</a> обнаружены ошибки</p>
                             <table border="1">
-                            ${errorsTableHeader}
+                            $errorsTableHeader
                             ${this.errors.joinToString(separator = "") { it.toTableRow() }}
                             </table>
                         </body>
@@ -222,7 +227,7 @@ class DevOpsRevisions(private val dsl: DSLContext, @Qualifier("tfsDataSource") p
                 """<div>
                         <p>Задача <a href="https://support.fsight.ru/issue/${this.source}">${this.source}</a></p>
                         <table border="1">
-                            ${errorsTableHeader}
+                            $errorsTableHeader
                             ${this.errors.joinToString { it.toTableRow() }}
                         </table>
                    </div>""".trimIndent().replace("[\n\r]".toRegex(), "").replace("\\s+".toRegex(), " ")
