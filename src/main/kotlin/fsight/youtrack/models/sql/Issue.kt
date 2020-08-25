@@ -12,5 +12,6 @@ data class Issue(
     var solutionAgent: String? = null,
     var evaluation: String? = null,
     var postponements: Int? = null,
-    var requestedClarifications: Int? = null
+    var requestedClarifications: Int? = null,
+    var isCommercial: Boolean? = null
 )
