@@ -1,10 +1,8 @@
 package fsight.youtrack.api.charts
 
 import fsight.youtrack.db.exposed.pg.TimeAccountingExtendedRepo
-import org.springframework.web.bind.annotation.CrossOrigin
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
+import fsight.youtrack.models.PartnerFilter
+import org.springframework.web.bind.annotation.*
 
 @CrossOrigin
 @RestController
@@ -44,4 +42,15 @@ class ChartDataController(
         @RequestParam("dateFrom", required = false) dateFrom: String = "",
         @RequestParam("dateTo", required = false) dateTo: String = ""
     ) = timeAccountingExtendedRepo.getGroupedByProjectType(projects, dateFrom, dateTo)
+
+
+
+    @GetMapping("/api/chart/processed")
+    fun getProcessedDaily(
+        @RequestParam("projects", required = false) projects: String = "",
+        @RequestParam("dateFrom", required = false) dateFrom: String = "",
+        @RequestParam("dateTo", required = false) dateTo: String = ""
+    ): Any {
+        return service.getProcessedDaily(projects, dateFrom, dateTo)
+    }
 }

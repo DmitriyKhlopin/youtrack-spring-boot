@@ -3,11 +3,11 @@ package fsight.youtrack.api.charts
 import com.google.gson.GsonBuilder
 import fsight.youtrack.*
 import fsight.youtrack.generated.jooq.tables.Dynamics.DYNAMICS
+import fsight.youtrack.generated.jooq.tables.DynamicsProcessedByDay
+import fsight.youtrack.generated.jooq.tables.DynamicsProcessedByDay.DYNAMICS_PROCESSED_BY_DAY
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
-import fsight.youtrack.models.SigmaIntermediatePower
-import fsight.youtrack.models.SigmaItem
-import fsight.youtrack.models.SigmaResult
-import fsight.youtrack.models.TimeLine
+import fsight.youtrack.models.*
+import fsight.youtrack.models.sql.ValueByDate
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.jooq.impl.DSL.sum
@@ -141,5 +141,18 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
                 return retrofit.create(GetGanttDataRetrofitService::class.java)
             }
         }
+    }
+
+
+    override fun getProcessedDaily(
+        projects: String,
+        dateFrom: String,
+        dateTo: String
+    ): Any {
+        return dslContext.select(
+            DYNAMICS_PROCESSED_BY_DAY.D.`as`("date"),
+            DYNAMICS_PROCESSED_BY_DAY.COUNT.`as`("value")
+        )
+            .from(DYNAMICS_PROCESSED_BY_DAY).fetchInto(ValueByDate::class.java)
     }
 }

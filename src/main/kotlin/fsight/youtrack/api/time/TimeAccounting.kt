@@ -10,6 +10,9 @@ import fsight.youtrack.models.TimeAccountingItem
 import fsight.youtrack.toEndOfDate
 import fsight.youtrack.toStartOfDate
 import org.jooq.DSLContext
+import org.jooq.impl.DSL
+import org.jooq.tools.json.JSONObject
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -178,6 +181,31 @@ class TimeAccounting(private val dsl: DSLContext) : ITimeAccounting {
 
     override fun postDictionaryItem(item: TimeAccountingDictionaryItem): ResponseEntity<Any> {
         val actualIteration: String? = if (item.iterationPath?.isEmpty() != false) null else item.iterationPath
+        val c = dsl.selectCount().from(DICTIONARY_PROJECT_CUSTOMER_ETS)
+            .where(
+                DICTIONARY_PROJECT_CUSTOMER_ETS.PROJ_SHORT_NAME.eq(item.projectShortName)
+                    .and(DICTIONARY_PROJECT_CUSTOMER_ETS.CUSTOMER.eq(item.customer))
+                    .and(DICTIONARY_PROJECT_CUSTOMER_ETS.PROJ_ETS.eq(item.projectEts))
+                    .and(
+                        (DICTIONARY_PROJECT_CUSTOMER_ETS.ITERATION_PATH.eq(actualIteration))
+                            .or((DSL.condition(actualIteration == null)).and(DICTIONARY_PROJECT_CUSTOMER_ETS.ITERATION_PATH.isNull))
+                    )
+                    .and(
+                        (DICTIONARY_PROJECT_CUSTOMER_ETS.DATE_FROM.between(item.dateFrom.toStartOfDate()).and(item.dateTo.toStartOfDate()))
+                            .or((DICTIONARY_PROJECT_CUSTOMER_ETS.DATE_TO.between(item.dateFrom.toStartOfDate()).and(item.dateTo.toStartOfDate())))
+                            .or(
+                                (DICTIONARY_PROJECT_CUSTOMER_ETS.DATE_FROM.le(item.dateFrom.toStartOfDate())
+                                    .and(DICTIONARY_PROJECT_CUSTOMER_ETS.DATE_TO.ge(item.dateTo.toStartOfDate())))
+                            )
+                            .or(
+                                (DICTIONARY_PROJECT_CUSTOMER_ETS.DATE_FROM.ge(item.dateFrom.toStartOfDate())
+                                    .and(DICTIONARY_PROJECT_CUSTOMER_ETS.DATE_TO.le(item.dateTo.toStartOfDate())))
+                            )
+                    )
+            ).fetchInto(Int::class.java).first()
+        println(c)
+        if (c != 0) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(JSONObject(mapOf("value" to "Item already exists")))
+
         val result = dsl.insertInto(DICTIONARY_PROJECT_CUSTOMER_ETS)
             .set(DICTIONARY_PROJECT_CUSTOMER_ETS.PROJ_SHORT_NAME, item.projectShortName)
             .set(DICTIONARY_PROJECT_CUSTOMER_ETS.CUSTOMER, item.customer)
@@ -187,7 +215,7 @@ class TimeAccounting(private val dsl: DSLContext) : ITimeAccounting {
             .set(DICTIONARY_PROJECT_CUSTOMER_ETS.DATE_TO, item.dateTo.toEndOfDate())
             .set(DICTIONARY_PROJECT_CUSTOMER_ETS.IS_APPROVED, true)
             .execute()
-        return ResponseEntity.ok(result)
+        return ResponseEntity.ok(JSONObject(mapOf("value" to result)))
     }
 
     override fun toggleDictionaryItemById(id: Int): ResponseEntity<Any> {

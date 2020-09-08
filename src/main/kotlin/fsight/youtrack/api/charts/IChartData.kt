@@ -1,5 +1,6 @@
 package fsight.youtrack.api.charts
 
+import fsight.youtrack.models.PartnerFilter
 import fsight.youtrack.models.SigmaResult
 import fsight.youtrack.models.TimeLine
 import org.springframework.http.ResponseEntity
@@ -13,6 +14,8 @@ interface IChartData {
         dateFrom: String,
         dateTo: String
     ): List<ChartData.SimpleAggregatedValue>?
+
+    fun getProcessedDaily(projects: String, dateFrom: String, dateTo: String): Any
 
     fun getGanttData(): ResponseEntity<Any>
 }
