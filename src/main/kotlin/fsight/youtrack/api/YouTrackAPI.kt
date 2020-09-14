@@ -6,6 +6,7 @@ import fsight.youtrack.getConverterFactory
 import fsight.youtrack.getOkhttpClient
 import fsight.youtrack.models.*
 import fsight.youtrack.models.youtrack.Issue
+import fsight.youtrack.models.youtrack.CustomField
 import retrofit2.Call
 import retrofit2.Retrofit
 import retrofit2.http.*
@@ -34,7 +35,7 @@ interface YouTrackAPI {
     ): Call<List<YouTrackProject>>
 
     @Headers("Accept: application/json")
-    @GET("api/admin/customFieldSettings/customFields?fields=name,id&\$top=-1")
+    @GET("api/admin/customFieldSettings/customFields?fields=name,id,fieldType(id,valueType)&\$top=-1")
     fun getListOfCustomFields(
         @Header("Authorization") auth: String
     ): Call<List<CustomField>>
@@ -127,6 +128,14 @@ interface YouTrackAPI {
     @Headers("Accept: application/json", "Content-Type: application/json;charset=UTF-8")
     @POST("api/admin/projects/{projectId}/workflows")
     fun attachWorkflow(
+        @Header("Authorization") auth: String,
+        @Path("projectId") projectId: String,
+        @Body body: String
+    ): Call<String>
+
+    @Headers("Accept: application/json", "Content-Type: application/json;charset=UTF-8")
+    @POST("api/admin/projects/{projectId}/fields")
+    fun attachCustomField(
         @Header("Authorization") auth: String,
         @Path("projectId") projectId: String,
         @Body body: String

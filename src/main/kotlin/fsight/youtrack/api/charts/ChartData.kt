@@ -62,12 +62,13 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
                 .from(ISSUES)
                 .where(ISSUES.RESOLVED_DATE.lessOrEqual(dateTo.toStartOfDate()))
                 .and(ISSUES.RESOLVED_DATE.isNotNull)
+                /*.and(ISSUES.ISSUE_TYPE.eq("Feature"))*/
                 .and(ISSUES.PROJECT_SHORT_NAME.`in`(filter))
                 .orderBy(ISSUES.CREATED_DATE.desc())
                 .limit(100)
                 .fetchInto(Int::class.java)
         val sourceAgg =
-            items.asSequence().groupBy { 1 + it / 32400 }.map { item -> SigmaItem(item.key, item.value.size) }
+            items.groupBy { 1 + it / 32400 }.map { item -> SigmaItem(item.key, item.value.size) }
                 .sortedBy { it.day }.toList()
         val average = items.asSequence().map { it / 32400 }.average()
         val power = sourceAgg.map {
@@ -88,7 +89,7 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
             .and(ISSUES.RESOLVED_DATE.isNull)
             .and(ISSUES.PROJECT_SHORT_NAME.`in`(filter))
             .orderBy(ISSUES.CREATED_DATE.desc())
-            .fetchInto(Int::class.java).asSequence().groupBy { 1 + it / 32400 }
+            .fetchInto(Int::class.java).groupBy { 1 + it / 32400 }
             .map { item -> SigmaItem(item.key, item.value.size) }.sortedBy { it.day }.toList()
         return SigmaResult(sigma, active)
     }

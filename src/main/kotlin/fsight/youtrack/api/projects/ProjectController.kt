@@ -11,6 +11,9 @@ class ProjectController(private val service: IProject) {
     @GetMapping("/api/project")
     fun getProjects() = service.getProjects()
 
+    @GetMapping("/api/project/commercial")
+    fun getCommercialProjects() = service.getCommercialProjects()
+
     @Deprecated("Use /dictionaries/partner_customers")
     @GetMapping("/api/partner_customers")
     fun getPartnerCustomers() = service.getPartnerCustomers()
@@ -19,6 +22,11 @@ class ProjectController(private val service: IProject) {
     @PostMapping("/api/projects/workflows")
     fun attachWorkflow(@RequestBody data: ProjectWorkflow): ResponseEntity<Any> {
         return ResponseEntity.ok(service.attachWorkflow(data))
+    }
+
+    @PostMapping("/api/projects/custom_field/attach")
+    fun attachCustomField(@RequestBody data: String): ResponseEntity<Any> {
+        return ResponseEntity.ok(service.attachCustomField(data))
     }
 }
 

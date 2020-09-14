@@ -4,6 +4,7 @@ package fsight.youtrack.models.youtrack
 data class Project(
         var startingNumber: Long?,
         var shortName: String?,
+        var id: String?,
         var description: String?,
         var leader: User?,
         var createdBy: User?,

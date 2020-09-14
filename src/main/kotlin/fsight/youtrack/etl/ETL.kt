@@ -2,6 +2,7 @@ package fsight.youtrack.etl
 
 import fsight.youtrack.ETLState
 import fsight.youtrack.etl.bundles.Bundle
+import fsight.youtrack.etl.fields.ICustomFieldsETL
 import fsight.youtrack.etl.issues.IIssue
 import fsight.youtrack.etl.projects.IProjects
 import fsight.youtrack.etl.timeline.ITimeline
@@ -20,7 +21,8 @@ class ETL(
     private val users: UsersETL,
     private val timeline: ITimeline,
     private val bundle: Bundle,
-    private val etlStateService: IETLState
+    private val etlStateService: IETLState,
+    private val customFieldsETL: ICustomFieldsETL
 ) : IETL {
 
     override fun runScheduledExport(): ETLResult? {
@@ -40,6 +42,7 @@ class ETL(
 
         if (time.get(Calendar.MINUTE) == 30 && time.get(Calendar.HOUR_OF_DAY) == 0) {
             projects.saveProjects()
+            customFieldsETL.getCustomFields()
             bundle.getBundles()
             users.getUsers()
             issue.findDeletedIssues()
