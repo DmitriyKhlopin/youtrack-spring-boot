@@ -90,3 +90,13 @@ val errorsTableHeader = """
             <th>Причина</th>
         </tr>
         """.trimIndent()
+
+
+val featuresTableHeader = """
+    <tr>
+        <th><p>Задача</p></th>
+        <th><p>Приоритет</p></th>
+        <th><p>Дата создания</p></th>
+        <th><p>Дата изменения</p></th>
+    </tr>
+""".trimIndent()

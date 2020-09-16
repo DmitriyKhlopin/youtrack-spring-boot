@@ -8,4 +8,4 @@ interface IReport {
     fun getPrioritiesByPartner(filters: List<PartnerFilter>): Any
     fun getCustomersByPartner(filters: List<PartnerFilter>): Any
     fun getProductsByPartner(filters: List<PartnerFilter>): Any
-    }
+}

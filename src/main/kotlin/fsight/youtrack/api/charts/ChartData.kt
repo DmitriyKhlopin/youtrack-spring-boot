@@ -2,6 +2,7 @@ package fsight.youtrack.api.charts
 
 import com.google.gson.GsonBuilder
 import fsight.youtrack.*
+import fsight.youtrack.api.dictionaries.IDictionary
 import fsight.youtrack.generated.jooq.tables.Dynamics.DYNAMICS
 import fsight.youtrack.generated.jooq.tables.DynamicsProcessedByDay
 import fsight.youtrack.generated.jooq.tables.DynamicsProcessedByDay.DYNAMICS_PROCESSED_BY_DAY
@@ -11,6 +12,7 @@ import fsight.youtrack.models.sql.ValueByDate
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.jooq.impl.DSL.sum
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
@@ -24,6 +26,8 @@ import kotlin.math.sqrt
 
 @Service
 class ChartData(private val dslContext: DSLContext) : IChartData {
+    @Autowired
+    private lateinit var dictionariesService: IDictionary
 
     data class SimpleAggregatedValue(val name: String, val value: Int)
 
@@ -56,7 +60,11 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
     }
 
     override fun getSigmaData(projects: String, dateFrom: String, dateTo: String): SigmaResult {
-        val filter = projects.splitToList()
+        val filter = if (projects.isEmpty()) {
+            dictionariesService.commercialProjects
+        } else {
+            projects.splitToList()
+        }
         val items: List<Int> =
             dslContext.select(DSL.coalesce(ISSUES.TIME_AGENT, 0) + DSL.coalesce(ISSUES.TIME_DEVELOPER, 0))
                 .from(ISSUES)

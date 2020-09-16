@@ -9,11 +9,12 @@ import fsight.youtrack.db.exposed.ms.schedule.plan.ScheduleTimeIntervalModel
 import fsight.youtrack.db.exposed.ms.schedule.plan.ScheduleTimeIntervalTable
 import fsight.youtrack.db.exposed.pg.TimeAccountingExtendedModel
 import fsight.youtrack.db.exposed.pg.TimeAccountingExtendedView
+import fsight.youtrack.db.models.DevOpsFeature
 import fsight.youtrack.generated.jooq.tables.records.BundleValuesRecord
 import fsight.youtrack.models.BundleValue
 import fsight.youtrack.models.DevOpsWorkItem
 import fsight.youtrack.models.hooks.Hook
-import fsight.youtrack.models.sql.DevOpsStateOrder
+import fsight.youtrack.db.models.DevOpsStateOrder
 import fsight.youtrack.models.youtrack.Issue
 import okhttp3.OkHttpClient
 import org.jetbrains.exposed.sql.ColumnType
@@ -254,6 +255,17 @@ class ExposedTransformations {
             area = rs.getString("AreaPath"),
             title = rs.getString("System_Title"),
             author = rs.getString("System_CreatedBy") ?: null
+        )
+    }
+
+    val toDevOpsFeature: (ResultSet) -> DevOpsFeature = { rs ->
+        DevOpsFeature(
+            id = rs.getString("System_Id").toInt(),
+            priority = rs.getString("Microsoft_VSTS_Common_Priority").toInt(),
+            createdDate = rs.getTimestamp("System_CreatedDate"),
+            updatedDate = rs.getTimestamp("System_ChangedDate"),
+            assignee = rs.getString("System_AssignedTo"),
+            title = rs.getString("System_Title")
         )
     }
 }

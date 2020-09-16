@@ -3,7 +3,7 @@ package fsight.youtrack.api.dictionaries
 import fsight.youtrack.models.BundleValue
 import fsight.youtrack.models.YouTrackProject
 import fsight.youtrack.models.YouTrackUser
-import fsight.youtrack.models.sql.DevOpsStateOrder
+import fsight.youtrack.db.models.DevOpsStateOrder
 import java.sql.Timestamp
 import java.util.*
 

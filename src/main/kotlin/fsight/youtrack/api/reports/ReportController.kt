@@ -1,9 +1,7 @@
 package fsight.youtrack.api.reports
 
 import fsight.youtrack.models.PartnerFilter
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 @RestController
 class ReportController(private val service: IReport) {

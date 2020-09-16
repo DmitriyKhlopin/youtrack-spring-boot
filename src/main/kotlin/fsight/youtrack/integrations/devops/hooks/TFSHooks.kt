@@ -73,6 +73,9 @@ class TFSHooks(
     override fun postCommand(id: String?, command: String): ResponseEntity<Any> {
         val cmd = Gson().toJson(Command(issues = arrayListOf(Issue(idReadable = id)), query = command))
         val response = YouTrackAPI.create().postCommand(DEVOPS_AUTH, cmd).execute()
+
+        println(response.body())
+        println(cmd)
         return ResponseEntity.ok("Issue $id returned response code ${response.code()} on command: $command")
     }
 
@@ -81,15 +84,14 @@ class TFSHooks(
      * */
     override fun postHook(body: Hook?): ResponseEntity<Any> {
         return try {
+            if (body?.subscriptionId == "00000000-0000-0000-0000-000000000000") {
+                saveHookToDatabase(body, null, null, "This is a test hook", "null")
+                ResponseEntity.status(HttpStatus.CREATED).body("This is a test hook")
+            }
             /**
              * Выходим если не менялись состояние и не было включения/исключения из спринта
              * */
-            /*if (body?.sprintHasChanged()==true){
-                postCommand()
-                saveHookToDatabase(body, null, null, "Bug state and sprint didn't change", null)
-            }*/
-
-            if (body?.isFieldChanged("System.State") != true && body?.wasIncludedToSprint() != true && body?.wasExcludedFromSprint() != true && body?.sprintHasChanged() != true) {
+            if (body?.isFieldChanged("System.State") != true && body?.wasIncludedToSprint() != true && body?.wasExcludedFromSprint() != true && body?.sprintHasChanged() != true && body?.isFieldChanged("System.BoardColumn") != true ) {
                 return ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, null, null, "Bug state and sprint didn't change", null))
             }
             /**
@@ -107,7 +109,9 @@ class TFSHooks(
             /**
              * Получаем информацию из YT по номерам issue
              * */
-            val actualIssues = issueService.search(issues.joinToString(separator = " ") { "#$it" }, listOf("idReadable", "customFields(name,value(name))"))
+            val filter = "(${issues.joinToString(separator = " ") { "#$it" }}) и Состояние: {Направлена разработчику}"
+            val actualIssues =
+                issueService.search(filter, listOf("idReadable", "customFields(name,value(name))"))
             /*
             * На основании всех issue получаем все привязанные к ним баги
             * */
@@ -138,7 +142,6 @@ class TFSHooks(
                 val inferredState = getInferredState(wi)
                 val issueState = ai.unwrapFieldValue("State")
                 val issueDetailedState = ai.unwrapFieldValue("Детализированное состояние")
-                /*if (actualIssueFieldState != "Направлена разработчику") return ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, actualIssueFieldState, null, "Issue with id $ytId is not on 3rd line"))*/
                 val sprint = wi.getLastSprint()
                 when {
                     body.sprintHasChanged() /*&& ai.idReadable?.contains("SA-") == true*/ && sprint != null -> {
@@ -154,6 +157,12 @@ class TFSHooks(
                     /**
                      * Issue закрыт либо ожидает закрытия
                      * */
+                    body.isFeature()
+                            && body.isFieldChanged("System.BoardColumn")
+                            && body.newFieldValue("System.BoardColumn") in listOf("На уточнении", "Отклонено") -> {
+                        fieldState = postCommand(ai.idReadable, "Состояние Открыта").body.toString()
+                        fieldDetailedState = postCommand(ai.idReadable, "Детализированное состояние Backlog 2ЛП").body.toString()
+                    }
                     issueState in listOf("Ожидает ответа", "Ожидает подтверждения", "Incomplete", "Подтверждена", "Без подтверждения") -> {
                         errorMessage = "Нельзя применить изменения к issue в состоянии $issueState"
                     }
@@ -207,29 +216,12 @@ class TFSHooks(
                     -> {
                         fieldDetailedState = postCommand(ai.idReadable, "Детализированное состояние $inferredState").body.toString()
                     }
-
-
                 }
                 /**
                  * Сохраняем информацию об изменениях на основе хука для последующего анализа
                  * */
                 saveHookToDatabase(body, fieldState, fieldDetailedState, errorMessage, inferredState)
             }
-
-            /*
-
-            val result = JSONObject(
-                mapOf(
-                    "timestamp" to saveHookToDatabase(body, fieldState, fieldDetailedState, null, inferredState),
-                    "ytId" to ytId,
-                    "inferredState" to inferredState,
-                    "actualIssueState" to actualIssueState,
-                    "linkedBugs" to linkedBugs,
-                    "fieldState" to fieldState,
-                    "fieldDetailedState" to fieldDetailedState,
-                    "inferredState" to inferredState
-                )
-            )*/
             ResponseEntity.status(HttpStatus.CREATED).body(null)
         } catch (e: Error) {
             mailSender.sendHtmlMessage(TEST_MAIL_RECEIVER, "Ошибка при обработке хука", e.localizedMessage)
@@ -241,7 +233,7 @@ class TFSHooks(
         return dsl
             .select(CUSTOM_FIELD_VALUES.ISSUE_ID)
             .from(CUSTOM_FIELD_VALUES)
-            .where(CUSTOM_FIELD_VALUES.FIELD_NAME.`in`(listOf("Issue", "Feature")).and(CUSTOM_FIELD_VALUES.FIELD_VALUE.like("%%$id%%")))
+            .where(CUSTOM_FIELD_VALUES.FIELD_NAME.`in`(listOf("Issue", "Requirement")).and(CUSTOM_FIELD_VALUES.FIELD_VALUE.like("%%$id%%")))
             .fetchInto(String::class.java)
     }
 
@@ -260,9 +252,9 @@ class TFSHooks(
 
     override fun getDevOpsBugsState(ids: List<Int>): List<DevOpsWorkItem> {
         val statement =
-            """select System_Id, System_State, IterationPath, Microsoft_VSTS_Common_Priority, System_CreatedDate, System_AssignedTo, System_WorkItemType, AreaPath, System_Title, System_CreatedBy from CurrentWorkItemView where System_Id in (${ids.joinToString(
-                ","
-            )}) and TeamProjectCollectionSK = 37"""
+            """select System_Id, System_State, IterationPath, Microsoft_VSTS_Common_Priority, System_CreatedDate, System_AssignedTo, System_WorkItemType, AreaPath, System_Title, System_CreatedBy from CurrentWorkItemView where System_Id in (${
+                ids.joinToString(",")
+            }) and TeamProjectCollectionSK = 37"""
         return statement.execAndMap(ms) { ExposedTransformations().toDevOpsWorkItem(it) }
     }
 

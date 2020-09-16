@@ -1,5 +1,6 @@
 package fsight.youtrack.api.issues
 
+import fsight.youtrack.api.dictionaries.IDictionary
 import fsight.youtrack.generated.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALUES
 import fsight.youtrack.generated.jooq.tables.IssueTags.ISSUE_TAGS
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
@@ -13,11 +14,15 @@ import org.jooq.Condition
 import org.jooq.DSLContext
 import org.jooq.Field
 import org.jooq.impl.DSL
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 
 @Service
 class Issues(private val dslContext: DSLContext, @Qualifier("tfsDataSource") private val ms: Database) : IIssues {
+    @Autowired
+    private lateinit var dictionariesService: IDictionary
+
     private val issues = ISSUES.`as`("i")
     private val priority = CUSTOM_FIELD_VALUES.`as`("priority")
     private val customer = CUSTOM_FIELD_VALUES.`as`("customer")
@@ -234,7 +239,8 @@ WHERE issue.System_Id IN ($issueIds)
         return result
     }
 
-    fun getProjectsCondition(issueFilter: IssueFilter): Condition = if (issueFilter.projects.isEmpty()) DSL.and(DSL.trueCondition()) else DSL.and(issues.PROJECT_SHORT_NAME.`in`(issueFilter.projects))
+    /*fun getProjectsCondition(issueFilter: IssueFilter): Condition = if (issueFilter.projects.isEmpty()) DSL.and(DSL.trueCondition()) else DSL.and(issues.PROJECT_SHORT_NAME.`in`(issueFilter.projects))*/
+    fun getProjectsCondition(issueFilter: IssueFilter): Condition = if (issueFilter.projects.isEmpty()) DSL.and(issues.PROJECT_SHORT_NAME.`in`(dictionariesService.commercialProjects)) else DSL.and(issues.PROJECT_SHORT_NAME.`in`(issueFilter.projects))
     fun getPrioritiesCondition(issueFilter: IssueFilter): Condition = if (issueFilter.priorities.isEmpty()) DSL.and(DSL.trueCondition()) else DSL.and(issues.PRIORITY.`in`(issueFilter.priorities))
     fun getStatesCondition(issueFilter: IssueFilter): Condition = if (issueFilter.states.isEmpty()) DSL.and(DSL.trueCondition()) else DSL.and(issues.STATE.`in`(issueFilter.states))
     fun getCustomersCondition(issueFilter: IssueFilter): Condition = if (issueFilter.customers.isEmpty()) DSL.and(DSL.trueCondition()) else DSL.and(issues.CUSTOMER.`in`(issueFilter.customers))
@@ -375,7 +381,7 @@ WHERE issue.System_Id IN ($issueIds)
         val ids = dslContext.select(issues.ID)
             .from(issues)
             .where()
-            .and(dateCondition)
+            /*.and(dateCondition)*/
             .and(issues.RESOLVED_DATE.isNull)
             .and(getProjectsCondition(issueFilter))
             .and((((DSL.coalesce(issues.TIME_AGENT, 0) + DSL.coalesce(issues.TIME_DEVELOPER, 0)) / 32400) + 1).eq(days.toLong()))

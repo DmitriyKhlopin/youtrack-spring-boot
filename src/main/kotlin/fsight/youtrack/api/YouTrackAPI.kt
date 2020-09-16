@@ -4,9 +4,12 @@ import fsight.youtrack.Converter
 import fsight.youtrack.NEW_ROOT_REF
 import fsight.youtrack.getConverterFactory
 import fsight.youtrack.getOkhttpClient
-import fsight.youtrack.models.*
-import fsight.youtrack.models.youtrack.Issue
+import fsight.youtrack.models.YouTrackActivityCursor
+import fsight.youtrack.models.YouTrackIssueWorkItem
+import fsight.youtrack.models.YouTrackProject
+import fsight.youtrack.models.YouTrackUser
 import fsight.youtrack.models.youtrack.CustomField
+import fsight.youtrack.models.youtrack.Issue
 import retrofit2.Call
 import retrofit2.Retrofit
 import retrofit2.http.*
@@ -20,6 +23,13 @@ interface YouTrackAPI {
         @Query("\$top") top: Int,
         @Query("\$skip") skip: Int
     ): Call<List<Issue>>
+
+    @Headers("Accept: application/json")
+    @GET("api/issues/{id}?fields=customFields(name,value(name))")
+    fun getIssueById(
+        @Header("Authorization") auth: String,
+        @Path("id") id: String
+    ): Call<Issue>
 
     @Headers("Accept: application/json")
     @GET("api/issues/{id}?fields=idReadable,project(id,shortName)")

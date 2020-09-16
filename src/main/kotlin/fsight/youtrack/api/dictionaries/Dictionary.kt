@@ -11,7 +11,7 @@ import fsight.youtrack.generated.jooq.tables.Users
 import fsight.youtrack.models.BundleValue
 import fsight.youtrack.models.YouTrackProject
 import fsight.youtrack.models.YouTrackUser
-import fsight.youtrack.models.sql.DevOpsStateOrder
+import fsight.youtrack.db.models.DevOpsStateOrder
 import fsight.youtrack.toStartOfDate
 import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Autowired

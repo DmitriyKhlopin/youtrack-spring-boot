@@ -1,4 +1,4 @@
-package fsight.youtrack.models.sql
+package fsight.youtrack.db.models
 
 data class DevOpsStateOrder(
         var state: String,
