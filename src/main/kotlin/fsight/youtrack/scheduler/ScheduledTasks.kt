@@ -3,6 +3,7 @@ package fsight.youtrack.scheduler
 import fsight.youtrack.ETLState
 import fsight.youtrack.etl.IETL
 import fsight.youtrack.etl.IETLState
+import fsight.youtrack.integrations.devops.features.IFeaturesAnalyzer
 import fsight.youtrack.integrations.devops.revisions.IDevOpsRevisions
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.CommandLineRunner
@@ -15,6 +16,9 @@ import java.net.InetAddress
 class ScheduledTasks(private val service: IETL, private val state: IETLState) : CommandLineRunner {
     @Autowired
     lateinit var devOpsRevisions: IDevOpsRevisions
+
+    @Autowired
+    lateinit var featuresAnalyzer: IFeaturesAnalyzer
 
     private val runOnStartup = false
     private val testServers = listOf(
@@ -46,7 +50,19 @@ class ScheduledTasks(private val service: IETL, private val state: IETLState) : 
      * */
     @Scheduled(cron = "0 0 10 * * MON-FRI")
     fun notifyProjectOwners() {
-        devOpsRevisions.startRevision()
+        if (InetAddress.getLocalHost().hostName !in testServers) {
+            devOpsRevisions.startRevision()
+        }
+    }
+
+    /**
+     * ПН-ПТ в 10 утра
+     * */
+    @Scheduled(cron = "0 0 10 * * MON")
+    fun analyzeFeatures() {
+        if (InetAddress.getLocalHost().hostName !in testServers) {
+            featuresAnalyzer.analyze()
+        }
     }
 
     override fun run(vararg args: String?) {
