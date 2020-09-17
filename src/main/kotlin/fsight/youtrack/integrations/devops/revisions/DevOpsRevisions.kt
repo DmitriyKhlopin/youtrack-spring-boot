@@ -54,7 +54,7 @@ class DevOpsRevisions(private val dsl: DSLContext, @Qualifier("tfsDataSource") p
             7 -> errors.toT4List()
             8 -> errors.toT4List().map { it.recipient }.distinct()
             9 -> {
-                errors.toT4List().forEach { mailSender.sendHtmlMessage(/*TEST_MAIL_RECEIVER*/it.recipient, "Автоматическая провека заявок (${it.errors.size})", it.body) }
+                errors.toT4List().forEach { mailSender.sendHtmlMessage(/*TEST_MAIL_RECEIVER*/it.recipient, null, "Автоматическая провека заявок (${it.errors.size})", it.body) }
                 errors
             }
             else -> errors
@@ -109,15 +109,17 @@ class DevOpsRevisions(private val dsl: DSLContext, @Qualifier("tfsDataSource") p
 
     override fun getDevOpsWorkItems(ids: List<Int>): List<DevOpsWorkItem> {
         val statement =
-            "select System_Id, System_State, Microsoft_VSTS_Common_Priority, IterationPath, System_CreatedDate, System_AssignedTo, System_WorkItemType, AreaPath, System_Title, System_CreatedBy from CurrentWorkItemView where System_Id in (${ids.joinToString(
-                ","
-            )})  and TeamProjectCollectionSK = 37 and System_WorkItemType in ('Bug', 'Feature')"
+            "select System_Id, System_State, Microsoft_VSTS_Common_Priority, IterationPath, System_CreatedDate, System_AssignedTo, System_WorkItemType, AreaPath, System_Title, System_CreatedBy from CurrentWorkItemView where System_Id in (${
+                ids.joinToString(
+                    ","
+                )
+            })  and TeamProjectCollectionSK = 37 and System_WorkItemType in ('Bug', 'Feature')"
         /*val statement = """select System_Id, System_State, IterationPath from CurrentWorkItemView where System_Id in (${ids.joinToString(",")}) and TeamProjectCollectionSK = 37"""*/
         return statement.execAndMap(ms) { ExposedTransformations().toDevOpsWorkItem(it) }
     }
 
     fun notify(subject: String, body: String) {
-        mailSender.sendHtmlMessage(to = TEST_MAIL_RECEIVER, subject = subject, text = body)
+        mailSender.sendHtmlMessage(to = TEST_MAIL_RECEIVER, cc = null, subject = subject, text = body)
     }
 
     /**
@@ -179,9 +181,11 @@ class DevOpsRevisions(private val dsl: DSLContext, @Qualifier("tfsDataSource") p
                     CustomError(
                         ytId = issueId,
                         reason = "<p>Указан неправильный тип задачи</p>",
-                        description = "<p>${if (features.size > 1) "Номеа фич" else "Номер фичи"}: ${features.joinToString(separator = ", ") { getDevOpsUrl(it) }}. Тип задачи в ${getYouTrackUrl(
-                            issueId
-                        )} = $type</p>"
+                        description = "<p>${if (features.size > 1) "Номеа фич" else "Номер фичи"}: ${features.joinToString(separator = ", ") { getDevOpsUrl(it) }}. Тип задачи в ${
+                            getYouTrackUrl(
+                                issueId
+                            )
+                        } = $type</p>"
                     )
                 )
             }
