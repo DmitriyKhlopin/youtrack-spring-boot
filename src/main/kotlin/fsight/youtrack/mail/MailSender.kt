@@ -29,13 +29,14 @@ class MailSender : IMailSender {
         logger.info { "Отправлено уведомление получателю $to с темой \"$subject\" и текстом \"$text\"" };
     }
 
-    override fun sendHtmlMessage(to: String, subject: String, text: String) {
+    override fun sendHtmlMessage(to: String, cc: Array<String>?, subject: String, text: String) {
         val mailSender = JavaMailSenderImpl()
         mailSender.host = MAIL_SERVER_ADDRESS
         mailSender.port = MAIL_SERVER_PORT
         val message = mailSender.createMimeMessage()
         val helper = MimeMessageHelper(message, true, "utf-8")
         helper.setTo(to)
+        if (cc != null) helper.setCc(cc)
         helper.setFrom(DEFAULT_MAIL_SENDER)
         helper.setSubject(subject)
         val htmlMsg = (text)
