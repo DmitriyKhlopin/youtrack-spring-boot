@@ -1,34 +1,29 @@
 package fsight.youtrack.integrations.devops.hooks
 
 import com.google.gson.Gson
-import com.google.gson.JsonObject
 import fsight.youtrack.*
 import fsight.youtrack.api.YouTrackAPI
 import fsight.youtrack.api.dictionaries.IDictionary
+import fsight.youtrack.db.IDevOpsProvider
+import fsight.youtrack.db.IPGProvider
 import fsight.youtrack.etl.issues.IIssue
 import fsight.youtrack.generated.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALUES
-import fsight.youtrack.generated.jooq.tables.Hooks
 import fsight.youtrack.generated.jooq.tables.Hooks.HOOKS
 import fsight.youtrack.mail.IMailSender
 import fsight.youtrack.models.DevOpsWorkItem
 import fsight.youtrack.models.hooks.Hook
 import fsight.youtrack.models.youtrack.Command
 import fsight.youtrack.models.youtrack.Issue
-import org.jetbrains.exposed.sql.Database
 import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
-import java.sql.Timestamp
-import java.time.Instant
 
 
 @Service
 class TFSHooks(
-    private val dsl: DSLContext,
-    @Qualifier("tfsDataSource") private val ms: Database
+    private val dsl: DSLContext
 ) : ITFSHooks {
     @Autowired
     lateinit var issueService: IIssue
@@ -38,6 +33,12 @@ class TFSHooks(
 
     @Autowired
     lateinit var mailSender: IMailSender
+
+    @Autowired
+    lateinit var ms: IDevOpsProvider
+
+    @Autowired
+    lateinit var pg: IPGProvider
 
     /**
      * Получение [limit] последних хуков из лога.
@@ -56,9 +57,9 @@ class TFSHooks(
 
     override fun getPostableHooks(limit: Int): ResponseEntity<Any> {
         val i = dsl
-            .select(Hooks.HOOKS.HOOK_BODY)
-            .from(Hooks.HOOKS)
-            .orderBy(Hooks.HOOKS.RECORD_DATE_TIME.desc())
+            .select(HOOKS.HOOK_BODY)
+            .from(HOOKS)
+            .orderBy(HOOKS.RECORD_DATE_TIME.desc())
             .limit(limit)
             .fetchInto(String::class.java)
             .map { Gson().fromJson(it, Hook::class.java) }
@@ -73,9 +74,6 @@ class TFSHooks(
     override fun postCommand(id: String?, command: String): ResponseEntity<Any> {
         val cmd = Gson().toJson(Command(issues = arrayListOf(Issue(idReadable = id)), query = command))
         val response = YouTrackAPI.create().postCommand(DEVOPS_AUTH, cmd).execute()
-
-        println(response.body())
-        println(cmd)
         return ResponseEntity.ok("Issue $id returned response code ${response.code()} on command: $command")
     }
 
@@ -85,19 +83,22 @@ class TFSHooks(
     override fun postHook(body: Hook?): ResponseEntity<Any> {
         return try {
             if (body?.subscriptionId == "00000000-0000-0000-0000-000000000000") {
-                saveHookToDatabase(body, null, null, "This is a test hook", "null")
+                pg.saveHookToDatabase(body, null, null, "This is a test hook", "null")
                 ResponseEntity.status(HttpStatus.CREATED).body("This is a test hook")
             }
             /**
              * Выходим если не менялись состояние и не было включения/исключения из спринта
              * */
-            if (body?.isFieldChanged("System.State") != true && body?.wasIncludedToSprint() != true && body?.wasExcludedFromSprint() != true && body?.sprintHasChanged() != true && body?.isFieldChanged("System.BoardColumn") != true ) {
-                return ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, null, null, "Bug state and sprint didn't change", null))
+            if (body?.isFieldChanged("System.State") != true && body?.wasIncludedToSprint() != true && body?.wasExcludedFromSprint() != true && body?.sprintHasChanged() != true && body?.isFieldChanged(
+                    "System.BoardColumn"
+                ) != true
+            ) {
+                return ResponseEntity.status(HttpStatus.CREATED).body(pg.saveHookToDatabase(body, null, null, "Bug state and sprint didn't change", null))
             }
             /**
              * Получаем номер WI из хука
              * */
-            val hookWIId = body.getDevOpsId() ?: return ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, null, null, "Unable to parse WI ID", null))
+            val hookWIId = body.getDevOpsId() ?: return ResponseEntity.status(HttpStatus.CREATED).body(pg.saveHookToDatabase(body, null, null, "Unable to parse WI ID", null))
             /*
             * Получаем список issue, в которые указан id WI в полях "Issue" и "Requirement"
             * */
@@ -105,7 +106,7 @@ class TFSHooks(
             /**
              * Выходим, если не найдены связанные issue
              * */
-            if (issues.isEmpty()) return ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, null, null, "No issues are associated with WI", null))
+            if (issues.isEmpty()) return ResponseEntity.status(HttpStatus.CREATED).body(pg.saveHookToDatabase(body, null, null, "No issues are associated with WI", null))
             /**
              * Получаем информацию из YT по номерам issue
              * */
@@ -117,9 +118,13 @@ class TFSHooks(
             * */
             val linkedWIIds = actualIssues.getBugsAndFeatures()
             /*
+            * Выходим, если нет багов и фич
+            * */
+            if (linkedWIIds.isEmpty()) return ResponseEntity.status(HttpStatus.CREATED).body(pg.saveHookToDatabase(body, null, null, "No bugs found. Issues size = ${actualIssues.size}", null))
+            /*
             * Получаем состояния багов из DevOps и присваиваем порядок каждому состоянию
             * */
-            val devOpsStates = getDevOpsBugsState(linkedWIIds).mergeWithHookData(body, dictionaries.devOpsStates)
+            val devOpsStates = ms.getDevOpsBugsState(linkedWIIds).mergeWithHookData(body, dictionaries.devOpsStates)
 
             var fieldState: String? = null
             var fieldDetailedState: String? = null
@@ -147,7 +152,7 @@ class TFSHooks(
                     body.sprintHasChanged() /*&& ai.idReadable?.contains("SA-") == true*/ && sprint != null -> {
                         wi.getLastSprint()
                         val s = postCommand(ai.idReadable, "Sprints $sprint").body.toString()
-                        saveHookToDatabase(body, s, null, null, null)
+                        pg.saveHookToDatabase(body, s, null, null, null)
                     }
                 }
                 /**
@@ -220,12 +225,12 @@ class TFSHooks(
                 /**
                  * Сохраняем информацию об изменениях на основе хука для последующего анализа
                  * */
-                saveHookToDatabase(body, fieldState, fieldDetailedState, errorMessage, inferredState)
+                pg.saveHookToDatabase(body, fieldState, fieldDetailedState, errorMessage, inferredState)
             }
             ResponseEntity.status(HttpStatus.CREATED).body(null)
         } catch (e: Error) {
-            mailSender.sendHtmlMessage(TEST_MAIL_RECEIVER, "Ошибка при обработке хука", e.localizedMessage)
-            ResponseEntity.status(HttpStatus.CREATED).body(saveHookToDatabase(body, null, null, e.localizedMessage, null))
+            mailSender.sendHtmlMessage(TEST_MAIL_RECEIVER, null, "Ошибка при обработке хука", e.localizedMessage)
+            ResponseEntity.status(HttpStatus.CREATED).body(pg.saveHookToDatabase(body, null, null, e.localizedMessage, null))
         }
     }
 
@@ -235,27 +240,6 @@ class TFSHooks(
             .from(CUSTOM_FIELD_VALUES)
             .where(CUSTOM_FIELD_VALUES.FIELD_NAME.`in`(listOf("Issue", "Requirement")).and(CUSTOM_FIELD_VALUES.FIELD_VALUE.like("%%$id%%")))
             .fetchInto(String::class.java)
-    }
-
-    override fun saveHookToDatabase(body: Hook?, fieldState: String?, fieldDetailedState: String?, errorMessage: String?, inferredState: String?): Timestamp {
-        return dsl
-            .insertInto(HOOKS)
-            .set(HOOKS.RECORD_DATE_TIME, Timestamp.from(Instant.now()))
-            .set(HOOKS.HOOK_BODY, Gson().toJson(body).toString())
-            .set(HOOKS.FIELD_STATE, fieldState)
-            .set(HOOKS.FIELD_DETAILED_STATE, fieldDetailedState)
-            .set(HOOKS.ERROR_MESSAGE, errorMessage)
-            .set(HOOKS.INFERRED_STATE, inferredState)
-            .returning(HOOKS.RECORD_DATE_TIME)
-            .fetchOne().recordDateTime
-    }
-
-    override fun getDevOpsBugsState(ids: List<Int>): List<DevOpsWorkItem> {
-        val statement =
-            """select System_Id, System_State, IterationPath, Microsoft_VSTS_Common_Priority, System_CreatedDate, System_AssignedTo, System_WorkItemType, AreaPath, System_Title, System_CreatedBy from CurrentWorkItemView where System_Id in (${
-                ids.joinToString(",")
-            }) and TeamProjectCollectionSK = 37"""
-        return statement.execAndMap(ms) { ExposedTransformations().toDevOpsWorkItem(it) }
     }
 
     override fun getInferredState(bugStates: List<DevOpsWorkItem>): String {
@@ -270,23 +254,5 @@ class TFSHooks(
 
     override fun getInferredSprint(bugStates: List<DevOpsWorkItem>): String {
         return ""
-    }
-
-    override fun getAssociatedBugsState(id: String): JsonObject? {
-        val issues = dsl
-            .select(CUSTOM_FIELD_VALUES.FIELD_VALUE)
-            .from(CUSTOM_FIELD_VALUES)
-            .where(CUSTOM_FIELD_VALUES.ISSUE_ID.eq(id))
-            .and(CUSTOM_FIELD_VALUES.FIELD_NAME.eq("Issue"))
-            .fetchOneInto(String::class.java)
-
-        val statement = """select System_Id, System_State, IterationPath from CurrentWorkItemView where System_Id in (${issues}) and TeamProjectCollectionSK = 37"""
-        val all = statement.execAndMap(ms) { ExposedTransformations().toJsonObject(it, listOf("System_Id", "System_State", "IterationPath")) }
-            .map { e ->
-                e.addProperty("order", dictionaries.devOpsStates.firstOrNull { k -> k.state == e["System_State"].asString }?.order)
-                e
-            }
-        val filtered = all.filter { it["IterationPath"].asString != "Backlog" && it["System_State"].asString != "Closed" && it["System_State"].asString != "Resolved" }
-        return if (filtered.isEmpty()) all.minBy { it["order"].toString().toInt() } else filtered.minBy { it["order"].toString().toInt() }
     }
 }

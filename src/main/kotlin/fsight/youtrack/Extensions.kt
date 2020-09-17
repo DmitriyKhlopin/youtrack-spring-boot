@@ -9,12 +9,13 @@ import fsight.youtrack.db.exposed.ms.schedule.plan.ScheduleTimeIntervalModel
 import fsight.youtrack.db.exposed.ms.schedule.plan.ScheduleTimeIntervalTable
 import fsight.youtrack.db.exposed.pg.TimeAccountingExtendedModel
 import fsight.youtrack.db.exposed.pg.TimeAccountingExtendedView
-import fsight.youtrack.db.models.DevOpsFeature
+import fsight.youtrack.db.models.devops.DevOpsFeature
+import fsight.youtrack.db.models.devops.DevOpsFieldValue
+import fsight.youtrack.db.models.devops.DevOpsStateOrder
 import fsight.youtrack.generated.jooq.tables.records.BundleValuesRecord
 import fsight.youtrack.models.BundleValue
 import fsight.youtrack.models.DevOpsWorkItem
 import fsight.youtrack.models.hooks.Hook
-import fsight.youtrack.db.models.DevOpsStateOrder
 import fsight.youtrack.models.youtrack.Issue
 import okhttp3.OkHttpClient
 import org.jetbrains.exposed.sql.ColumnType
@@ -65,7 +66,8 @@ fun List<DevOpsWorkItem>.getSprints(): List<String> = this.map { it.sprint.subst
 fun List<DevOpsWorkItem>.getLastSprint(): String? {
     var sprint: String? = null
     try {
-        sprint = this.map { it.sprint.substringAfterLast("\\") }.filterNot { it.contains("FY") }.maxBy { if (it == "Backlog") Int.MAX_VALUE else it.substringAfterLast(" ").toInt() }
+        sprint = this.filter { it.state !in listOf("Closed") }.map { it.sprint.substringAfterLast("\\") }.filterNot { it.contains("FY") }
+            .maxBy { if (it == "Backlog") Int.MAX_VALUE else it.substringAfterLast(" ").toInt() }
     } catch (e: Exception) {
 
     }
@@ -265,7 +267,19 @@ class ExposedTransformations {
             createdDate = rs.getTimestamp("System_CreatedDate"),
             updatedDate = rs.getTimestamp("System_ChangedDate"),
             assignee = rs.getString("System_AssignedTo"),
-            title = rs.getString("System_Title")
+            title = rs.getString("System_Title"),
+            project = ""
+        )
+    }
+
+    val toDevOpsFieldValue: (ResultSet) -> DevOpsFieldValue = { rs ->
+        DevOpsFieldValue(
+            id = rs.getInt("Id"),
+            fieldId = rs.getInt("FieldId"),
+            int = rs.getInt("IntValue"),
+            float = rs.getFloat("FloatValue"),
+            dateTime = rs.getTimestamp("DateTimeValue"),
+            string = rs.getString("StringValue")
         )
     }
 }
