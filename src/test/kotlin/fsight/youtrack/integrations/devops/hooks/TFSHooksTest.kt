@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import fsight.youtrack.*
 import fsight.youtrack.api.dictionaries.Dictionary
+import fsight.youtrack.db.IDevOpsProvider
 import fsight.youtrack.etl.ETLState
 import fsight.youtrack.etl.issues.Issue
 import fsight.youtrack.etl.logs.ImportLog
@@ -15,6 +16,7 @@ import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.util.ResourceUtils
 import java.io.File
 
@@ -27,13 +29,16 @@ internal class TFSHooksTest {
         DSL.using("jdbc:postgresql://v-ctp-postgres.fs.fsight.world:5432/youtrack?autoReconnect=true", "postgres", "Qwerty1")
     }
 
+    @Autowired
+    private lateinit var ms: IDevOpsProvider
+
     @Test
     fun includedToSprint() {
         val bugs = listOf<Int>()
         val issueService = Issue(db, ImportLog(db), ETLState())
         val dictionaryService = Dictionary(db)
         /*val hooksService = TFSHooks(*//*db, tfsConnection, issueService, dictionaryService*//*)*/
-        val hooksService = TFSHooks(db, tfsConnection/*, issueService, dictionaryService*/)
+        val hooksService = TFSHooks(db/*, issueService, dictionaryService*/)
         val file: File = ResourceUtils.getFile("classpath:test/hooks/includedToSprint.json")
         assert(file.exists())
         val body: Hook = Gson().fromJson(String(file.readBytes()), object : TypeToken<Hook>() {}.type)
@@ -53,7 +58,7 @@ internal class TFSHooksTest {
         assertEquals("Направлена разработчику", actualIssueFieldState, "YT states are not equal")
         if (actualIssueFieldState != "Направлена разработчику") return
         val linkedBugs = if (bugs.isEmpty()) actualIssueState.unwrapFieldValue("Issue").toString().split(",", " ").mapNotNull { it.toIntOrNull() } else bugs
-        val bugStates = hooksService.getDevOpsBugsState(linkedBugs).map {
+        val bugStates = ms.getDevOpsBugsState(linkedBugs).map {
             if (it.systemId == body.resource?.workItemId) {
                 it.state = body.getFieldValue("System.State").toString()
                 it.sprint = body.getFieldValue("System.IterationPath").toString()
@@ -81,7 +86,7 @@ internal class TFSHooksTest {
         val bugs = listOf<Int>()
         val issueService = Issue(db, ImportLog(db), ETLState())
         val dictionaryService = Dictionary(db)
-        val hooksService = TFSHooks(db, tfsConnection)
+        val hooksService = TFSHooks(db)
         val file: File = ResourceUtils.getFile("classpath:test/hooks/excludedFromSprint.json")
         assert(file.exists())
         val body: Hook = Gson().fromJson(String(file.readBytes()), object : TypeToken<Hook>() {}.type)
@@ -95,7 +100,7 @@ internal class TFSHooksTest {
         assertEquals("Направлена разработчику", actualIssueFieldState, "YT states are not equal")
         if (actualIssueFieldState != "Направлена разработчику") return
         val linkedBugs = if (bugs.isEmpty()) actualIssueState.unwrapFieldValue("Issue").toString().split(",", " ").mapNotNull { it.toIntOrNull() } else bugs
-        val bugStates = hooksService.getDevOpsBugsState(linkedBugs).map {
+        val bugStates = ms.getDevOpsBugsState(linkedBugs).map {
             if (it.systemId == body.resource?.workItemId) {
                 it.state = body.getFieldValue("System.State").toString()
                 it.sprint = body.getFieldValue("System.IterationPath").toString()
@@ -124,7 +129,7 @@ internal class TFSHooksTest {
         val issueService = Issue(db, ImportLog(db), ETLState())
         val projectsService = Projects(db)
         val dictionaryService = Dictionary(db)
-        val hooksService = TFSHooks(db, tfsConnection/*, issueService, dictionaryService*/)
+        val hooksService = TFSHooks(db/*, issueService, dictionaryService*/)
         val file: File = ResourceUtils.getFile("classpath:test/hooks/activeToResolved.json")
         assert(file.exists())
         val body: Hook = Gson().fromJson(String(file.readBytes()), object : TypeToken<Hook>() {}.type)
@@ -138,7 +143,7 @@ internal class TFSHooksTest {
         assertEquals("Направлена разработчику", actualIssueFieldState, "YT states are not equal")
         if (actualIssueFieldState != "Направлена разработчику") return
         val linkedBugs = if (bugs.isEmpty()) actualIssueState.unwrapFieldValue("Issue").toString().split(",", " ").mapNotNull { it.toIntOrNull() } else bugs
-        val bugStates = hooksService.getDevOpsBugsState(linkedBugs).mergeWithHookData(body, dictionaryService.devOpsStates)
+        val bugStates = ms.getDevOpsBugsState(linkedBugs).mergeWithHookData(body, dictionaryService.devOpsStates)
         val inferredState = hooksService.getInferredState(bugStates)
         assertEquals("Resolved", inferredState)
     }
@@ -153,7 +158,7 @@ internal class TFSHooksTest {
 
     @Test
     fun getIssuesByWIId() {
-        val hooksService = TFSHooks(db, tfsConnection)
+        val hooksService = TFSHooks(db)
         val issues = hooksService.getIssuesByWIId(60000)
         val expected = listOf("TEST-12", "TEST-13")
         assertThat(issues.containsAll(expected))
@@ -166,11 +171,11 @@ internal class TFSHooksTest {
         val dictionaryService = Dictionary(db)
         val issues = listOf("TEST-12", "TEST-13")
         val actualIssues = issueService.search(issues.joinToString(separator = " ") { "#$it" }, listOf("idReadable", "customFields(name,value(name))"))
-        val hooksService = TFSHooks(db, tfsConnection)
+        val hooksService = TFSHooks(db)
         val file: File = ResourceUtils.getFile("classpath:test/hooks/wiType.json")
         assert(file.exists())
         val hook: Hook = Gson().fromJson(String(file.readBytes()), object : TypeToken<Hook>() {}.type)
-        val a = hooksService.getDevOpsBugsState(actualIssues.getBugsAndFeatures()).mergeWithHookData(hook, dictionaryService.devOpsStates)
+        val a = ms.getDevOpsBugsState(actualIssues.getBugsAndFeatures()).mergeWithHookData(hook, dictionaryService.devOpsStates)
         a.forEach { println(it) }
         assertEquals(3, a.size, "Wrong number of work items")
     }
@@ -191,8 +196,8 @@ internal class TFSHooksTest {
     @Test
     fun getInferredState() {
         val ids = listOf(22132, 25601, 25600, 59612, 60280, 67174, 44249)
-        val hooksService = TFSHooks(db, tfsConnection)
-        val r = hooksService.getDevOpsBugsState(ids)
+        val hooksService = TFSHooks(db)
+        val r = ms.getDevOpsBugsState(ids)
         r.getSprints().forEach { println(it) }
         println("Last = ${r.getLastSprint()}")
     }

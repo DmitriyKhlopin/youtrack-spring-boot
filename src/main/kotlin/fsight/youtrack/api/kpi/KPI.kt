@@ -1,6 +1,7 @@
 package fsight.youtrack.api.kpi
 
 
+import fsight.youtrack.db.IPGProvider
 import fsight.youtrack.generated.jooq.Tables.*
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
 import fsight.youtrack.generated.jooq.tables.KpiOverallView.KPI_OVERALL_VIEW
@@ -8,10 +9,12 @@ import fsight.youtrack.generated.jooq.tables.SlaViolationsResponsible.SLA_VIOLAT
 import fsight.youtrack.generated.jooq.tables.Users.USERS
 import fsight.youtrack.generated.jooq.tables.WorkItems.WORK_ITEMS
 import fsight.youtrack.models.sql.Issue
+import fsight.youtrack.splitToList
 import fsight.youtrack.toDateRanges
 import org.jetbrains.exposed.sql.Database
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import java.sql.Timestamp
@@ -19,6 +22,9 @@ import java.sql.Timestamp
 
 @Service
 class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: DSLContext) : IKPI {
+    @Autowired
+    private lateinit var pg: IPGProvider
+
 
     private final val prioritiesMap: HashMap<String, Float> by lazy {
         hashMapOf<String, Float>().also {
@@ -306,12 +312,14 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
 
     override fun getResult(
         projects: List<String>,
-        emails: List<String>,
+        emails: String?,
         dateFrom: Timestamp,
         dateTo: Timestamp,
         withDetails: Boolean
     ): Any {
         /**Получаем список сотрудников с номерами задач и трудозатратами сотрудников в рамках этих задач*/
+
+        val e = emails?.splitToList() ?: pg.getSupportEmployees().map { it.email }
         val issueParticipantsQuery = dsl.select(
             USERS.FULL_NAME.`as`("user"),
             ISSUES.ID.`as`("issueId"),
@@ -322,7 +330,7 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
             .leftJoin(ISSUES).on(WORK_ITEMS.ISSUE_ID.eq(ISSUES.ID))
             .where(ISSUES.RESOLVED_DATE.between(dateFrom).and(dateTo))
             .and(ISSUES.PROJECT_SHORT_NAME.`in`(projects))
-            .and(USERS.EMAIL.`in`(emails))
+            .and(USERS.EMAIL.`in`(e))
             .and((WORK_ITEMS.WORK_NAME.notEqual("Анализ сроков выполнения")).or(WORK_ITEMS.WORK_NAME.isNull))
             .groupBy(USERS.FULL_NAME, ISSUES.ID)
         val issueParticipants = issueParticipantsQuery.fetchInto(BasicKPIIndicatorRecord::class.java)

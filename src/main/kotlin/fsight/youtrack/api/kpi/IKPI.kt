@@ -76,16 +76,16 @@ interface IKPI {
     ): List<KPI.T1>*/
 
     fun getResult(
-            projects: List<String>,
-            emails: List<String>,
-            dateFrom: Timestamp,
-            dateTo: Timestamp,
-            withDetails: Boolean
+        projects: List<String>,
+        emails: String?,
+        dateFrom: Timestamp,
+        dateTo: Timestamp,
+        withDetails: Boolean
     ): Any
 
     fun getOverallResult(
-            projects: List<String>,
-            dateFrom: Timestamp,
-            dateTo: Timestamp
+        projects: List<String>,
+        dateFrom: Timestamp,
+        dateTo: Timestamp
     ): Any
 }
