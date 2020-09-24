@@ -61,7 +61,7 @@ class ScheduledTasks(private val service: IETL, private val state: IETLState) : 
     @Scheduled(cron = "0 0 10 * * MON")
     fun analyzeFeatures() {
         if (InetAddress.getLocalHost().hostName !in testServers) {
-            featuresAnalyzer.analyze()
+            featuresAnalyzer.analyzePendingFeatures()
         }
     }
 

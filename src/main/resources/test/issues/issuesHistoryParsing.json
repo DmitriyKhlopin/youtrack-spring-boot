@@ -1,0 +1,2911 @@
+{
+  "cursor": "RH.91-633524+:1600672174227",
+  "hasBefore": false,
+  "activities": [
+    {
+      "removed": [
+        {
+          "localizedName": "Зарегистрирована",
+          "name": "Submitted",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "59-0",
+          "$type": "StateBundleElement"
+        }
+      ],
+      "added": [
+        {
+          "localizedName": "В обработке",
+          "name": "In Progress",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "59-2",
+          "$type": "StateBundleElement"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "state",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-3",
+          "$type": "CustomField"
+        },
+        "id": "45-3",
+        "presentation": "Состояние",
+        "name": "Состояние",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-545277",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1589538967696,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Антон Лыков",
+        "isLocked": false,
+        "fullName": "Антон Лыков",
+        "login": "anton.lykov",
+        "avatarUrl": "/hub/api/rest/avatar/d5467b4c-b765-4889-9ab7-49450156509b?s=48",
+        "email": "anton.lykov@fsight.ru",
+        "online": false,
+        "ringId": "d5467b4c-b765-4889-9ab7-49450156509b",
+        "issueRelatedGroup": null,
+        "id": "1-92",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__State_3",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [],
+      "added": [
+        {
+          "name": "Антон Лыков",
+          "id": "1-92",
+          "$type": "User"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "user",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-4",
+          "$type": "CustomField"
+        },
+        "id": "45-4",
+        "presentation": "Исполнитель",
+        "name": "Исполнитель",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-545278",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1589538967696,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Антон Лыков",
+        "isLocked": false,
+        "fullName": "Антон Лыков",
+        "login": "anton.lykov",
+        "avatarUrl": "/hub/api/rest/avatar/d5467b4c-b765-4889-9ab7-49450156509b?s=48",
+        "email": "anton.lykov@fsight.ru",
+        "online": false,
+        "ringId": "d5467b4c-b765-4889-9ab7-49450156509b",
+        "issueRelatedGroup": null,
+        "id": "1-92",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Assignee_4",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "localizedName": null,
+          "name": "Backlog 1ЛП",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "57-2083",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "added": [
+        {
+          "localizedName": null,
+          "name": "В работе 2ЛП",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "57-2214",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "enum",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-176",
+          "$type": "CustomField"
+        },
+        "id": "45-176",
+        "presentation": "Детализированное состояние",
+        "name": "Детализированное состояние",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-545279",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1589538972130,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Антон Лыков",
+        "isLocked": false,
+        "fullName": "Антон Лыков",
+        "login": "anton.lykov",
+        "avatarUrl": "/hub/api/rest/avatar/d5467b4c-b765-4889-9ab7-49450156509b?s=48",
+        "email": "anton.lykov@fsight.ru",
+        "online": false,
+        "ringId": "d5467b4c-b765-4889-9ab7-49450156509b",
+        "issueRelatedGroup": null,
+        "id": "1-92",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Состояние в DevOps_176",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": null,
+      "added": "\n\n**Ссылки на issue:**\nhttps://tfsprod.fsight.ru/Foresight/AP/_workitems?_a=edit&id=58893\n\n",
+      "markup": "<div class=\"wiki text common-markdown\"><p><strong>Ссылки на issue:</strong><br/><a href=\"https://tfsprod.fsight.ru/Foresight/AP/_workitems?_a=edit&amp;id=58893\" target=\"_blank\" rel=\"noopener noreferrer\">https://tfsprod.fsight.ru/Foresight/AP/_workitems?_a=edit&amp;id=58893</a></p>\n</div>",
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "text",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-134",
+          "$type": "CustomField"
+        },
+        "id": "45-134",
+        "presentation": "Дополнительная информация",
+        "name": "Дополнительная информация",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-545354",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1589543254851,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Антон Лыков",
+        "isLocked": false,
+        "fullName": "Антон Лыков",
+        "login": "anton.lykov",
+        "avatarUrl": "/hub/api/rest/avatar/d5467b4c-b765-4889-9ab7-49450156509b?s=48",
+        "email": "anton.lykov@fsight.ru",
+        "online": false,
+        "ringId": "d5467b4c-b765-4889-9ab7-49450156509b",
+        "issueRelatedGroup": null,
+        "id": "1-92",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Дополнительная информация_134",
+      "$type": "TextCustomFieldActivityItem"
+    },
+    {
+      "removed": null,
+      "added": "58893",
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "string",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-57",
+          "$type": "CustomField"
+        },
+        "id": "45-57",
+        "presentation": "Issue",
+        "name": "Issue",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-545355",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1589543254851,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Антон Лыков",
+        "isLocked": false,
+        "fullName": "Антон Лыков",
+        "login": "anton.lykov",
+        "avatarUrl": "/hub/api/rest/avatar/d5467b4c-b765-4889-9ab7-49450156509b?s=48",
+        "email": "anton.lykov@fsight.ru",
+        "online": false,
+        "ringId": "d5467b4c-b765-4889-9ab7-49450156509b",
+        "issueRelatedGroup": null,
+        "id": "1-92",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Номер заявки в TFS_57",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "localizedName": null,
+          "name": "Действует",
+          "color": {
+            "id": "13",
+            "$type": "FieldStyle"
+          },
+          "id": "57-48",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "added": [
+        {
+          "localizedName": null,
+          "name": "Выполнен",
+          "color": {
+            "id": "14",
+            "$type": "FieldStyle"
+          },
+          "id": "57-49",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "enum",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-44",
+          "$type": "CustomField"
+        },
+        "id": "45-44",
+        "presentation": "SLA по первому ответу",
+        "name": "SLA по первому ответу",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-545359",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1589543369392,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Антон Лыков",
+        "isLocked": false,
+        "fullName": "Антон Лыков",
+        "login": "anton.lykov",
+        "avatarUrl": "/hub/api/rest/avatar/d5467b4c-b765-4889-9ab7-49450156509b?s=48",
+        "email": "anton.lykov@fsight.ru",
+        "online": false,
+        "ringId": "d5467b4c-b765-4889-9ab7-49450156509b",
+        "issueRelatedGroup": null,
+        "id": "1-92",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__FRTimer_44",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "localizedName": "В обработке",
+          "name": "In Progress",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "59-2",
+          "$type": "StateBundleElement"
+        }
+      ],
+      "added": [
+        {
+          "localizedName": null,
+          "name": "Направлена разработчику",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "59-20",
+          "$type": "StateBundleElement"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "state",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-3",
+          "$type": "CustomField"
+        },
+        "id": "45-3",
+        "presentation": "Состояние",
+        "name": "Состояние",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-545361",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1589543373311,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Антон Лыков",
+        "isLocked": false,
+        "fullName": "Антон Лыков",
+        "login": "anton.lykov",
+        "avatarUrl": "/hub/api/rest/avatar/d5467b4c-b765-4889-9ab7-49450156509b?s=48",
+        "email": "anton.lykov@fsight.ru",
+        "online": false,
+        "ringId": "d5467b4c-b765-4889-9ab7-49450156509b",
+        "issueRelatedGroup": null,
+        "id": "1-92",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__State_3",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "localizedName": null,
+          "name": "В работе 2ЛП",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "57-2214",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "added": [
+        {
+          "localizedName": null,
+          "name": "Backlog",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "57-2092",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "enum",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-176",
+          "$type": "CustomField"
+        },
+        "id": "45-176",
+        "presentation": "Детализированное состояние",
+        "name": "Детализированное состояние",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-545362",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1589543376349,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Антон Лыков",
+        "isLocked": false,
+        "fullName": "Антон Лыков",
+        "login": "anton.lykov",
+        "avatarUrl": "/hub/api/rest/avatar/d5467b4c-b765-4889-9ab7-49450156509b?s=48",
+        "email": "anton.lykov@fsight.ru",
+        "online": false,
+        "ringId": "d5467b4c-b765-4889-9ab7-49450156509b",
+        "issueRelatedGroup": null,
+        "id": "1-92",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Состояние в DevOps_176",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "name": "Антон Лыков",
+          "id": "1-92",
+          "$type": "User"
+        }
+      ],
+      "added": [],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "user",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-4",
+          "$type": "CustomField"
+        },
+        "id": "45-4",
+        "presentation": "Исполнитель",
+        "name": "Исполнитель",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-545363",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1589543376349,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Антон Лыков",
+        "isLocked": false,
+        "fullName": "Антон Лыков",
+        "login": "anton.lykov",
+        "avatarUrl": "/hub/api/rest/avatar/d5467b4c-b765-4889-9ab7-49450156509b?s=48",
+        "email": "anton.lykov@fsight.ru",
+        "online": false,
+        "ringId": "d5467b4c-b765-4889-9ab7-49450156509b",
+        "issueRelatedGroup": null,
+        "id": "1-92",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Assignee_4",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "localizedName": null,
+          "name": "Действует",
+          "color": {
+            "id": "13",
+            "$type": "FieldStyle"
+          },
+          "id": "57-48",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "added": [
+        {
+          "localizedName": null,
+          "name": "Истекает",
+          "color": {
+            "id": "20",
+            "$type": "FieldStyle"
+          },
+          "id": "57-51",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "enum",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-45",
+          "$type": "CustomField"
+        },
+        "id": "45-45",
+        "presentation": "SLA по решению",
+        "name": "SLA по решению",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-546594",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1589868240910,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Рабочий процесс YouTrack",
+        "isLocked": true,
+        "fullName": "Рабочий процесс YouTrack",
+        "login": "workflow_user_1038925207",
+        "avatarUrl": "/hub/api/rest/avatar/default?s=48",
+        "email": null,
+        "online": false,
+        "ringId": null,
+        "issueRelatedGroup": null,
+        "id": "82-0",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__SLA по решению_45",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "localizedName": null,
+          "name": "Истекает",
+          "color": {
+            "id": "20",
+            "$type": "FieldStyle"
+          },
+          "id": "57-51",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "added": [
+        {
+          "localizedName": null,
+          "name": "Выполнен",
+          "color": {
+            "id": "14",
+            "$type": "FieldStyle"
+          },
+          "id": "57-49",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "enum",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-45",
+          "$type": "CustomField"
+        },
+        "id": "45-45",
+        "presentation": "SLA по решению",
+        "name": "SLA по решению",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-546664",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1589872787957,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Антон Лыков",
+        "isLocked": false,
+        "fullName": "Антон Лыков",
+        "login": "anton.lykov",
+        "avatarUrl": "/hub/api/rest/avatar/d5467b4c-b765-4889-9ab7-49450156509b?s=48",
+        "email": "anton.lykov@fsight.ru",
+        "online": false,
+        "ringId": "d5467b4c-b765-4889-9ab7-49450156509b",
+        "issueRelatedGroup": null,
+        "id": "1-92",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__SLA по решению_45",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "localizedName": null,
+          "name": "Backlog",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "57-2092",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "added": [
+        {
+          "localizedName": null,
+          "name": "Proposed",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "57-2081",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "enum",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-176",
+          "$type": "CustomField"
+        },
+        "id": "45-176",
+        "presentation": "Детализированное состояние",
+        "name": "Детализированное состояние",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-549821",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1590399666047,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Николай Пархачев",
+        "isLocked": false,
+        "fullName": "Николай Пархачев",
+        "login": "nikolai.parkhachev",
+        "avatarUrl": "/hub/api/rest/avatar/5ab2aea4-db6a-43c7-9846-3df6b6dd1539?s=48",
+        "email": "nikolai.parkhachev@fsight.ru",
+        "online": false,
+        "ringId": "5ab2aea4-db6a-43c7-9846-3df6b6dd1539",
+        "issueRelatedGroup": null,
+        "id": "1-436",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Состояние в DevOps_176",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [],
+      "added": [
+        {
+          "name": "Николай Пархачев",
+          "id": "1-436",
+          "$type": "User"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "user",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-4",
+          "$type": "CustomField"
+        },
+        "id": "45-4",
+        "presentation": "Исполнитель",
+        "name": "Исполнитель",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-549822",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1590399666047,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Николай Пархачев",
+        "isLocked": false,
+        "fullName": "Николай Пархачев",
+        "login": "nikolai.parkhachev",
+        "avatarUrl": "/hub/api/rest/avatar/5ab2aea4-db6a-43c7-9846-3df6b6dd1539?s=48",
+        "email": "nikolai.parkhachev@fsight.ru",
+        "online": false,
+        "ringId": "5ab2aea4-db6a-43c7-9846-3df6b6dd1539",
+        "issueRelatedGroup": null,
+        "id": "1-436",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Assignee_4",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "name": "Николай Пархачев",
+          "id": "1-436",
+          "$type": "User"
+        }
+      ],
+      "added": [
+        {
+          "name": "DevOps Service",
+          "id": "1-578",
+          "$type": "User"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "user",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-4",
+          "$type": "CustomField"
+        },
+        "id": "45-4",
+        "presentation": "Исполнитель",
+        "name": "Исполнитель",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-549823",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1590399669423,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Николай Пархачев",
+        "isLocked": false,
+        "fullName": "Николай Пархачев",
+        "login": "nikolai.parkhachev",
+        "avatarUrl": "/hub/api/rest/avatar/5ab2aea4-db6a-43c7-9846-3df6b6dd1539?s=48",
+        "email": "nikolai.parkhachev@fsight.ru",
+        "online": false,
+        "ringId": "5ab2aea4-db6a-43c7-9846-3df6b6dd1539",
+        "issueRelatedGroup": null,
+        "id": "1-436",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Assignee_4",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": 1589875406043,
+      "added": 1589537006464,
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "date and time",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-60",
+          "$type": "CustomField"
+        },
+        "id": "45-60",
+        "presentation": "Дата решения",
+        "name": "Дата решения",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-556534",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1591207102360,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Андрей Непомнящий",
+        "isLocked": false,
+        "fullName": "Андрей Непомнящий",
+        "login": "Андрей_Непомнящий",
+        "avatarUrl": "/hub/api/rest/avatar/414aef85-a396-446c-b22d-ffafb778e110?s=48&etag=%3DMjUtMjcx",
+        "email": "andrey.nepomnyashchiy@fsight.ru",
+        "online": false,
+        "ringId": "414aef85-a396-446c-b22d-ffafb778e110",
+        "issueRelatedGroup": null,
+        "id": "1-15",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Дата решения_60",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": 1589551406043,
+      "added": 1589537006464,
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "date and time",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-59",
+          "$type": "CustomField"
+        },
+        "id": "45-59",
+        "presentation": "Дата первого ответа",
+        "name": "Дата первого ответа",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-556535",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1591207102360,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Андрей Непомнящий",
+        "isLocked": false,
+        "fullName": "Андрей Непомнящий",
+        "login": "Андрей_Непомнящий",
+        "avatarUrl": "/hub/api/rest/avatar/414aef85-a396-446c-b22d-ffafb778e110?s=48&etag=%3DMjUtMjcx",
+        "email": "andrey.nepomnyashchiy@fsight.ru",
+        "online": false,
+        "ringId": "414aef85-a396-446c-b22d-ffafb778e110",
+        "issueRelatedGroup": null,
+        "id": "1-15",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Дата первого ответа 2_59",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "localizedName": null,
+          "name": "Премиальный",
+          "color": {
+            "id": "25",
+            "$type": "FieldStyle"
+          },
+          "id": "57-44",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "added": [
+        {
+          "localizedName": null,
+          "name": "Партнёрский",
+          "color": {
+            "id": "24",
+            "$type": "FieldStyle"
+          },
+          "id": "57-1786",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "enum",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-40",
+          "$type": "CustomField"
+        },
+        "id": "45-40",
+        "presentation": "SLA",
+        "name": "SLA",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-556536",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1591207102360,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Андрей Непомнящий",
+        "isLocked": false,
+        "fullName": "Андрей Непомнящий",
+        "login": "Андрей_Непомнящий",
+        "avatarUrl": "/hub/api/rest/avatar/414aef85-a396-446c-b22d-ffafb778e110?s=48&etag=%3DMjUtMjcx",
+        "email": "andrey.nepomnyashchiy@fsight.ru",
+        "online": false,
+        "ringId": "414aef85-a396-446c-b22d-ffafb778e110",
+        "issueRelatedGroup": null,
+        "id": "1-15",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__SLA_40",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "localizedName": null,
+          "name": "Proposed",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "57-2081",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "added": [
+        {
+          "localizedName": null,
+          "name": "Backlog 2ЛП",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "57-2210",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "enum",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-176",
+          "$type": "CustomField"
+        },
+        "id": "45-176",
+        "presentation": "Детализированное состояние",
+        "name": "Детализированное состояние",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-565760",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1592474178284,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Новоселов Евгений Валерьевич",
+        "isLocked": false,
+        "fullName": "Новоселов Евгений Валерьевич",
+        "login": "evgenii.novoselov",
+        "avatarUrl": "/hub/api/rest/avatar/18954bf7-2dd4-4e3f-b05e-9937e0de2bfa?s=48",
+        "email": "evgenii.novoselov@fsight.ru",
+        "online": false,
+        "ringId": "18954bf7-2dd4-4e3f-b05e-9937e0de2bfa",
+        "issueRelatedGroup": null,
+        "id": "1-737",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Состояние в DevOps_176",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "localizedName": null,
+          "name": "Направлена разработчику",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "59-20",
+          "$type": "StateBundleElement"
+        }
+      ],
+      "added": [
+        {
+          "localizedName": "Открыта",
+          "name": "Open",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "59-1",
+          "$type": "StateBundleElement"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "state",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-3",
+          "$type": "CustomField"
+        },
+        "id": "45-3",
+        "presentation": "Состояние",
+        "name": "Состояние",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-565761",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1592474178284,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Новоселов Евгений Валерьевич",
+        "isLocked": false,
+        "fullName": "Новоселов Евгений Валерьевич",
+        "login": "evgenii.novoselov",
+        "avatarUrl": "/hub/api/rest/avatar/18954bf7-2dd4-4e3f-b05e-9937e0de2bfa?s=48",
+        "email": "evgenii.novoselov@fsight.ru",
+        "online": false,
+        "ringId": "18954bf7-2dd4-4e3f-b05e-9937e0de2bfa",
+        "issueRelatedGroup": null,
+        "id": "1-737",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__State_3",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "name": "DevOps Service",
+          "id": "1-578",
+          "$type": "User"
+        }
+      ],
+      "added": [],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "user",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-4",
+          "$type": "CustomField"
+        },
+        "id": "45-4",
+        "presentation": "Исполнитель",
+        "name": "Исполнитель",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-565762",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1592474178284,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Новоселов Евгений Валерьевич",
+        "isLocked": false,
+        "fullName": "Новоселов Евгений Валерьевич",
+        "login": "evgenii.novoselov",
+        "avatarUrl": "/hub/api/rest/avatar/18954bf7-2dd4-4e3f-b05e-9937e0de2bfa?s=48",
+        "email": "evgenii.novoselov@fsight.ru",
+        "online": false,
+        "ringId": "18954bf7-2dd4-4e3f-b05e-9937e0de2bfa",
+        "issueRelatedGroup": null,
+        "id": "1-737",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Assignee_4",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "localizedName": null,
+          "name": "Backlog 2ЛП",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "57-2210",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "added": [
+        {
+          "localizedName": null,
+          "name": "На проверке 2ЛП",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "57-2216",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "enum",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-176",
+          "$type": "CustomField"
+        },
+        "id": "45-176",
+        "presentation": "Детализированное состояние",
+        "name": "Детализированное состояние",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-565855",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1592475948156,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Антон Лыков",
+        "isLocked": false,
+        "fullName": "Антон Лыков",
+        "login": "anton.lykov",
+        "avatarUrl": "/hub/api/rest/avatar/d5467b4c-b765-4889-9ab7-49450156509b?s=48",
+        "email": "anton.lykov@fsight.ru",
+        "online": false,
+        "ringId": "d5467b4c-b765-4889-9ab7-49450156509b",
+        "issueRelatedGroup": null,
+        "id": "1-92",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Состояние в DevOps_176",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [],
+      "added": [
+        {
+          "name": "Антон Лыков",
+          "id": "1-92",
+          "$type": "User"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "user",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-4",
+          "$type": "CustomField"
+        },
+        "id": "45-4",
+        "presentation": "Исполнитель",
+        "name": "Исполнитель",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-565856",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1592475948156,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Антон Лыков",
+        "isLocked": false,
+        "fullName": "Антон Лыков",
+        "login": "anton.lykov",
+        "avatarUrl": "/hub/api/rest/avatar/d5467b4c-b765-4889-9ab7-49450156509b?s=48",
+        "email": "anton.lykov@fsight.ru",
+        "online": false,
+        "ringId": "d5467b4c-b765-4889-9ab7-49450156509b",
+        "issueRelatedGroup": null,
+        "id": "1-92",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Assignee_4",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [],
+      "added": [
+        {
+          "name": "9.2.959U11",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "123-746",
+          "$type": "VersionBundleElement"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "version",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-83",
+          "$type": "CustomField"
+        },
+        "id": "45-83",
+        "presentation": "Исправлено в версии",
+        "name": "Исправлено в версии",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-565887",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1592476958074,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Антон Лыков",
+        "isLocked": false,
+        "fullName": "Антон Лыков",
+        "login": "anton.lykov",
+        "avatarUrl": "/hub/api/rest/avatar/d5467b4c-b765-4889-9ab7-49450156509b?s=48",
+        "email": "anton.lykov@fsight.ru",
+        "online": false,
+        "ringId": "d5467b4c-b765-4889-9ab7-49450156509b",
+        "issueRelatedGroup": null,
+        "id": "1-92",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Исправлено в версии_83",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "localizedName": "Открыта",
+          "name": "Open",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "59-1",
+          "$type": "StateBundleElement"
+        }
+      ],
+      "added": [
+        {
+          "localizedName": "В обработке",
+          "name": "In Progress",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "59-2",
+          "$type": "StateBundleElement"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "state",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-3",
+          "$type": "CustomField"
+        },
+        "id": "45-3",
+        "presentation": "Состояние",
+        "name": "Состояние",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-565889",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1592476967138,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Антон Лыков",
+        "isLocked": false,
+        "fullName": "Антон Лыков",
+        "login": "anton.lykov",
+        "avatarUrl": "/hub/api/rest/avatar/d5467b4c-b765-4889-9ab7-49450156509b?s=48",
+        "email": "anton.lykov@fsight.ru",
+        "online": false,
+        "ringId": "d5467b4c-b765-4889-9ab7-49450156509b",
+        "issueRelatedGroup": null,
+        "id": "1-92",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__State_3",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": null,
+      "added": 1593081784575,
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "date and time",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-61",
+          "$type": "CustomField"
+        },
+        "id": "45-61",
+        "presentation": "Плановая дата предоставления ответа",
+        "name": "Плановая дата предоставления ответа",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-565890",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1592476984692,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Антон Лыков",
+        "isLocked": false,
+        "fullName": "Антон Лыков",
+        "login": "anton.lykov",
+        "avatarUrl": "/hub/api/rest/avatar/d5467b4c-b765-4889-9ab7-49450156509b?s=48",
+        "email": "anton.lykov@fsight.ru",
+        "online": false,
+        "ringId": "d5467b4c-b765-4889-9ab7-49450156509b",
+        "issueRelatedGroup": null,
+        "id": "1-92",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Плановая дата предоставления ответа_61",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [],
+      "added": [
+        {
+          "localizedName": null,
+          "name": "Не оценена",
+          "color": {
+            "id": "16",
+            "$type": "FieldStyle"
+          },
+          "id": "57-182",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "enum",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-65",
+          "$type": "CustomField"
+        },
+        "id": "45-65",
+        "presentation": "Оценка",
+        "name": "Оценка",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-565891",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1592476984692,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Антон Лыков",
+        "isLocked": false,
+        "fullName": "Антон Лыков",
+        "login": "anton.lykov",
+        "avatarUrl": "/hub/api/rest/avatar/d5467b4c-b765-4889-9ab7-49450156509b?s=48",
+        "email": "anton.lykov@fsight.ru",
+        "online": false,
+        "ringId": "d5467b4c-b765-4889-9ab7-49450156509b",
+        "issueRelatedGroup": null,
+        "id": "1-92",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Оценка_65",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "localizedName": null,
+          "name": "На проверке 2ЛП",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "57-2216",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "added": [
+        {
+          "localizedName": null,
+          "name": "Ожидает подтверждения",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "57-2091",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "enum",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-176",
+          "$type": "CustomField"
+        },
+        "id": "45-176",
+        "presentation": "Детализированное состояние",
+        "name": "Детализированное состояние",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-565892",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1592476984692,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Антон Лыков",
+        "isLocked": false,
+        "fullName": "Антон Лыков",
+        "login": "anton.lykov",
+        "avatarUrl": "/hub/api/rest/avatar/d5467b4c-b765-4889-9ab7-49450156509b?s=48",
+        "email": "anton.lykov@fsight.ru",
+        "online": false,
+        "ringId": "d5467b4c-b765-4889-9ab7-49450156509b",
+        "issueRelatedGroup": null,
+        "id": "1-92",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Состояние в DevOps_176",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "localizedName": "В обработке",
+          "name": "In Progress",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "59-2",
+          "$type": "StateBundleElement"
+        }
+      ],
+      "added": [
+        {
+          "localizedName": null,
+          "name": "Ожидает подтверждения",
+          "color": {
+            "id": "17",
+            "$type": "FieldStyle"
+          },
+          "id": "59-84",
+          "$type": "StateBundleElement"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "state",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-3",
+          "$type": "CustomField"
+        },
+        "id": "45-3",
+        "presentation": "Состояние",
+        "name": "Состояние",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-565893",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1592476984692,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Антон Лыков",
+        "isLocked": false,
+        "fullName": "Антон Лыков",
+        "login": "anton.lykov",
+        "avatarUrl": "/hub/api/rest/avatar/d5467b4c-b765-4889-9ab7-49450156509b?s=48",
+        "email": "anton.lykov@fsight.ru",
+        "online": false,
+        "ringId": "d5467b4c-b765-4889-9ab7-49450156509b",
+        "issueRelatedGroup": null,
+        "id": "1-92",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__State_3",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": 1589537006464,
+      "added": 1589538146464,
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "date and time",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-60",
+          "$type": "CustomField"
+        },
+        "id": "45-60",
+        "presentation": "Дата решения",
+        "name": "Дата решения",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-565910",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1592478178897,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Иван Чумак",
+        "isLocked": false,
+        "fullName": "Иван Чумак",
+        "login": "Иван_Чумак",
+        "avatarUrl": "/hub/api/rest/avatar/b59f13ff-3e70-4660-913f-6afa569e37e0?s=48",
+        "email": "hello@mnwhl.ru",
+        "online": false,
+        "ringId": "b59f13ff-3e70-4660-913f-6afa569e37e0",
+        "issueRelatedGroup": null,
+        "id": "1-642",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Дата решения_60",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": 1593081784575,
+      "added": null,
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "date and time",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-61",
+          "$type": "CustomField"
+        },
+        "id": "45-61",
+        "presentation": "Плановая дата предоставления ответа",
+        "name": "Плановая дата предоставления ответа",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-565911",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1592478178897,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Иван Чумак",
+        "isLocked": false,
+        "fullName": "Иван Чумак",
+        "login": "Иван_Чумак",
+        "avatarUrl": "/hub/api/rest/avatar/b59f13ff-3e70-4660-913f-6afa569e37e0?s=48",
+        "email": "hello@mnwhl.ru",
+        "online": false,
+        "ringId": "b59f13ff-3e70-4660-913f-6afa569e37e0",
+        "issueRelatedGroup": null,
+        "id": "1-642",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Плановая дата предоставления ответа_61",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "localizedName": null,
+          "name": "Ожидает подтверждения",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "57-2091",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "added": [
+        {
+          "localizedName": null,
+          "name": "Backlog 2ЛП",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "57-2210",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "enum",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-176",
+          "$type": "CustomField"
+        },
+        "id": "45-176",
+        "presentation": "Детализированное состояние",
+        "name": "Детализированное состояние",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-565912",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1592478178897,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Иван Чумак",
+        "isLocked": false,
+        "fullName": "Иван Чумак",
+        "login": "Иван_Чумак",
+        "avatarUrl": "/hub/api/rest/avatar/b59f13ff-3e70-4660-913f-6afa569e37e0?s=48",
+        "email": "hello@mnwhl.ru",
+        "online": false,
+        "ringId": "b59f13ff-3e70-4660-913f-6afa569e37e0",
+        "issueRelatedGroup": null,
+        "id": "1-642",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Состояние в DevOps_176",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "localizedName": null,
+          "name": "Ожидает подтверждения",
+          "color": {
+            "id": "17",
+            "$type": "FieldStyle"
+          },
+          "id": "59-84",
+          "$type": "StateBundleElement"
+        }
+      ],
+      "added": [
+        {
+          "localizedName": "Открыта",
+          "name": "Open",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "59-1",
+          "$type": "StateBundleElement"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "state",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-3",
+          "$type": "CustomField"
+        },
+        "id": "45-3",
+        "presentation": "Состояние",
+        "name": "Состояние",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-565913",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1592478178897,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Иван Чумак",
+        "isLocked": false,
+        "fullName": "Иван Чумак",
+        "login": "Иван_Чумак",
+        "avatarUrl": "/hub/api/rest/avatar/b59f13ff-3e70-4660-913f-6afa569e37e0?s=48",
+        "email": "hello@mnwhl.ru",
+        "online": false,
+        "ringId": "b59f13ff-3e70-4660-913f-6afa569e37e0",
+        "issueRelatedGroup": null,
+        "id": "1-642",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__State_3",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "localizedName": null,
+          "name": "Не оценена",
+          "color": {
+            "id": "16",
+            "$type": "FieldStyle"
+          },
+          "id": "57-182",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "added": [],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "enum",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-65",
+          "$type": "CustomField"
+        },
+        "id": "45-65",
+        "presentation": "Оценка",
+        "name": "Оценка",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-565914",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1592478178897,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Иван Чумак",
+        "isLocked": false,
+        "fullName": "Иван Чумак",
+        "login": "Иван_Чумак",
+        "avatarUrl": "/hub/api/rest/avatar/b59f13ff-3e70-4660-913f-6afa569e37e0?s=48",
+        "email": "hello@mnwhl.ru",
+        "online": false,
+        "ringId": "b59f13ff-3e70-4660-913f-6afa569e37e0",
+        "issueRelatedGroup": null,
+        "id": "1-642",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Оценка_65",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "name": "Антон Лыков",
+          "id": "1-92",
+          "$type": "User"
+        }
+      ],
+      "added": [],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "user",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-4",
+          "$type": "CustomField"
+        },
+        "id": "45-4",
+        "presentation": "Исполнитель",
+        "name": "Исполнитель",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-565915",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1592478178897,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Иван Чумак",
+        "isLocked": false,
+        "fullName": "Иван Чумак",
+        "login": "Иван_Чумак",
+        "avatarUrl": "/hub/api/rest/avatar/b59f13ff-3e70-4660-913f-6afa569e37e0?s=48",
+        "email": "hello@mnwhl.ru",
+        "online": false,
+        "ringId": "b59f13ff-3e70-4660-913f-6afa569e37e0",
+        "issueRelatedGroup": null,
+        "id": "1-642",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Assignee_4",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "localizedName": "Открыта",
+          "name": "Open",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "59-1",
+          "$type": "StateBundleElement"
+        }
+      ],
+      "added": [
+        {
+          "localizedName": "В обработке",
+          "name": "In Progress",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "59-2",
+          "$type": "StateBundleElement"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "state",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-3",
+          "$type": "CustomField"
+        },
+        "id": "45-3",
+        "presentation": "Состояние",
+        "name": "Состояние",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-566035",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1592480897229,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Антон Лыков",
+        "isLocked": false,
+        "fullName": "Антон Лыков",
+        "login": "anton.lykov",
+        "avatarUrl": "/hub/api/rest/avatar/d5467b4c-b765-4889-9ab7-49450156509b?s=48",
+        "email": "anton.lykov@fsight.ru",
+        "online": false,
+        "ringId": "d5467b4c-b765-4889-9ab7-49450156509b",
+        "issueRelatedGroup": null,
+        "id": "1-92",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__State_3",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "localizedName": "В обработке",
+          "name": "In Progress",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "59-2",
+          "$type": "StateBundleElement"
+        }
+      ],
+      "added": [
+        {
+          "localizedName": null,
+          "name": "Направлена разработчику",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "59-20",
+          "$type": "StateBundleElement"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "state",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-3",
+          "$type": "CustomField"
+        },
+        "id": "45-3",
+        "presentation": "Состояние",
+        "name": "Состояние",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-566036",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1592480899749,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Антон Лыков",
+        "isLocked": false,
+        "fullName": "Антон Лыков",
+        "login": "anton.lykov",
+        "avatarUrl": "/hub/api/rest/avatar/d5467b4c-b765-4889-9ab7-49450156509b?s=48",
+        "email": "anton.lykov@fsight.ru",
+        "online": false,
+        "ringId": "d5467b4c-b765-4889-9ab7-49450156509b",
+        "issueRelatedGroup": null,
+        "id": "1-92",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__State_3",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "localizedName": null,
+          "name": "Backlog 2ЛП",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "57-2210",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "added": [
+        {
+          "localizedName": null,
+          "name": "Proposed",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "57-2081",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "enum",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-176",
+          "$type": "CustomField"
+        },
+        "id": "45-176",
+        "presentation": "Детализированное состояние",
+        "name": "Детализированное состояние",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-566037",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1592480903512,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Антон Лыков",
+        "isLocked": false,
+        "fullName": "Антон Лыков",
+        "login": "anton.lykov",
+        "avatarUrl": "/hub/api/rest/avatar/d5467b4c-b765-4889-9ab7-49450156509b?s=48",
+        "email": "anton.lykov@fsight.ru",
+        "online": false,
+        "ringId": "d5467b4c-b765-4889-9ab7-49450156509b",
+        "issueRelatedGroup": null,
+        "id": "1-92",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Состояние в DevOps_176",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [],
+      "added": [
+        {
+          "name": "Антон Лыков",
+          "id": "1-92",
+          "$type": "User"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "user",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-4",
+          "$type": "CustomField"
+        },
+        "id": "45-4",
+        "presentation": "Исполнитель",
+        "name": "Исполнитель",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-566038",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1592480903512,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Антон Лыков",
+        "isLocked": false,
+        "fullName": "Антон Лыков",
+        "login": "anton.lykov",
+        "avatarUrl": "/hub/api/rest/avatar/d5467b4c-b765-4889-9ab7-49450156509b?s=48",
+        "email": "anton.lykov@fsight.ru",
+        "online": false,
+        "ringId": "d5467b4c-b765-4889-9ab7-49450156509b",
+        "issueRelatedGroup": null,
+        "id": "1-92",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Assignee_4",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "name": "Антон Лыков",
+          "id": "1-92",
+          "$type": "User"
+        }
+      ],
+      "added": [],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "user",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-4",
+          "$type": "CustomField"
+        },
+        "id": "45-4",
+        "presentation": "Исполнитель",
+        "name": "Исполнитель",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-566039",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1592480905866,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Антон Лыков",
+        "isLocked": false,
+        "fullName": "Антон Лыков",
+        "login": "anton.lykov",
+        "avatarUrl": "/hub/api/rest/avatar/d5467b4c-b765-4889-9ab7-49450156509b?s=48",
+        "email": "anton.lykov@fsight.ru",
+        "online": false,
+        "ringId": "d5467b4c-b765-4889-9ab7-49450156509b",
+        "issueRelatedGroup": null,
+        "id": "1-92",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Assignee_4",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "name": "9.2.959U11",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "123-746",
+          "$type": "VersionBundleElement"
+        }
+      ],
+      "added": [],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "version",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-83",
+          "$type": "CustomField"
+        },
+        "id": "45-83",
+        "presentation": "Исправлено в версии",
+        "name": "Исправлено в версии",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-566040",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1592480908588,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Антон Лыков",
+        "isLocked": false,
+        "fullName": "Антон Лыков",
+        "login": "anton.lykov",
+        "avatarUrl": "/hub/api/rest/avatar/d5467b4c-b765-4889-9ab7-49450156509b?s=48",
+        "email": "anton.lykov@fsight.ru",
+        "online": false,
+        "ringId": "d5467b4c-b765-4889-9ab7-49450156509b",
+        "issueRelatedGroup": null,
+        "id": "1-92",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Исправлено в версии_83",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "localizedName": null,
+          "name": "Proposed",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "57-2081",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "added": [
+        {
+          "localizedName": null,
+          "name": "Active",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "57-2080",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "enum",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-176",
+          "$type": "CustomField"
+        },
+        "id": "45-176",
+        "presentation": "Детализированное состояние",
+        "name": "Детализированное состояние",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-596713",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1596536638787,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "DevOps Service",
+        "isLocked": false,
+        "fullName": "DevOps Service",
+        "login": "DevOps_Service",
+        "avatarUrl": "/hub/api/rest/avatar/0ee7c10b-deae-41ba-a536-151a800ac362?s=48",
+        "email": "dmitriy.khlopin@fsight.ru1",
+        "online": false,
+        "ringId": "0ee7c10b-deae-41ba-a536-151a800ac362",
+        "issueRelatedGroup": null,
+        "id": "1-578",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Состояние в DevOps_176",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "localizedName": null,
+          "name": "Active",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "57-2080",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "added": [
+        {
+          "localizedName": null,
+          "name": "Backlog 2ЛП",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "57-2210",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "enum",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-176",
+          "$type": "CustomField"
+        },
+        "id": "45-176",
+        "presentation": "Детализированное состояние",
+        "name": "Детализированное состояние",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-597394",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1596612586792,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Новоселов Евгений Валерьевич",
+        "isLocked": false,
+        "fullName": "Новоселов Евгений Валерьевич",
+        "login": "evgenii.novoselov",
+        "avatarUrl": "/hub/api/rest/avatar/18954bf7-2dd4-4e3f-b05e-9937e0de2bfa?s=48",
+        "email": "evgenii.novoselov@fsight.ru",
+        "online": false,
+        "ringId": "18954bf7-2dd4-4e3f-b05e-9937e0de2bfa",
+        "issueRelatedGroup": null,
+        "id": "1-737",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Состояние в DevOps_176",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "localizedName": null,
+          "name": "Направлена разработчику",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "59-20",
+          "$type": "StateBundleElement"
+        }
+      ],
+      "added": [
+        {
+          "localizedName": "Открыта",
+          "name": "Open",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "59-1",
+          "$type": "StateBundleElement"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "state",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-3",
+          "$type": "CustomField"
+        },
+        "id": "45-3",
+        "presentation": "Состояние",
+        "name": "Состояние",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-597395",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1596612586792,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Новоселов Евгений Валерьевич",
+        "isLocked": false,
+        "fullName": "Новоселов Евгений Валерьевич",
+        "login": "evgenii.novoselov",
+        "avatarUrl": "/hub/api/rest/avatar/18954bf7-2dd4-4e3f-b05e-9937e0de2bfa?s=48",
+        "email": "evgenii.novoselov@fsight.ru",
+        "online": false,
+        "ringId": "18954bf7-2dd4-4e3f-b05e-9937e0de2bfa",
+        "issueRelatedGroup": null,
+        "id": "1-737",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__State_3",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "localizedName": null,
+          "name": "Backlog 2ЛП",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "57-2210",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "added": [
+        {
+          "localizedName": null,
+          "name": "Proposed",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "57-2081",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "enum",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-176",
+          "$type": "CustomField"
+        },
+        "id": "45-176",
+        "presentation": "Детализированное состояние",
+        "name": "Детализированное состояние",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-597575",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1596625087573,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "DevOps Service",
+        "isLocked": false,
+        "fullName": "DevOps Service",
+        "login": "DevOps_Service",
+        "avatarUrl": "/hub/api/rest/avatar/0ee7c10b-deae-41ba-a536-151a800ac362?s=48",
+        "email": "dmitriy.khlopin@fsight.ru1",
+        "online": false,
+        "ringId": "0ee7c10b-deae-41ba-a536-151a800ac362",
+        "issueRelatedGroup": null,
+        "id": "1-578",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Состояние в DevOps_176",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [],
+      "added": [
+        {
+          "name": "Sprint 31",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "123-771",
+          "$type": "VersionBundleElement"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "version",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-168",
+          "$type": "CustomField"
+        },
+        "id": "45-168",
+        "presentation": "Sprints",
+        "name": "Sprints",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-616193",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1599036107579,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Артём Мальцев",
+        "isLocked": false,
+        "fullName": "Артём Мальцев",
+        "login": "Артём_Мальцев",
+        "avatarUrl": "/hub/api/rest/avatar/49f58b96-54b9-4808-8c38-c0cf5e899bdc?s=48&etag=%3DMjUtMTQxNw%3D%3D",
+        "email": "artem.maltsev@fsight.ru",
+        "online": false,
+        "ringId": "49f58b96-54b9-4808-8c38-c0cf5e899bdc",
+        "issueRelatedGroup": null,
+        "id": "1-16",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Sprints_168",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [],
+      "added": [
+        {
+          "localizedName": null,
+          "name": "11",
+          "color": {
+            "id": "30",
+            "$type": "FieldStyle"
+          },
+          "id": "57-2418",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "enum",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-178",
+          "$type": "CustomField"
+        },
+        "id": "45-178",
+        "presentation": "Проектный приоритет",
+        "name": "Проектный приоритет",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-625204",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1600086422896,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "YouTrack",
+        "isLocked": true,
+        "fullName": "YouTrack",
+        "login": "custom_fields_user_1915601822",
+        "avatarUrl": "/hub/api/rest/avatar/default?s=48",
+        "email": null,
+        "online": false,
+        "ringId": null,
+        "issueRelatedGroup": null,
+        "id": "211-0",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Проектный приоритет_178",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "localizedName": null,
+          "name": "11",
+          "color": {
+            "id": "30",
+            "$type": "FieldStyle"
+          },
+          "id": "57-2418",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "added": [
+        {
+          "localizedName": null,
+          "name": "5",
+          "color": {
+            "id": "13",
+            "$type": "FieldStyle"
+          },
+          "id": "57-2412",
+          "$type": "EnumBundleElement"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "enum",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-178",
+          "$type": "CustomField"
+        },
+        "id": "45-178",
+        "presentation": "Проектный приоритет",
+        "name": "Проектный приоритет",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-627992",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1600087970110,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Дмитрий Хлопин",
+        "isLocked": false,
+        "fullName": "Дмитрий Хлопин",
+        "login": "Дмитрий_Хлопин",
+        "avatarUrl": "/hub/api/rest/avatar/a8682dd5-75e4-4153-bc6d-5830c291ab25?s=48&etag=%3DMjUtMTQwOQ%3D%3D",
+        "email": "dmitriy.khlopin@fsight.ru",
+        "online": false,
+        "ringId": "a8682dd5-75e4-4153-bc6d-5830c291ab25",
+        "issueRelatedGroup": null,
+        "id": "1-18",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Проектный приоритет_178",
+      "$type": "CustomFieldActivityItem"
+    },
+    {
+      "removed": [
+        {
+          "name": "Sprint 31",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "123-771",
+          "$type": "VersionBundleElement"
+        }
+      ],
+      "added": [
+        {
+          "name": "Sprint 33",
+          "color": {
+            "id": "0",
+            "$type": "FieldStyle"
+          },
+          "id": "123-773",
+          "$type": "VersionBundleElement"
+        }
+      ],
+      "field": {
+        "customField": {
+          "fieldType": {
+            "valueType": "version",
+            "isMultiValue": false,
+            "$type": "FieldType"
+          },
+          "id": "45-168",
+          "$type": "CustomField"
+        },
+        "id": "45-168",
+        "presentation": "Sprints",
+        "name": "Sprints",
+        "$type": "CustomFilterField"
+      },
+      "id": "0-0.91-633524",
+      "target": {
+        "created": 1589537006464,
+        "usesMarkdown": true,
+        "id": "2-39209",
+        "$type": "Issue"
+      },
+      "timestamp": 1600672174227,
+      "category": {
+        "id": "CustomFieldCategory",
+        "$type": "ActivityCategory"
+      },
+      "author": {
+        "name": "Артём Мальцев",
+        "isLocked": false,
+        "fullName": "Артём Мальцев",
+        "login": "Артём_Мальцев",
+        "avatarUrl": "/hub/api/rest/avatar/49f58b96-54b9-4808-8c38-c0cf5e899bdc?s=48&etag=%3DMjUtMTQxNw%3D%3D",
+        "email": "artem.maltsev@fsight.ru",
+        "online": false,
+        "ringId": "49f58b96-54b9-4808-8c38-c0cf5e899bdc",
+        "issueRelatedGroup": null,
+        "id": "1-16",
+        "$type": "User"
+      },
+      "targetMember": "__CUSTOM_FIELD__Sprints_168",
+      "$type": "CustomFieldActivityItem"
+    }
+  ],
+  "hasAfter": false,
+  "reverse": false,
+  "$type": "ActivityCursorPage"
+}

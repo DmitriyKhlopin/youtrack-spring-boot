@@ -9,6 +9,7 @@ import fsight.youtrack.db.IPGProvider
 import fsight.youtrack.etl.issues.IIssue
 import fsight.youtrack.generated.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALUES
 import fsight.youtrack.generated.jooq.tables.Hooks.HOOKS
+import fsight.youtrack.generated.jooq.tables.records.CustomFieldValuesRecord
 import fsight.youtrack.mail.IMailSender
 import fsight.youtrack.models.DevOpsWorkItem
 import fsight.youtrack.models.hooks.Hook
@@ -117,6 +118,7 @@ class TFSHooks(
             * На основании всех issue получаем все привязанные к ним баги
             * */
             val linkedWIIds = actualIssues.getBugsAndFeatures()
+
             /*
             * Выходим, если нет багов и фич
             * */
@@ -236,10 +238,12 @@ class TFSHooks(
 
     override fun getIssuesByWIId(id: Int): List<String> {
         return dsl
-            .select(CUSTOM_FIELD_VALUES.ISSUE_ID)
+            .select(CUSTOM_FIELD_VALUES.ISSUE_ID, CUSTOM_FIELD_VALUES.FIELD_VALUE)
             .from(CUSTOM_FIELD_VALUES)
             .where(CUSTOM_FIELD_VALUES.FIELD_NAME.`in`(listOf("Issue", "Requirement")).and(CUSTOM_FIELD_VALUES.FIELD_VALUE.like("%%$id%%")))
-            .fetchInto(String::class.java)
+            .fetchInto(CustomFieldValuesRecord::class.java)
+            .filter { it.fieldValue.replace(" ", "").splitToList().contains(id.toString()) }
+            .map { it.issueId }
     }
 
     override fun getInferredState(bugStates: List<DevOpsWorkItem>): String {

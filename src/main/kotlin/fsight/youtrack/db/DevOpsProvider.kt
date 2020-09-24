@@ -11,17 +11,20 @@ import org.springframework.stereotype.Service
 
 @Service
 class DevOpsProvider(@Qualifier("tfsDataSource") private val ms: Database) : IDevOpsProvider {
-    override fun getPendingFeatures(): List<DevOpsFeature> {
+    override fun getFeaturesByPlanningBoardStates(states: List<String>): List<DevOpsFeature> {
         val fields = listOf(
             "System_Id",
             "Microsoft_VSTS_Common_Priority",
             "System_CreatedDate",
             "System_ChangedDate",
             "System_AssignedTo",
-            "System_Title"
+            "System_Title",
+            "System_CreatedBy"
         )
         val statement =
-            "select ${fields.joinToString(separator = ",")} from CurrentWorkItemView where TeamProjectCollectionSK = 37 and System_WorkItemType = 'Feature' and AreaPath = '\\AP\\Technical Support' and System_BoardColumn = 'На рассмотрении РО'"
+            "select ${fields.joinToString(separator = ",")} from CurrentWorkItemView where TeamProjectCollectionSK = 37 and System_WorkItemType = 'Feature' and AreaPath = '\\AP\\Technical Support' and System_BoardColumn in (${
+                states.joinToString(separator = ",") { "'$it'" }
+            })"
         return statement.execAndMap(ms) { ExposedTransformations().toDevOpsFeature(it) }
     }
 

@@ -20,13 +20,13 @@ class HtmlBuilder : IHtmlBuilder {
             ${agent}, добрый день.<br>
             Просьба оценить внешние фичи, находящиеся на <a href='https://tfsprod.fsight.ru/Foresight/AP/_boards/board/t/Technical%20Support%20Team/Features'>доске</a>.<br><br>
             <table border="1">
-                <thead><tr><th><p>ID</p></th><th><p>Задача</p></th><th><p>Проект</p></th><th><p>Приоритет</p></th><th><p>Дата создания</p></th><th><p>Дата изменения</p></th></tr></thead>
+                <thead><tr><th><p>#</p></th><th><p>ID</p></th><th><p>Задача</p></th><th><p>Проект</p></th><th><p>Приоритет</p></th><th><p>Дата создания</p></th><th><p>Дата изменения</p></th></tr></thead>
                 <tbody>$tableBody</tbody>
             </table>
         """.trimIndent()
         return """
             <html>
-                    ${getHead(2, 50)}
+                    ${getHead(3, 50)}
                         <body>
                             $body                                           
                         </body>

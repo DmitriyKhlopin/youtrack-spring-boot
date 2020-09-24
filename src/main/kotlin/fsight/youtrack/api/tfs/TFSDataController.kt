@@ -114,6 +114,11 @@ class TFSDataController(private val dataService: ITFSData, private val hooksServ
         return hooksService.postCommand(id, "Состояние Открыта")
     }
 
+    @GetMapping("/api/tfs/serviceHooks/issues/{id}")
+    fun getIssuesByWiId(@PathVariable("id") id: String? = null): List<String> {
+        return hooksService.getIssuesByWIId(id?.toInt() ?: 0)
+    }
+
     @GetMapping("/api/tfs/revision")
     fun startRevision(
         @RequestParam("stage", required = false) stage: Int? = null,

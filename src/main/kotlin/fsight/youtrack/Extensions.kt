@@ -66,8 +66,22 @@ fun List<DevOpsWorkItem>.getSprints(): List<String> = this.map { it.sprint.subst
 fun List<DevOpsWorkItem>.getLastSprint(): String? {
     var sprint: String? = null
     try {
-        sprint = this.filter { it.state !in listOf("Closed") }.map { it.sprint.substringAfterLast("\\") }.filterNot { it.contains("FY") }
-            .maxBy { if (it == "Backlog") Int.MAX_VALUE else it.substringAfterLast(" ").toInt() }
+        val hasFy = this.filter { it.state !in listOf("Closed") }.map { it.sprint.substringAfterLast("\\") }.any { it.contains("FY") }
+        sprint = if (hasFy) {
+            this.filter { it.state !in listOf("Closed") }.map { it.sprint.substringAfterLast("\\") }.filter { it.contains("FY") || it == "Backlog" }
+                .maxBy {
+                    if (it == "Backlog") {
+                        Int.MAX_VALUE
+                    } else {
+                        val re = Regex("[^0-9]")
+                        val d = re.replace(it, "").toInt()
+                        10 * (d % (d / 100)) + (d / 100)
+                    }
+                }
+        } else {
+            this.filter { it.state !in listOf("Closed") }.map { it.sprint.substringAfterLast("\\") }.filterNot { it.contains("FY") }
+                .maxBy { if (it == "Backlog") Int.MAX_VALUE else it.substringAfterLast(" ").toInt() }
+        }
     } catch (e: Exception) {
 
     }
@@ -262,13 +276,15 @@ class ExposedTransformations {
 
     val toDevOpsFeature: (ResultSet) -> DevOpsFeature = { rs ->
         DevOpsFeature(
+            ord = 0,
             id = rs.getString("System_Id").toInt(),
             priority = rs.getString("Microsoft_VSTS_Common_Priority").toInt(),
             createdDate = rs.getTimestamp("System_CreatedDate"),
             updatedDate = rs.getTimestamp("System_ChangedDate"),
             assignee = rs.getString("System_AssignedTo"),
             title = rs.getString("System_Title"),
-            project = ""
+            project = "",
+            author = rs.getString("System_CreatedBy")
         )
     }
 

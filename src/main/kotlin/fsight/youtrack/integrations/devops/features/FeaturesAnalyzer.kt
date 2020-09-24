@@ -26,12 +26,46 @@ class FeaturesAnalyzer : IFeaturesAnalyzer {
     lateinit var pg: IPGProvider
 
     override fun analyze(): Any {
-        val i = ms.getPendingFeatures()
+        analyzePendingFeatures()
+        analyzeRejectedFeatures()
+        return ""
+    }
+
+    override fun analyzePendingFeatures(): Any {
+        val i = ms.getFeaturesByPlanningBoardStates(listOf("На рассмотрении РО"))
         val fieldIds = listOf(10320)
         val columns = listOf("Id", "FieldId", "IntValue", "FloatValue", "DateTimeValue", "StringValue")
         val assignees = pg.getDevOpsAssignees()
         val j = ms.getCustomFieldsValues(i.map { it.id }, fieldIds, columns)
-        j.forEach { println(it) }
+        i.forEach { f -> f.project = j.firstOrNull { e -> e.id == f.id && e.fieldId == 10320 }?.string ?: "" }
+        i.groupBy { it.assignee }
+            .map {
+                it.key to it.value
+                    .sortedBy { j -> j.priority }
+                    .mapIndexed { index, devOpsFeature ->
+                        devOpsFeature.ord = index + 1
+                        devOpsFeature
+                    }
+                    .joinToString("") { i -> i.toTableRow() }
+            }
+            .forEach { m ->
+                mailSender.sendHtmlMessage(
+                    assignees.firstOrNull { a -> a.fullName.contains(m.first) }?.email ?: TEST_MAIL_RECEIVER,
+                    CC.splitToList(delimiters = ",").toTypedArray(),
+                    "Оценка внешних запросов на доработку",
+                    htmlBuilder.createFeaturesMessage(m.first, m.second)
+                )
+            }
+        return ""
+    }
+
+    override fun analyzeRejectedFeatures(): Any {
+        val i = ms.getFeaturesByPlanningBoardStates(listOf("Отклонено", "На уточнении"))
+        val fieldIds = listOf(10320)
+        val columns = listOf("Id", "FieldId", "IntValue", "FloatValue", "DateTimeValue", "StringValue")
+        val assignees = pg.getDevOpsAssignees()
+        val j = ms.getCustomFieldsValues(i.map { it.id }, fieldIds, columns)
+        /*j.forEach { println(it) }
         i.forEach { f -> f.project = j.firstOrNull { e -> e.id == f.id && e.fieldId == 10320 }?.string ?: "" }
         i.groupBy { it.assignee }
             .map { it.key to it.value.sortedBy { j -> j.priority }.joinToString("") { i -> i.toTableRow() } }
@@ -42,7 +76,7 @@ class FeaturesAnalyzer : IFeaturesAnalyzer {
                     "Оценка внешних запросов на доработку",
                     htmlBuilder.createFeaturesMessage(m.first, m.second)
                 )
-            }
+            }*/
         return ""
     }
 }
