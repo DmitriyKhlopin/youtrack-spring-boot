@@ -135,6 +135,7 @@ class TFSHooks(
             /*
             * Для каждого issue получаем выведенное состояние и отправляем команды в YT на его основании
             * */
+            val cases = arrayListOf<Pair<String, Int>>()
             actualIssues.forEach { ai ->
                 fieldState = null
                 fieldDetailedState = null
@@ -151,8 +152,13 @@ class TFSHooks(
                 val issueDetailedState = ai.unwrapFieldValue("Детализированное состояние")
                 val sprint = wi.getLastSprint()
                 when {
+                    body.sprintHasChanged() /*&& ai.idReadable?.contains("SA-") == true*/ && (sprint == "Backlog" || sprint == null) -> {
+                        cases.add(Pair(ai.idReadable ?: "", 1))
+                        val s = postCommand(ai.idReadable, "Sprints $sprint Детализированное состояние Backlog").body.toString()
+                        pg.saveHookToDatabase(body, s, "Backlog", null, null)
+                    }
                     body.sprintHasChanged() /*&& ai.idReadable?.contains("SA-") == true*/ && sprint != null -> {
-                        wi.getLastSprint()
+                        cases.add(Pair(ai.idReadable ?: "", 2))
                         val s = postCommand(ai.idReadable, "Sprints $sprint").body.toString()
                         pg.saveHookToDatabase(body, s, null, null, null)
                     }
@@ -167,13 +173,16 @@ class TFSHooks(
                     body.isFeature()
                             && body.isFieldChanged("System.BoardColumn")
                             && body.newFieldValue("System.BoardColumn") in listOf("На уточнении", "Отклонено") -> {
+                        cases.add(Pair(ai.idReadable ?: "", 3))
                         fieldState = postCommand(ai.idReadable, "Состояние Открыта").body.toString()
                         fieldDetailedState = postCommand(ai.idReadable, "Детализированное состояние Backlog 2ЛП").body.toString()
                     }
                     issueState in listOf("Ожидает ответа", "Ожидает подтверждения", "Incomplete", "Подтверждена", "Без подтверждения") -> {
+                        cases.add(Pair(ai.idReadable ?: "", 4))
                         errorMessage = "Нельзя применить изменения к issue в состоянии $issueState"
                     }
                     issueDetailedState in listOf("Ожидает сборку") -> {
+                        cases.add(Pair(ai.idReadable ?: "", 5))
                         errorMessage = "Нельзя применить изменения к issue в детализированном состоянии $issueDetailedState"
                     }
                     /*
@@ -184,6 +193,7 @@ class TFSHooks(
                             && body.getFieldValue("Microsoft.VSTS.Common.ResolvedReason") in listOf("Fixed", "Verified")
 
                     -> {
+                        cases.add(Pair(ai.idReadable ?: "", 6))
                         fieldState = postCommand(ai.idReadable, "Состояние Открыта").body.toString()
                         fieldDetailedState = postCommand(ai.idReadable, "Детализированное состояние Backlog проверки").body.toString()
                     }
@@ -193,6 +203,7 @@ class TFSHooks(
                     inferredState in arrayOf("Closed", "Resolved") && body.isFieldChanged("System.State")
                             && body.getFieldValue("Microsoft.VSTS.Common.ResolvedReason") == "Rejected"
                     -> {
+                        cases.add(Pair(ai.idReadable ?: "", 7))
                         fieldState = postCommand(ai.idReadable, "Состояние Открыта").body.toString()
                         fieldDetailedState = postCommand(ai.idReadable, "Детализированное состояние Backlog 2ЛП").body.toString()
                     }
@@ -203,8 +214,10 @@ class TFSHooks(
                     * */
                     body.isFieldChanged("System.State")
                             && inferredState in arrayOf("Closed", "Proposed", "Resolved")
-                            && body.getFieldValue("Microsoft.VSTS.Common.ResolvedReason") in listOf("Rejected", "As Designed", "Cannot Reproduce")
+                            && (body.getFieldValue("Microsoft.VSTS.Common.ResolvedReason") in listOf("Rejected", "As Designed", "Cannot Reproduce") ||
+                            body.getFieldValue("System.Reason") in listOf("Rejected", "As Designed", "Cannot Reproduce"))
                     -> {
+                        cases.add(Pair(ai.idReadable ?: "", 8))
                         fieldState = postCommand(ai.idReadable, "Состояние Открыта").body.toString()
                         fieldDetailedState = postCommand(ai.idReadable, "Детализированное состояние $inferredState").body.toString()
                     }
@@ -213,6 +226,7 @@ class TFSHooks(
                     * */
                     body.isFieldChanged("System.State") && inferredState in arrayOf("Closed", "Proposed", "Resolved") -> {
                         /*fieldState = postCommand(ai.idReadable, "Состояние Открыта").body.toString()*/
+                        cases.add(Pair(ai.idReadable ?: "", 9))
                         fieldDetailedState = postCommand(ai.idReadable, "Детализированное состояние $inferredState").body.toString()
                     }
                     /*
@@ -221,6 +235,7 @@ class TFSHooks(
                     inferredState !in arrayOf("Closed", "Resolved") && !body.wasExcludedFromSprint()
                             && ((body.isFieldChanged("System.State") || body.isFieldChanged("System.IterationPath")))
                     -> {
+                        cases.add(Pair(ai.idReadable ?: "", 10))
                         fieldDetailedState = postCommand(ai.idReadable, "Детализированное состояние $inferredState").body.toString()
                     }
                 }
@@ -229,7 +244,7 @@ class TFSHooks(
                  * */
                 pg.saveHookToDatabase(body, fieldState, fieldDetailedState, errorMessage, inferredState)
             }
-            ResponseEntity.status(HttpStatus.CREATED).body(null)
+            ResponseEntity.status(HttpStatus.CREATED).body(cases)
         } catch (e: Error) {
             mailSender.sendHtmlMessage(TEST_MAIL_RECEIVER, null, "Ошибка при обработке хука", e.localizedMessage)
             ResponseEntity.status(HttpStatus.CREATED).body(pg.saveHookToDatabase(body, null, null, e.localizedMessage, null))
