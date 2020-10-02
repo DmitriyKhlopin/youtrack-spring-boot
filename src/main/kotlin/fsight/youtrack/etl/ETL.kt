@@ -12,6 +12,8 @@ import fsight.youtrack.models.youtrack.Issue
 import fsight.youtrack.printlnIf
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.*
 
 @Service
@@ -36,8 +38,14 @@ class ETL(
             ids.size
         } else 0
 
-        if (time.get(Calendar.MINUTE) == 0 &&time.get(Calendar.HOUR_OF_DAY) in (5..23)) {
+        if (time.get(Calendar.MINUTE) == 0 && time.get(Calendar.HOUR_OF_DAY) in (5..23)) {
             timeline.launchCalculation()
+        }
+
+        if (time.get(Calendar.MINUTE) == 0 && time.get(Calendar.HOUR_OF_DAY) == 2) {
+            val dateFrom = LocalDateTime.now().minusMonths(2).toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+            val dateTo = LocalDateTime.now().toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+            timeline.launchCalculationForPeriod(dateFrom, dateTo)
         }
 
         if (time.get(Calendar.MINUTE) == 30 && time.get(Calendar.HOUR_OF_DAY) == 0) {
@@ -106,5 +114,11 @@ class ETL(
 
     override fun getTimelineById(idReadable: String): ResponseEntity<Any> {
         return ResponseEntity.ok(timeline.calculateForId(idReadable, 1, 1, true))
+    }
+
+    override fun launchCalculationForPeriod() {
+        val dateFrom = LocalDateTime.now().minusMonths(2).toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+        val dateTo = LocalDateTime.now().toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+        timeline.launchCalculationForPeriod(dateFrom, dateTo)
     }
 }

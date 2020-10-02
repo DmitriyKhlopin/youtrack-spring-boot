@@ -126,7 +126,7 @@ class TFSHooks(
             /*
             * Получаем состояния багов из DevOps и присваиваем порядок каждому состоянию
             * */
-            val devOpsStates = ms.getDevOpsBugsState(linkedWIIds).mergeWithHookData(body, dictionaries.devOpsStates)
+            val devOpsStates = ms.getDevOpsWiState(linkedWIIds).mergeWithHookData(body, dictionaries.devOpsStates)
 
             var fieldState: String? = null
             var fieldDetailedState: String? = null

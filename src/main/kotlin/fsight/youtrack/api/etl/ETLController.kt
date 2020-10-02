@@ -15,6 +15,8 @@ class ETLController {
     @Autowired
     lateinit var etlStateService: IETLState
 
+
+
     @GetMapping("/api/etl")
     fun loadData(
         @RequestParam("dateType", required = false) dateType: String? = "",
@@ -51,5 +53,10 @@ class ETLController {
     @GetMapping("/api/etl/timeline/{id}")
     fun getTimeline(@PathVariable("id") id: String): Any {
         return service.getTimelineById(id)
+    }
+
+    @GetMapping("/api/etl/timeline/period")
+    fun launchCalculationForPeriod(): Any {
+        return service.launchCalculationForPeriod()
     }
 }

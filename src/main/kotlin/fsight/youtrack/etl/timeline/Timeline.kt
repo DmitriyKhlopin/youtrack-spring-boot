@@ -55,7 +55,7 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
         val size = i.size
         i.asSequence().forEachIndexed { index, s ->
             calculateForId(s, index, size, false)
-            print("Calculated timeline for ${index * 100 / size}% of issues\r")
+            println("Calculated timeline for ${index * 100 / size}% of issues")
         }
         updateIssueSpentTime()
     }
@@ -64,8 +64,9 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
         val i: List<String> = dsl
             .select(ISSUES.ID)
             .from(ISSUES)
-            .where(ISSUES.CREATED_DATE.between(dateFrom?.toStartOfDate()).and(dateTo?.toEndOfDate()))
+            .where(ISSUES.UPDATED_DATE.between(dateFrom?.toStartOfDate()).and(dateTo?.toEndOfDate()))
             .and(ISSUES.PROJECT_SHORT_NAME.notIn(listOf("SD", "TC", "SPAM", "PO", "BL")))
+            .orderBy(ISSUES.UPDATED_DATE.asc())
             .fetchInto(String::class.java)
         println("Need to calculate timelines for ${i.size} items.")
         val size = i.size

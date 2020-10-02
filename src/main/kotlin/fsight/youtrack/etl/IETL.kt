@@ -11,4 +11,5 @@ interface IETL {
     fun getIssueById(id: String): Issue
     fun getIssueHistory(idReadable: String)
     fun getTimelineById(idReadable: String): Any
+    fun launchCalculationForPeriod():Any
 }

@@ -7,6 +7,7 @@ import fsight.youtrack.generated.jooq.tables.TimeAccounting.TIME_ACCOUNTING
 import fsight.youtrack.models.FactWorkItem
 import fsight.youtrack.models.TimeAccountingDictionaryItem
 import fsight.youtrack.models.TimeAccountingItem
+import fsight.youtrack.models.isValid
 import fsight.youtrack.toEndOfDate
 import fsight.youtrack.toStartOfDate
 import org.jooq.DSLContext
@@ -204,7 +205,7 @@ class TimeAccounting(private val dsl: DSLContext) : ITimeAccounting {
                     )
             ).fetchInto(Int::class.java).first()
         println(c)
-        if (c != 0) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(JSONObject(mapOf("value" to "Item already exists")))
+        if (c != 0 || !item.isValid()) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(JSONObject(mapOf("value" to "Item already exists")))
 
         val result = dsl.insertInto(DICTIONARY_PROJECT_CUSTOMER_ETS)
             .set(DICTIONARY_PROJECT_CUSTOMER_ETS.PROJ_SHORT_NAME, item.projectShortName)

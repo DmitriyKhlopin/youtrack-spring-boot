@@ -58,7 +58,7 @@ internal class TFSHooksTest {
         assertEquals("Направлена разработчику", actualIssueFieldState, "YT states are not equal")
         if (actualIssueFieldState != "Направлена разработчику") return
         val linkedBugs = if (bugs.isEmpty()) actualIssueState.unwrapFieldValue("Issue").toString().split(",", " ").mapNotNull { it.toIntOrNull() } else bugs
-        val bugStates = ms.getDevOpsBugsState(linkedBugs).map {
+        val bugStates = ms.getDevOpsWiState(linkedBugs).map {
             if (it.systemId == body.resource?.workItemId) {
                 it.state = body.getFieldValue("System.State").toString()
                 it.sprint = body.getFieldValue("System.IterationPath").toString()
@@ -100,7 +100,7 @@ internal class TFSHooksTest {
         assertEquals("Направлена разработчику", actualIssueFieldState, "YT states are not equal")
         if (actualIssueFieldState != "Направлена разработчику") return
         val linkedBugs = if (bugs.isEmpty()) actualIssueState.unwrapFieldValue("Issue").toString().split(",", " ").mapNotNull { it.toIntOrNull() } else bugs
-        val bugStates = ms.getDevOpsBugsState(linkedBugs).map {
+        val bugStates = ms.getDevOpsWiState(linkedBugs).map {
             if (it.systemId == body.resource?.workItemId) {
                 it.state = body.getFieldValue("System.State").toString()
                 it.sprint = body.getFieldValue("System.IterationPath").toString()
@@ -143,7 +143,7 @@ internal class TFSHooksTest {
         assertEquals("Направлена разработчику", actualIssueFieldState, "YT states are not equal")
         if (actualIssueFieldState != "Направлена разработчику") return
         val linkedBugs = if (bugs.isEmpty()) actualIssueState.unwrapFieldValue("Issue").toString().split(",", " ").mapNotNull { it.toIntOrNull() } else bugs
-        val bugStates = ms.getDevOpsBugsState(linkedBugs).mergeWithHookData(body, dictionaryService.devOpsStates)
+        val bugStates = ms.getDevOpsWiState(linkedBugs).mergeWithHookData(body, dictionaryService.devOpsStates)
         val inferredState = hooksService.getInferredState(bugStates)
         assertEquals("Resolved", inferredState)
     }
@@ -175,7 +175,7 @@ internal class TFSHooksTest {
         val file: File = ResourceUtils.getFile("classpath:test/hooks/wiType.json")
         assert(file.exists())
         val hook: Hook = Gson().fromJson(String(file.readBytes()), object : TypeToken<Hook>() {}.type)
-        val a = ms.getDevOpsBugsState(actualIssues.getBugsAndFeatures()).mergeWithHookData(hook, dictionaryService.devOpsStates)
+        val a = ms.getDevOpsWiState(actualIssues.getBugsAndFeatures()).mergeWithHookData(hook, dictionaryService.devOpsStates)
         a.forEach { println(it) }
         assertEquals(3, a.size, "Wrong number of work items")
     }
@@ -197,7 +197,7 @@ internal class TFSHooksTest {
     fun getInferredState() {
         val ids = listOf(22132, 25601, 25600, 59612, 60280, 67174, 44249)
         val hooksService = TFSHooks(db)
-        val r = ms.getDevOpsBugsState(ids)
+        val r = ms.getDevOpsWiState(ids)
         r.getSprints().forEach { println(it) }
         println("Last = ${r.getLastSprint()}")
     }

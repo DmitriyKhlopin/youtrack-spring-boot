@@ -3,12 +3,16 @@ package fsight.youtrack.api.charts
 import com.google.gson.GsonBuilder
 import fsight.youtrack.*
 import fsight.youtrack.api.dictionaries.IDictionary
+import fsight.youtrack.generated.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALUES
 import fsight.youtrack.generated.jooq.tables.Dynamics.DYNAMICS
-import fsight.youtrack.generated.jooq.tables.DynamicsProcessedByDay
 import fsight.youtrack.generated.jooq.tables.DynamicsProcessedByDay.DYNAMICS_PROCESSED_BY_DAY
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
-import fsight.youtrack.models.*
+import fsight.youtrack.models.SigmaIntermediatePower
+import fsight.youtrack.models.SigmaItem
+import fsight.youtrack.models.SigmaResult
+import fsight.youtrack.models.TimeLine
 import fsight.youtrack.models.sql.ValueByDate
+import org.jooq.Condition
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.jooq.impl.DSL.sum
@@ -59,18 +63,22 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
             .fetchInto(TimeLine::class.java)
     }
 
-    override fun getSigmaData(projects: String, dateFrom: String, dateTo: String): SigmaResult {
+    override fun getSigmaData(projects: String, types: String, dateFrom: String, dateTo: String): SigmaResult {
         val filter = if (projects.isEmpty()) {
             dictionariesService.commercialProjects
         } else {
             projects.splitToList()
         }
+        val t = types.splitToList()
+        val typesCondition: Condition = if (types.isEmpty()) DSL.trueCondition() else DSL.and(CUSTOM_FIELD_VALUES.FIELD_VALUE.`in`(t))
         val items: List<Int> =
             dslContext.select(DSL.coalesce(ISSUES.TIME_AGENT, 0) + DSL.coalesce(ISSUES.TIME_DEVELOPER, 0))
                 .from(ISSUES)
+                .leftJoin(CUSTOM_FIELD_VALUES)
+                .on(CUSTOM_FIELD_VALUES.ISSUE_ID.eq(ISSUES.ID).and(CUSTOM_FIELD_VALUES.FIELD_NAME.eq("Type")))
                 .where(ISSUES.RESOLVED_DATE.lessOrEqual(dateTo.toStartOfDate()))
                 .and(ISSUES.RESOLVED_DATE.isNotNull)
-                /*.and(ISSUES.ISSUE_TYPE.eq("Feature"))*/
+                .and(typesCondition)
                 .and(ISSUES.PROJECT_SHORT_NAME.`in`(filter))
                 .orderBy(ISSUES.CREATED_DATE.desc())
                 .limit(100)
@@ -91,13 +99,16 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
         val c = power.asSequence().map { it.c }.sum() - 1
         if (c == 0) return SigmaResult(0.0, listOf(SigmaItem(0, 0)))
         val sigma = sqrt(p / c)
-        val active = dslContext.select(DSL.coalesce(ISSUES.TIME_AGENT, 0) + DSL.coalesce(ISSUES.TIME_DEVELOPER, 0))
+        val q = dslContext.select(DSL.coalesce(ISSUES.TIME_AGENT, 0) + DSL.coalesce(ISSUES.TIME_DEVELOPER, 0))
             .from(ISSUES)
+            .leftJoin(CUSTOM_FIELD_VALUES)
+            .on(CUSTOM_FIELD_VALUES.ISSUE_ID.eq(ISSUES.ID).and(CUSTOM_FIELD_VALUES.FIELD_NAME.eq("Type")))
             .where(ISSUES.CREATED_DATE.lessOrEqual(dateTo.toStartOfDate()))
             .and(ISSUES.RESOLVED_DATE.isNull)
+            .and(typesCondition)
             .and(ISSUES.PROJECT_SHORT_NAME.`in`(filter))
             .orderBy(ISSUES.CREATED_DATE.desc())
-            .fetchInto(Int::class.java).groupBy { 1 + it / 32400 }
+        val active = q.fetchInto(Int::class.java).groupBy { 1 + it / 32400 }
             .map { item -> SigmaItem(item.key, item.value.size) }.sortedBy { it.day }.toList()
         return SigmaResult(sigma, active)
     }
