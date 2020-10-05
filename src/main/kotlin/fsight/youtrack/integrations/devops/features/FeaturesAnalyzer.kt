@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service
 @Service
 class FeaturesAnalyzer : IFeaturesAnalyzer {
     @Autowired
-    private lateinit var ms: IDevOpsProvider
+    private lateinit var devops: IDevOpsProvider
 
     @Autowired
     private lateinit var mailSender: IMailSender
@@ -32,11 +32,11 @@ class FeaturesAnalyzer : IFeaturesAnalyzer {
     }
 
     override fun analyzePendingFeatures(): Any {
-        val i = ms.getFeaturesByPlanningBoardStates(listOf("На рассмотрении РО"))
+        val i = devops.getFeaturesByPlanningBoardStates(listOf("На рассмотрении РО"))
         val fieldIds = listOf(10320)
         val columns = listOf("Id", "FieldId", "IntValue", "FloatValue", "DateTimeValue", "StringValue")
         val assignees = pg.getDevOpsAssignees()
-        val j = ms.getCustomFieldsValues(i.map { it.id }, fieldIds, columns)
+        val j = devops.getCustomFieldsValues(i.map { it.id }, fieldIds, columns)
         i.forEach { f -> f.project = j.firstOrNull { e -> e.id == f.id && e.fieldId == 10320 }?.string ?: "" }
         i.groupBy { it.assignee }
             .map {
@@ -60,11 +60,11 @@ class FeaturesAnalyzer : IFeaturesAnalyzer {
     }
 
     override fun analyzeRejectedFeatures(): Any {
-        val i = ms.getFeaturesByPlanningBoardStates(listOf("Отклонено", "На уточнении"))
+        val i = devops.getFeaturesByPlanningBoardStates(listOf("Отклонено", "На уточнении"))
         val fieldIds = listOf(10320)
         val columns = listOf("Id", "FieldId", "IntValue", "FloatValue", "DateTimeValue", "StringValue")
         val assignees = pg.getDevOpsAssignees()
-        val j = ms.getCustomFieldsValues(i.map { it.id }, fieldIds, columns)
+        val j = devops.getCustomFieldsValues(i.map { it.id }, fieldIds, columns)
         /*j.forEach { println(it) }
         i.forEach { f -> f.project = j.firstOrNull { e -> e.id == f.id && e.fieldId == 10320 }?.string ?: "" }
         i.groupBy { it.assignee }

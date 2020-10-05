@@ -1,6 +1,7 @@
 package fsight.youtrack.api.issues
 
 import fsight.youtrack.api.dictionaries.IDictionary
+import fsight.youtrack.db.IDevOpsProvider
 import fsight.youtrack.generated.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALUES
 import fsight.youtrack.generated.jooq.tables.IssueTags.ISSUE_TAGS
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
@@ -21,6 +22,9 @@ import org.springframework.stereotype.Service
 class Issues(private val dslContext: DSLContext, @Qualifier("tfsDataSource") private val ms: Database) : IIssues {
     @Autowired
     private lateinit var dictionariesService: IDictionary
+
+    @Autowired
+    private lateinit var devops: IDevOpsProvider
 
     private val issues = ISSUES.`as`("i")
     private val priority = CUSTOM_FIELD_VALUES.`as`("priority")
@@ -301,67 +305,13 @@ WHERE issue.System_Id IN ($issueIds)
         return query.fetchInto(HighPriorityIssue::class.java)
     }
 
-    fun getDevOpsItems(ids: List<Int>, type: String): List<DevOpsBug> {
-        val statement = """
-            SELECT 
-                issue.system_id                             AS id,
-                issue.System_State                          AS state,
-                issue.System_Reason                         AS reason,
-                issue.System_ChangedDate                    AS last_update,
-                issue.IterationPath                         AS iteration,
-                issue.System_ChangedBy                      as changed_by,
-                issue.System_AssignedTo                     as responsible,
-                issue.Microsoft_VSTS_Common_ResolvedReason  as resolved_reason,
-                issue.Microsoft_VSTS_Common_Priority        as priority,
-                issue.Microsoft_VSTS_Build_FoundIn          as found_in,
-                issue.Microsoft_VSTS_Build_IntegrationBuild as integrated_in,
-                issue.Microsoft_VSTS_Common_Severity        as severity,
-                issue.AreaPath                              as area,
-                issue.System_Title                          as title,
-                issue.Microsoft_VSTS_Common_Triage          as triage,
-                issue.System_WorkItemType                   as type
-            FROM CurrentWorkItemView issue
-            WHERE
-                issue.System_Id IN (${ids.joinToString("','", prefix = "'", postfix = "'")})
-                AND issue.System_WorkItemType = '${type}'
-                AND issue.TeamProjectCollectionSK = 37
-      """
-
-        val a = arrayListOf<DevOpsBug>()
-        transaction(ms) {
-            TransactionManager.current().exec(statement) { rs ->
-                while (rs.next()) {
-                    val i = DevOpsBug(
-                        id = rs.getString("id").toInt(),
-                        state = rs.getString("state"),
-                        reason = rs.getString("reason"),
-                        lastUpdate = rs.getString("last_update"),
-                        iteration = rs.getString("iteration"),
-                        changedBy = rs.getString("changed_by"),
-                        responsible = rs.getString("responsible"),
-                        resolvedReason = rs.getString("resolved_reason"),
-                        priority = rs.getString("priority").toInt(),
-                        foundIn = rs.getString("found_in"),
-                        integratedIn = rs.getString("integrated_in"),
-                        severity = rs.getString("severity"),
-                        area = rs.getString("area"),
-                        title = rs.getString("title"),
-                        triage = rs.getString("triage"),
-                        type = rs.getString("type")
-                    )
-                    a.add(i)
-                }
-            }
-        }
-        return a.toList()
-    }
 
     override fun getIssuesWithTFSDetails(issueFilter: IssueFilter): Any {
         val issues = getYouTrackIssuesQuery(issueFilter)
         val bugs = issues.getBugs()
         val requirements = issues.getRequirements()
-        val bugsDetails = getDevOpsItems(bugs, "Bug")
-        val requirementsDetails = getDevOpsItems(requirements, "Feature")
+        val bugsDetails = devops.getDevOpsItemsByIdsAndType(bugs, "Bug")
+        val requirementsDetails = devops.getDevOpsItemsByIdsAndType(requirements, "Feature")
         /** Merging issues with bugs */
         issues.forEach { j ->
             j.devOpsBugs.addAll(j.getBugs().mapNotNull { b -> bugsDetails.firstOrNull { e -> e.id == b } })

@@ -3,6 +3,7 @@ package fsight.youtrack
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import com.google.gson.LongSerializationPolicy
+import fsight.youtrack.api.issues.DevOpsBug
 import fsight.youtrack.db.exposed.ms.schedule.fact.WorkHoursModel
 import fsight.youtrack.db.exposed.ms.schedule.fact.WorkHoursTable
 import fsight.youtrack.db.exposed.ms.schedule.plan.ScheduleTimeIntervalModel
@@ -296,6 +297,27 @@ class ExposedTransformations {
             float = rs.getFloat("FloatValue"),
             dateTime = rs.getTimestamp("DateTimeValue"),
             string = rs.getString("StringValue")
+        )
+    }
+
+    val toDevOpsBug: (ResultSet) -> DevOpsBug = { rs ->
+        DevOpsBug(
+            id = rs.getString("System_Id").toInt(),
+            state = rs.getString("System_State"),
+            reason = rs.getString("System_Reason"),
+            lastUpdate = rs.getString("System_ChangedDate"),
+            iteration = rs.getString("IterationPath"),
+            changedBy = rs.getString("System_ChangedBy"),
+            responsible = rs.getString("System_AssignedTo"),
+            resolvedReason = rs.getString("Microsoft_VSTS_Common_ResolvedReason"),
+            priority = rs.getString("Microsoft_VSTS_Common_Priority").toInt(),
+            foundIn = rs.getString("Microsoft_VSTS_Build_FoundIn"),
+            integratedIn = rs.getString("Microsoft_VSTS_Build_IntegrationBuild"),
+            severity = rs.getString("Microsoft_VSTS_Common_Severity"),
+            area = rs.getString("AreaPath"),
+            title = rs.getString("System_Title"),
+            triage = rs.getString("Microsoft_VSTS_Common_Triage"),
+            type = rs.getString("System_WorkItemType")
         )
     }
 }

@@ -8,10 +8,10 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class DevOpsController {
     @Autowired
-    private lateinit var ms: IDevOpsProvider
+    private lateinit var devops: IDevOpsProvider
 
     @GetMapping("/api/db/devops/features_by_planning_board_state")
     fun startRevision(
         /*@RequestParam("stage", required = false) states: Int? = null*/
-    ): Any = ms.getFeaturesByPlanningBoardStates(listOf("Отклонено", "На уточнении"))
+    ): Any = devops.getFeaturesByPlanningBoardStates(listOf("Отклонено", "На уточнении"))
 }

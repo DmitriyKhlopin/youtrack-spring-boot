@@ -36,7 +36,7 @@ class TFSHooks(
     lateinit var mailSender: IMailSender
 
     @Autowired
-    lateinit var ms: IDevOpsProvider
+    lateinit var devops: IDevOpsProvider
 
     @Autowired
     lateinit var pg: IPGProvider
@@ -126,7 +126,7 @@ class TFSHooks(
             /*
             * Получаем состояния багов из DevOps и присваиваем порядок каждому состоянию
             * */
-            val devOpsStates = ms.getDevOpsWiState(linkedWIIds).mergeWithHookData(body, dictionaries.devOpsStates)
+            val devOpsStates = devops.getDevOpsItemsByIds(linkedWIIds).mergeWithHookData(body, dictionaries.devOpsStates)
 
             var fieldState: String? = null
             var fieldDetailedState: String? = null
