@@ -126,12 +126,11 @@ class TFSHooks(
             /*
             * Получаем состояния багов из DevOps и присваиваем порядок каждому состоянию
             * */
-            val devOpsStates = devops.getDevOpsItemsByIds(linkedWIIds).mergeWithHookData(body, dictionaries.devOpsStates)
+            val devOpsItems = devops.getDevOpsItemsByIds(linkedWIIds).mergeWithHookData(body, dictionaries.devOpsStates)
 
             var fieldState: String? = null
             var fieldDetailedState: String? = null
             var errorMessage: String? = null
-
             /*
             * Для каждого issue получаем выведенное состояние и отправляем команды в YT на его основании
             * */
@@ -142,12 +141,12 @@ class TFSHooks(
                 /*
                 * Получаем только актуальные для конкретного issue баги
                 * */
-                val wi = devOpsStates.filter { w -> ai.bugsAndFeatures().indexOf(w.systemId) != -1 }
+                val wi = devOpsItems.filter { w -> ai.bugsAndFeatures().indexOf(w.systemId) != -1 }
                 /*
                 * Получаем выведенное состояние
                 * */
                 //TODO выведение состояния должно учитывать поле Reason
-                val inferredState = getInferredState(wi)
+                val inferredState = wi.getInferredState()
                 val issueState = ai.unwrapFieldValue("State")
                 val issueDetailedState = ai.unwrapFieldValue("Детализированное состояние")
                 val sprint = wi.getLastSprint()
@@ -259,19 +258,5 @@ class TFSHooks(
             .fetchInto(CustomFieldValuesRecord::class.java)
             .filter { it.fieldValue.replace(" ", "").splitToList().contains(id.toString()) }
             .map { it.issueId }
-    }
-
-    override fun getInferredState(bugStates: List<DevOpsWorkItem>): String {
-        return when {
-            bugStates.any { it.sprint == "\\AP\\Backlog" && it.state == "Proposed" } -> "Backlog"
-            bugStates.any { it.state == "Proposed" } -> "Proposed"
-            bugStates.all { it.state == "Closed" } -> "Closed"
-            bugStates.all { it.state == "Closed" || it.state == "Resolved" } -> "Resolved"
-            else -> bugStates.filter { it.state != "Closed" }.minBy { it.stateOrder }?.state ?: "Closed"
-        }
-    }
-
-    override fun getInferredSprint(bugStates: List<DevOpsWorkItem>): String {
-        return ""
     }
 }

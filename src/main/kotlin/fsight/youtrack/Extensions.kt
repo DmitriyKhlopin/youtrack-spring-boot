@@ -88,6 +88,14 @@ fun List<DevOpsWorkItem>.getLastSprint(): String? {
     return sprint
 }
 
+fun List<DevOpsWorkItem>.getInferredState(): String = when {
+    this.any { it.sprint == "\\AP\\Backlog" && it.state == "Proposed" } -> "Backlog"
+    this.any { it.state == "Proposed" } -> "Proposed"
+    this.all { it.state == "Closed" } -> "Closed"
+    this.all { it.state == "Closed" || it.state == "Resolved" } -> "Resolved"
+    else -> this.filter { it.state != "Closed" }.minBy { it.stateOrder }?.state ?: "Closed"
+}
+
 
 fun ResultRow.toWorkHoursModel(): WorkHoursModel {
     return WorkHoursModel(
