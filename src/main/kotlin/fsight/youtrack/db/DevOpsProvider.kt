@@ -1,7 +1,6 @@
 package fsight.youtrack.db
 
 import fsight.youtrack.ExposedTransformations
-import fsight.youtrack.api.issues.DevOpsBug
 import fsight.youtrack.db.models.devops.DevOpsFeature
 import fsight.youtrack.db.models.devops.DevOpsFieldValue
 import fsight.youtrack.execAndMap
@@ -42,7 +41,7 @@ class DevOpsProvider(@Qualifier("tfsDataSource") private val ms: Database) : IDe
         return statement.execAndMap(ms) { ExposedTransformations().toDevOpsWorkItem(it) }
     }
 
-    override fun getDevOpsItemsByIdsAndType(ids: List<Int>, type: String): List<DevOpsBug> {
+    override fun getDevOpsItemsByIdsAndType(ids: List<Int>, type: String): List<DevOpsWorkItem> {
         if (ids.isEmpty()) return listOf()
         val statement = """
             SELECT ${fields.joinToString(separator = ",")}
@@ -52,7 +51,7 @@ class DevOpsProvider(@Qualifier("tfsDataSource") private val ms: Database) : IDe
                 AND System_WorkItemType = '${type}'
                 AND TeamProjectCollectionSK = 37
       """
-        val a = statement.execAndMap(ms) { ExposedTransformations().toDevOpsBug(it) }
+        val a = statement.execAndMap(ms) { ExposedTransformations().toDevOpsWorkItem(it) }
         return a.toList()
     }
 

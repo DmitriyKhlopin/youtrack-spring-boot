@@ -1,6 +1,6 @@
 package fsight.youtrack.api.issues
 
-data class DevOpsBug(
+data class DevOpsBug1(
     val id: Int,
     val state: String? = null,
     val reason: String? = null,

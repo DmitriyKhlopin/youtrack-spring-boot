@@ -314,8 +314,8 @@ WHERE issue.System_Id IN ($issueIds)
         val requirementsDetails = devops.getDevOpsItemsByIdsAndType(requirements, "Feature")
         /** Merging issues with bugs */
         issues.forEach { j ->
-            j.devOpsBugs.addAll(j.getBugs().mapNotNull { b -> bugsDetails.firstOrNull { e -> e.id == b } })
-            j.devOpsRequirements.addAll(j.getRequirements().mapNotNull { b -> requirementsDetails.firstOrNull { e -> e.id == b } })
+            j.devOpsBugs.addAll(j.getBugs().mapNotNull { b -> bugsDetails.firstOrNull { e -> e.systemId == b } })
+            j.devOpsRequirements.addAll(j.getRequirements().mapNotNull { b -> requirementsDetails.firstOrNull { e -> e.systemId == b } })
             j.plainTags?.removeSurrounding("{", "}")?.split(",")?.let { j.tags.addAll(it) }
         }
         return issues

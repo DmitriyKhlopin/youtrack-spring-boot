@@ -3,7 +3,6 @@ package fsight.youtrack
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import com.google.gson.LongSerializationPolicy
-import fsight.youtrack.api.issues.DevOpsBug
 import fsight.youtrack.db.exposed.ms.schedule.fact.WorkHoursModel
 import fsight.youtrack.db.exposed.ms.schedule.fact.WorkHoursTable
 import fsight.youtrack.db.exposed.ms.schedule.plan.ScheduleTimeIntervalModel
@@ -300,7 +299,7 @@ class ExposedTransformations {
         )
     }
 
-    val toDevOpsBug: (ResultSet) -> DevOpsBug = { rs ->
+    /*val toDevOpsBug: (ResultSet) -> DevOpsBug = { rs ->
         DevOpsBug(
             id = rs.getString("System_Id").toInt(),
             state = rs.getString("System_State"),
@@ -319,7 +318,7 @@ class ExposedTransformations {
             triage = rs.getString("Microsoft_VSTS_Common_Triage"),
             type = rs.getString("System_WorkItemType")
         )
-    }
+    }*/
 }
 
 

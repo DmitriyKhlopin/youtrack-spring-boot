@@ -1,5 +1,6 @@
 package fsight.youtrack.api.issues
 
+import fsight.youtrack.models.DevOpsWorkItem
 import java.sql.Timestamp
 
 data class HighPriorityIssue(
@@ -18,8 +19,8 @@ data class HighPriorityIssue(
     var requirement: String? = null,
     var tfsPlainIssues: ArrayList<IssueTFSData> = arrayListOf(),
     var tfsData: ArrayList<Issues.TFSPlainIssue> = arrayListOf(),
-    var devOpsBugs: ArrayList<DevOpsBug> = arrayListOf(),
-    var devOpsRequirements: ArrayList<DevOpsBug> = arrayListOf(),
+    var devOpsBugs: ArrayList<DevOpsWorkItem> = arrayListOf(),
+    var devOpsRequirements: ArrayList<DevOpsWorkItem> = arrayListOf(),
     var timeUser: Long? = null,
     var timeAgent: Long? = null,
     var timeDeveloper: Long? = null,
