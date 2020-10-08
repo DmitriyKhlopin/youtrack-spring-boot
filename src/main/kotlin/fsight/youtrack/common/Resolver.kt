@@ -4,40 +4,35 @@ import org.springframework.stereotype.Service
 
 @Service
 class Resolver : IResolver {
-    final val i: HashMap<String, String> = HashMap()
+    final val areas: HashMap<String, String> = HashMap()
 
     init {
-        i["\\AP\\Products\\Development\\Core Functionality"] = "Core"
-        i["\\AP\\Products\\Development\\Internal"] = "Core"
-        i["\\AP\\Products\\Development\\Data Engine"] = "Data Engine"
-        i["\\AP\\Products\\Development\\InMemory"] = "Data Engine"
-        i["\\AP\\Products\\Development\\Visualization"] = "Visualization"
-        i["\\AP\\Products\\Development\\DevTools"] = "DevTools"
-        i["\\AP\\Products\\Development\\Self Service BI"] = "SSBI"
-        i["\\AP\\Products\\Development\\Products\\BPM and BAC\\West"] = "West BPM"
-        i["\\AP\\Products\\Development\\Products\\BPM and BAC\\East"] = "East BPM"
-        i["\\AP\\Products\\Development\\Reporting\\Phobos"] = "Phobos"
-        i["\\AP\\Products\\Development\\Reporting\\Deimos"] = "Deimos"
-        i["\\AP\\Products\\Development\\Statistics and Modeling Tools"] = "Modeling"
-        i["\\AP\\Products\\Development\\React-сomponents\\Prime"] = "Prime"
-        i["\\AP\\Products\\Development\\React-сomponents\\Nexus"] = "Nexus"
-        i["\\AP\\Products\\Development\\Products\\Budgeting"] = "Corporate Products"
-        i["\\AP\\Products\\Development\\Products\\Corporate Products Tools"] = "Corporate Products"
-        i["\\AP\\Products\\Development\\Web administration and navigation tools"] = "Data Storage Constructors"
-        i["\\AP\\Products\\Development\\Mobile Technologies"] = "Mobile Platform"
-        i["\\AP\\Products\\Automated Testing"] = "Automation"
-        i["\\AP\\Products\\Release Engineering"] = "DevOps"
-        i["\\AP\\Products\\Technical Support"] = "Support"
-        i["\\AP\\Products\\Analytics"] = "Design"
-        i["\\AP\\Products\\Design"] = "Design"
-        i["\\AP\\Products\\Documentation"] = "Documentation"
-        i["\\AP\\Products\\Localization"] = "Documentation"
-        i["\\AP\\Products\\raining"] = "Education"
-
-
-
-        val j = "\\AP\\Products\\Development\\Core Functionality"
-        i.filter { j.contains(it.key) }.forEach { println(it.value) }
+        areas["\\AP\\Products\\Development\\Core Functionality"] = "Core"
+        areas["\\AP\\Products\\Development\\Internal"] = "Core"
+        areas["\\AP\\Products\\Development\\Data Engine"] = "Data Engine"
+        areas["\\AP\\Products\\Development\\InMemory"] = "Data Engine"
+        areas["\\AP\\Products\\Development\\Visualization"] = "Visualization"
+        areas["\\AP\\Products\\Development\\DevTools"] = "DevTools"
+        areas["\\AP\\Products\\Development\\Self Service BI"] = "SSBI"
+        areas["\\AP\\Products\\Development\\Products\\BPM and BAC\\West"] = "West BPM"
+        areas["\\AP\\Products\\Development\\Products\\BPM and BAC\\East"] = "East BPM"
+        areas["\\AP\\Products\\Development\\Reporting\\Phobos"] = "Phobos"
+        areas["\\AP\\Products\\Development\\Reporting\\Deimos"] = "Deimos"
+        areas["\\AP\\Products\\Development\\Statistics and Modeling Tools"] = "Modeling"
+        areas["\\AP\\Products\\Development\\React-сomponents\\Prime"] = "Prime"
+        areas["\\AP\\Products\\Development\\React-сomponents\\Nexus"] = "Nexus"
+        areas["\\AP\\Products\\Development\\Products\\Budgeting"] = "Corporate Products"
+        areas["\\AP\\Products\\Development\\Products\\Corporate Products Tools"] = "Corporate Products"
+        areas["\\AP\\Products\\Development\\Web administration and navigation tools"] = "Data Storage Constructors"
+        areas["\\AP\\Products\\Development\\Mobile Technologies"] = "Mobile Platform"
+        areas["\\AP\\Products\\Automated Testing"] = "Automation"
+        areas["\\AP\\Products\\Release Engineering"] = "DevOps"
+        areas["\\AP\\Products\\Technical Support"] = "Support"
+        areas["\\AP\\Products\\Analytics"] = "Design"
+        areas["\\AP\\Products\\Design"] = "Design"
+        areas["\\AP\\Products\\Documentation"] = "Documentation"
+        areas["\\AP\\Products\\Localization"] = "Documentation"
+        areas["\\AP\\Products\\raining"] = "Education"
     }
 
     override fun valueTypeToYouTrackProjectFieldType(string: String): String? {
@@ -45,5 +40,9 @@ class Resolver : IResolver {
             "enum" -> "EnumProjectCustomField"
             else -> null
         }
+    }
+
+    override fun resolveAreaToTeam(area: String): String? {
+        return areas.filter { area.contains(it.key) }.map { it.value }.joinToString()
     }
 }

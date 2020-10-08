@@ -2,6 +2,11 @@ package fsight.youtrack
 
 import org.springframework.http.HttpHeaders
 
+enum class HookTypes{
+    CHANGE,
+    COMMENT
+}
+
 enum class ETLState(val state: Int) {
     IDLE(0),
     RUNNING(1),

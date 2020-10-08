@@ -3,7 +3,7 @@ package fsight.youtrack.db
 import com.google.gson.Gson
 import fsight.youtrack.db.models.pg.ETSNameRecord
 import fsight.youtrack.generated.jooq.tables.EtsNames.ETS_NAMES
-import fsight.youtrack.generated.jooq.tables.Hooks
+import fsight.youtrack.generated.jooq.tables.Hooks.HOOKS
 import fsight.youtrack.models.hooks.Hook
 import org.jooq.DSLContext
 import org.springframework.stereotype.Service
@@ -12,16 +12,27 @@ import java.time.Instant
 
 @Service
 class PGProvider(private val dsl: DSLContext) : IPGProvider {
-    override fun saveHookToDatabase(body: Hook?, fieldState: String?, fieldDetailedState: String?, errorMessage: String?, inferredState: String?): Timestamp {
+    override fun saveHookToDatabase(
+        body: Hook?,
+        fieldState: String?,
+        fieldDetailedState: String?,
+        errorMessage: String?,
+        inferredState: String?,
+        commands: ArrayList<String>?,
+        type: String,
+        rule: ArrayList<Pair<String, Int>>?
+    ): Timestamp {
         return dsl
-            .insertInto(Hooks.HOOKS)
-            .set(Hooks.HOOKS.RECORD_DATE_TIME, Timestamp.from(Instant.now()))
-            .set(Hooks.HOOKS.HOOK_BODY, Gson().toJson(body).toString())
-            .set(Hooks.HOOKS.FIELD_STATE, fieldState)
-            .set(Hooks.HOOKS.FIELD_DETAILED_STATE, fieldDetailedState)
-            .set(Hooks.HOOKS.ERROR_MESSAGE, errorMessage)
-            .set(Hooks.HOOKS.INFERRED_STATE, inferredState)
-            .returning(Hooks.HOOKS.RECORD_DATE_TIME)
+            .insertInto(HOOKS)
+            .set(HOOKS.RECORD_DATE_TIME, Timestamp.from(Instant.now()))
+            .set(HOOKS.HOOK_BODY, Gson().toJson(body).toString())
+            .set(HOOKS.FIELD_STATE, fieldState)
+            .set(HOOKS.FIELD_DETAILED_STATE, fieldDetailedState)
+            .set(HOOKS.ERROR_MESSAGE, errorMessage)
+            .set(HOOKS.INFERRED_STATE, inferredState)
+            .set(HOOKS.COMMANDS, commands?.joinToString())
+            .set(HOOKS.TYPE, type)
+            .returning(HOOKS.RECORD_DATE_TIME)
             .fetchOne().recordDateTime
     }
 

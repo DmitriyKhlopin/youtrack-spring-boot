@@ -144,7 +144,7 @@ internal class TFSHooksTest {
         if (actualIssueFieldState != "Направлена разработчику") return
         val linkedBugs = if (bugs.isEmpty()) actualIssueState.unwrapFieldValue("Issue").toString().split(",", " ").mapNotNull { it.toIntOrNull() } else bugs
         val bugStates = devops.getDevOpsItemsByIds(linkedBugs).mergeWithHookData(body, dictionaryService.devOpsStates)
-        val inferredState = hooksService.getInferredState(bugStates)
+        val inferredState = bugStates.getInferredState()
         assertEquals("Resolved", inferredState)
     }
 
@@ -187,6 +187,7 @@ internal class TFSHooksTest {
         val file: File = ResourceUtils.getFile("classpath:test/hooks/sprintHasChanged.json")
         assert(file.exists())
         val body: Hook = Gson().fromJson(String(file.readBytes()), object : TypeToken<Hook>() {}.type)
+        /*println(body.oldFieldValue("System.IterationPath"))*/
         assertTrue(body.oldFieldValue("System.IterationPath") == oldValue, "Previous sprint is not \"$oldValue\"")
         assertTrue(body.newFieldValue("System.IterationPath") == newValue, "New sprint is not \"$newValue\"")
         assertTrue(body.sprintHasChanged(), "Sprint didn't change")
@@ -200,5 +201,25 @@ internal class TFSHooksTest {
         val r = devops.getDevOpsItemsByIds(ids)
         r.getSprints().forEach { println(it) }
         println("Last = ${r.getLastSprint()}")
+    }
+
+    @Test
+    fun getWiCommentedParse(){
+        val file: File = ResourceUtils.getFile("classpath:test/hooks/t.json")
+        assert(file.exists())
+        val body: Hook = Gson().fromJson(String(file.readBytes()), object : TypeToken<Hook>() {}.type)
+        println(body.isFieldChanged("System.State"))
+        println(body.oldFieldValue("System.State"))
+        println(body.newFieldValue("System.State"))
+
+
+        val file2: File = ResourceUtils.getFile("classpath:test/hooks/t2.json")
+        assert(file2.exists())
+        val body2: Hook = Gson().fromJson(String(file2.readBytes()), object : TypeToken<Hook>() {}.type)
+        println(body2.isFieldChanged("System.State"))
+        println(body2.oldFieldValue("System.State"))
+        println(body2.newFieldValue("System.State"))
+        println(body2.getMentionedUsers())
+        /*assertTrue(body.wasIncludedToSprint(), "Bug was not included to sprint")*/
     }
 }

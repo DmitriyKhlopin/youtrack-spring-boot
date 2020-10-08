@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import fsight.youtrack.integrations.devops.hooks.ITFSHooks
 import fsight.youtrack.integrations.devops.revisions.IDevOpsRevisions
 import fsight.youtrack.models.hooks.Hook
+import mu.KotlinLogging
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -11,6 +12,8 @@ import org.springframework.web.bind.annotation.*
 @CrossOrigin
 @RestController
 class TFSDataController(private val dataService: ITFSData, private val hooksService: ITFSHooks, private val devOpsRevisions: IDevOpsRevisions) {
+    private val logger = KotlinLogging.logger {}
+
     @GetMapping("/api/tfs/count")
     fun getItemsCount() = dataService.getItemsCount()
 
@@ -75,7 +78,7 @@ class TFSDataController(private val dataService: ITFSData, private val hooksServ
         }
 
 
-    @GetMapping("/api/tfs/serviceHooks")
+    @GetMapping("/api/tfs/serviceHooks/")
     fun getHook(
         @RequestParam("limit", required = false) limit: Int? = null,
         @RequestParam("postable", required = false) postable: Boolean? = null
@@ -86,25 +89,34 @@ class TFSDataController(private val dataService: ITFSData, private val hooksServ
         }
 
 
-    @PostMapping("/api/tfs/serviceHooks")
-    fun postHook(
+    @PostMapping(value = ["/api/tfs/serviceHooks", "/api/tfs/serviceHooks/wiUpdated"])
+    fun postHookOnWIUpdated(
         @RequestParam("bugs", required = false) bugs: List<Int>? = null,
         @RequestBody body: String?
     ): ResponseEntity<Any> {
         return try {
             val jsonBody = Gson().fromJson(body, Hook::class.java)
-            hooksService.postHook(jsonBody)
-            /*return if (InetAddress.getLocalHost().hostName != "SPB-FSIGHT11") {
-                println("*** Checking server ***")
-                val status = API.create(environment = "TEST", converter = Converter.GSON).getStatus().execute()
-                if (status.code() == 200) {
-                    println("*** Redirecting ***")
-                    val res = API.create(environment = "TEST", converter = Converter.GSON).postHook(body = jsonBody).execute()
-                    ResponseEntity.status(res.code()).body(res.body())
-                } else service.postHook(jsonBody, listOf())
-            } else service.postHook(jsonBody, listOf())*/
+            hooksService.handleWiUpdated(jsonBody)
         } catch (e: Exception) {
-            println(e.message)
+            println("WorkItem Updated: ${e.message}")
+            logger.info { "WorkItem Updated: ${e.message}" }
+            logger.info { body }
+            ResponseEntity.status(HttpStatus.OK).body(e.message)
+        }
+    }
+
+    @PostMapping(value = ["/api/tfs/serviceHooks/wiCommented"])
+    fun postHookOnWICommented(
+        @RequestParam("bugs", required = false) bugs: List<Int>? = null,
+        @RequestBody body: String?
+    ): ResponseEntity<Any> {
+        return try {
+            val jsonBody = Gson().fromJson(body, Hook::class.java)
+            hooksService.handleWiCommented(jsonBody)
+        } catch (e: Exception) {
+            println("WorkItem Commented: ${e.message}")
+            logger.info { "WorkItem Commented: ${e.message}" }
+            logger.info { body }
             ResponseEntity.status(HttpStatus.OK).body(e.message)
         }
     }
