@@ -85,6 +85,7 @@ class ETL(
                 "deleted" -> issue.findDeletedIssues()
                 "projects" -> projects.saveProjects()
                 "pending" -> issue.checkPendingIssues()
+                "fields" ->customFieldsETL.getCustomFields()
             }
         }
         etlStateService.state = ETLState.IDLE

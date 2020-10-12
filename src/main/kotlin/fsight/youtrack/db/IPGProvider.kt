@@ -17,4 +17,6 @@ interface IPGProvider {
     ): Timestamp
     fun getDevOpsAssignees(): List<ETSNameRecord>
     fun getSupportEmployees():List<ETSNameRecord>
+    fun getIssueIdsByWIId(id: Int): List<String>
+    fun getIssuesIdsInDevelopment(): List<String>
 }

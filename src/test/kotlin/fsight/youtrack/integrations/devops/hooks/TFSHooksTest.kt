@@ -10,7 +10,6 @@ import fsight.youtrack.etl.issues.Issue
 import fsight.youtrack.etl.logs.ImportLog
 import fsight.youtrack.etl.projects.Projects
 import fsight.youtrack.models.hooks.Hook
-import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.exposed.sql.Database
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
@@ -38,7 +37,7 @@ internal class TFSHooksTest {
         val issueService = Issue(db, ImportLog(db), ETLState())
         val dictionaryService = Dictionary(db)
         /*val hooksService = TFSHooks(*//*db, tfsConnection, issueService, dictionaryService*//*)*/
-        val hooksService = TFSHooks(db/*, issueService, dictionaryService*/)
+        val hooksService = TFSHooks(/*, issueService, dictionaryService*/)
         val file: File = ResourceUtils.getFile("classpath:test/hooks/includedToSprint.json")
         assert(file.exists())
         val body: Hook = Gson().fromJson(String(file.readBytes()), object : TypeToken<Hook>() {}.type)
@@ -86,7 +85,7 @@ internal class TFSHooksTest {
         val bugs = listOf<Int>()
         val issueService = Issue(db, ImportLog(db), ETLState())
         val dictionaryService = Dictionary(db)
-        val hooksService = TFSHooks(db)
+        val hooksService = TFSHooks()
         val file: File = ResourceUtils.getFile("classpath:test/hooks/excludedFromSprint.json")
         assert(file.exists())
         val body: Hook = Gson().fromJson(String(file.readBytes()), object : TypeToken<Hook>() {}.type)
@@ -129,7 +128,7 @@ internal class TFSHooksTest {
         val issueService = Issue(db, ImportLog(db), ETLState())
         val projectsService = Projects(db)
         val dictionaryService = Dictionary(db)
-        val hooksService = TFSHooks(db/*, issueService, dictionaryService*/)
+        val hooksService = TFSHooks(/*, issueService, dictionaryService*/)
         val file: File = ResourceUtils.getFile("classpath:test/hooks/activeToResolved.json")
         assert(file.exists())
         val body: Hook = Gson().fromJson(String(file.readBytes()), object : TypeToken<Hook>() {}.type)
@@ -157,21 +156,12 @@ internal class TFSHooksTest {
     }
 
     @Test
-    fun getIssuesByWIId() {
-        val hooksService = TFSHooks(db)
-        val issues = hooksService.getIssuesByWIId(60000)
-        val expected = listOf("TEST-12", "TEST-13")
-        assertThat(issues.containsAll(expected))
-        assertEquals(expected.size, issues.size, "Lists have different length")
-    }
-
-    @Test
     fun getDevOpsBugsState() {
         val issueService = Issue(db, ImportLog(db), ETLState())
         val dictionaryService = Dictionary(db)
         val issues = listOf("TEST-12", "TEST-13")
         val actualIssues = issueService.search(issues.joinToString(separator = " ") { "#$it" }, listOf("idReadable", "customFields(name,value(name))"))
-        val hooksService = TFSHooks(db)
+        val hooksService = TFSHooks()
         val file: File = ResourceUtils.getFile("classpath:test/hooks/wiType.json")
         assert(file.exists())
         val hook: Hook = Gson().fromJson(String(file.readBytes()), object : TypeToken<Hook>() {}.type)
@@ -197,14 +187,14 @@ internal class TFSHooksTest {
     @Test
     fun getInferredState() {
         val ids = listOf(22132, 25601, 25600, 59612, 60280, 67174, 44249)
-        val hooksService = TFSHooks(db)
+        val hooksService = TFSHooks()
         val r = devops.getDevOpsItemsByIds(ids)
         r.getSprints().forEach { println(it) }
         println("Last = ${r.getLastSprint()}")
     }
 
     @Test
-    fun getWiCommentedParse(){
+    fun getWiCommentedParse() {
         val file: File = ResourceUtils.getFile("classpath:test/hooks/t.json")
         assert(file.exists())
         val body: Hook = Gson().fromJson(String(file.readBytes()), object : TypeToken<Hook>() {}.type)

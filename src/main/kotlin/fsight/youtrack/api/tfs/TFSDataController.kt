@@ -77,18 +77,6 @@ class TFSDataController(private val dataService: ITFSData, private val hooksServ
             else -> dataService.getBuildsByIteration(iteration)
         }
 
-
-    @GetMapping("/api/tfs/serviceHooks/")
-    fun getHook(
-        @RequestParam("limit", required = false) limit: Int? = null,
-        @RequestParam("postable", required = false) postable: Boolean? = null
-    ): ResponseEntity<Any> =
-        when (postable) {
-            true -> hooksService.getPostableHooks(limit ?: 1)
-            else -> hooksService.getHook(limit ?: 1)
-        }
-
-
     @PostMapping(value = ["/api/tfs/serviceHooks", "/api/tfs/serviceHooks/wiUpdated"])
     fun postHookOnWIUpdated(
         @RequestParam("bugs", required = false) bugs: List<Int>? = null,
@@ -126,10 +114,6 @@ class TFSDataController(private val dataService: ITFSData, private val hooksServ
         return hooksService.postCommand(id, "Состояние Открыта")
     }
 
-    @GetMapping("/api/tfs/serviceHooks/issues/{id}")
-    fun getIssuesByWiId(@PathVariable("id") id: String? = null): List<String> {
-        return hooksService.getIssuesByWIId(id?.toInt() ?: 0)
-    }
 
     @GetMapping("/api/tfs/revision")
     fun startRevision(

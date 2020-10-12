@@ -4,17 +4,14 @@ import com.google.gson.Gson
 import fsight.youtrack.*
 import fsight.youtrack.api.YouTrackAPI
 import fsight.youtrack.api.dictionaries.IDictionary
+import fsight.youtrack.common.IResolver
 import fsight.youtrack.db.IDevOpsProvider
 import fsight.youtrack.db.IPGProvider
 import fsight.youtrack.etl.issues.IIssue
-import fsight.youtrack.generated.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALUES
-import fsight.youtrack.generated.jooq.tables.Hooks.HOOKS
-import fsight.youtrack.generated.jooq.tables.records.CustomFieldValuesRecord
 import fsight.youtrack.mail.IMailSender
 import fsight.youtrack.models.hooks.Hook
 import fsight.youtrack.models.youtrack.Command
 import fsight.youtrack.models.youtrack.Issue
-import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -22,9 +19,7 @@ import org.springframework.stereotype.Service
 
 
 @Service
-class TFSHooks(
-    private val dsl: DSLContext
-) : ITFSHooks {
+class TFSHooks : ITFSHooks {
     @Autowired
     lateinit var issueService: IIssue
 
@@ -40,32 +35,8 @@ class TFSHooks(
     @Autowired
     lateinit var pg: IPGProvider
 
-    /**
-     * Получение [limit] последних хуков из лога.
-     * */
-    override fun getHook(limit: Int): ResponseEntity<Any> {
-        val i = dsl
-            .select(HOOKS.HOOK_BODY)
-            .from(HOOKS)
-            .orderBy(HOOKS.RECORD_DATE_TIME.desc())
-            .limit(limit)
-            .fetchInto(String::class.java)
-            .map { Gson().fromJson(it, Hook::class.java) }
-        return ResponseEntity.ok(i)
-    }
-
-    override fun getPostableHooks(limit: Int): ResponseEntity<Any> {
-        val i = dsl
-            .select(HOOKS.HOOK_BODY)
-            .from(HOOKS)
-            .orderBy(HOOKS.RECORD_DATE_TIME.desc())
-            .limit(limit)
-            .fetchInto(String::class.java)
-            .map { Gson().fromJson(it, Hook::class.java) }
-            .filter { it.resource?.fields?.get("System.State") != null }
-            .map { it.resource?.fields?.get("System.State") }
-        return ResponseEntity.ok(i)
-    }
+    @Autowired
+    lateinit var resolver: IResolver
 
     /**
      * Отправка команды в YT. Команда [command] отправляется дли issue с idReadable = [id]
@@ -85,7 +56,6 @@ class TFSHooks(
                 pg.saveHookToDatabase(body, null, null, "This is a test hook", "null", null, HookTypes.CHANGE.name, null)
                 ResponseEntity.status(HttpStatus.CREATED).body("This is a test hook")
             }
-
             if (body?.eventType == "workitem.commented") {
                 return ResponseEntity.status(HttpStatus.CREATED).body(pg.saveHookToDatabase(body, null, null, "Comment was added", null, null, HookTypes.CHANGE.name, null))
             }
@@ -106,7 +76,7 @@ class TFSHooks(
             /*
             * Получаем список issue, в которые указан id WI в полях "Issue" и "Requirement"
             * */
-            val issues = getIssuesByWIId(hookWIId)
+            val issues = pg.getIssueIdsByWIId(hookWIId)
             /**
              * Выходим, если не найдены связанные issue
              * */
@@ -132,17 +102,12 @@ class TFSHooks(
             * Получаем состояния багов из DevOps и присваиваем порядок каждому состоянию
             * */
             val devOpsItems = devops.getDevOpsItemsByIds(linkedWIIds).mergeWithHookData(body, dictionaries.devOpsStates)
-
-            /*var fieldState: String? = null
-            var fieldDetailedState: String? = null*/
             var errorMessage: String? = null
             /*
             * Для каждого issue получаем выведенное состояние и отправляем команды в YT на его основании
             * */
 
             actualIssues.forEach { ai ->
-                /*fieldState = null
-                fieldDetailedState = null*/
                 /*
                 * Получаем только актуальные для конкретного issue баги
                 * */
@@ -158,19 +123,21 @@ class TFSHooks(
                 val cases: ArrayList<Pair<String, Int>> = arrayListOf()
                 val commands: ArrayList<String> = arrayListOf()
                 when {
-                    body.sprintHasChanged() /*&& ai.idReadable?.contains("SA-") == true*/ && (sprint == "Backlog" || sprint == null) -> {
+                    body.sprintHasChanged() && (sprint == "Backlog" || sprint == null) -> {
                         cases.add(Pair(ai.idReadable ?: "", 1))
-                        /*val s = postCommand(ai.idReadable, "Sprints $sprint Детализированное состояние Backlog").body.toString()*/
-                        /*pg.saveHookToDatabase(body, s, "Backlog", null, null, null, HookTypes.CHANGE.name)*/
                         commands.add("Sprints $sprint Детализированное состояние Backlog")
                     }
-                    body.sprintHasChanged() /*&& ai.idReadable?.contains("SA-") == true*/ && sprint != null -> {
+                    body.sprintHasChanged() && sprint != null -> {
                         cases.add(Pair(ai.idReadable ?: "", 2))
-                        /*val s = postCommand(ai.idReadable, "Sprints $sprint").body.toString()*/
-                        /*pg.saveHookToDatabase(body, s, null, null, null, null, HookTypes.CHANGE.name)*/
                         commands.add("Sprints $sprint")
                     }
                 }
+
+                val team = devOpsItems.first { it.state !in listOf("Closed", "Resolved") }.area?.let { area -> resolver.resolveAreaToTeam(area) }
+                if (team != null && team != ai.unwrapEnumValue("Команда")) {
+                    commands.add("Команда $team")
+                }
+
                 /**
                  * Отправляем команду в YT на основании выведенного состояния и прочих значений
                  * */
@@ -182,10 +149,7 @@ class TFSHooks(
                             && body.isFieldChanged("System.BoardColumn")
                             && body.newFieldValue("System.BoardColumn") in listOf("На уточнении", "Отклонено") -> {
                         cases.add(Pair(ai.idReadable ?: "", 3))
-                        /*fieldState = postCommand(ai.idReadable, "Состояние Открыта").body.toString()
-                        fieldDetailedState = postCommand(ai.idReadable, "Детализированное состояние Backlog 2ЛП").body.toString()*/
-                        commands.add("Состояние Открыта")
-                        commands.add("Детализированное состояние Backlog 2ЛП")
+                        commands.addAll(listOf("Состояние Открыта", "Детализированное состояние Backlog 2ЛП"))
                     }
                     issueState in listOf("Ожидает ответа", "Ожидает подтверждения", "Incomplete", "Подтверждена", "Без подтверждения") -> {
                         cases.add(Pair(ai.idReadable ?: "", 4))
@@ -204,10 +168,7 @@ class TFSHooks(
 
                     -> {
                         cases.add(Pair(ai.idReadable ?: "", 6))
-                        /*fieldState = postCommand(ai.idReadable, "Состояние Открыта").body.toString()
-                        fieldDetailedState = postCommand(ai.idReadable, "Детализированное состояние Backlog проверки").body.toString()*/
-                        commands.add("Состояние Открыта")
-                        commands.add("Детализированное состояние Backlog проверки")
+                        commands.addAll(listOf("Состояние Открыта", "Детализированное состояние Backlog проверки"))
                     }
                     /**
                      * Если выведенное состояние входит в ["Closed", "Resolved"], было изменено сосстояние и причина закрытия заявки = Rejected, то issue должен вернуться в состояние "Открыта", а детализированное состояние должно перейти в "Backlog 2ЛП"
@@ -216,10 +177,7 @@ class TFSHooks(
                             && body.getFieldValue("Microsoft.VSTS.Common.ResolvedReason") == "Rejected"
                     -> {
                         cases.add(Pair(ai.idReadable ?: "", 7))
-                        /*fieldState = postCommand(ai.idReadable, "Состояние Открыта").body.toString()
-                        fieldDetailedState = postCommand(ai.idReadable, "Детализированное состояние Backlog 2ЛП").body.toString()*/
-                        commands.add("Состояние Открыта")
-                        commands.add("Детализированное состояние Backlog 2ЛП")
+                        commands.addAll(listOf("Состояние Открыта", "Детализированное состояние Backlog 2ЛП"))
                     }
                     /*
                     * Если в хуке менялось состояние и выведенное состояние входит в ["Closed", "Proposed", "Resolved"] и причине изменение входит в ["Rejected", "As Designed", "Cannot Reproduce"],
@@ -232,18 +190,13 @@ class TFSHooks(
                             body.getFieldValue("System.Reason") in listOf("Rejected", "As Designed", "Cannot Reproduce"))
                     -> {
                         cases.add(Pair(ai.idReadable ?: "", 8))
-                        /*fieldState = postCommand(ai.idReadable, "Состояние Открыта").body.toString()
-                        fieldDetailedState = postCommand(ai.idReadable, "Детализированное состояние $inferredState").body.toString()*/
-                        commands.add("Состояние Открыта")
-                        commands.add("Детализированное состояние $inferredState")
+                        commands.addAll(listOf("Состояние Открыта", "Детализированное состояние $inferredState"))
                     }
                     /*
                     * Если в хуке менялось состояние и выведенное состояние входит в ["Closed", "Proposed", "Resolved"], то issue должен вернуться в состояние "Открыта", а в детализированное состояние должно записаться выведенное состояние
                     * */
                     body.isFieldChanged("System.State") && inferredState in arrayOf("Closed", "Proposed", "Resolved") -> {
-                        /*fieldState = postCommand(ai.idReadable, "Состояние Открыта").body.toString()*/
                         cases.add(Pair(ai.idReadable ?: "", 9))
-                        /*fieldDetailedState = postCommand(ai.idReadable, "Детализированное состояние $inferredState").body.toString()*/
                         commands.add("Детализированное состояние $inferredState")
                     }
                     /*
@@ -253,7 +206,6 @@ class TFSHooks(
                             && ((body.isFieldChanged("System.State") || body.isFieldChanged("System.IterationPath")))
                     -> {
                         cases.add(Pair(ai.idReadable ?: "", 10))
-                        /*fieldDetailedState = postCommand(ai.idReadable, "Детализированное состояние $inferredState").body.toString()*/
                         commands.add("Детализированное состояние $inferredState")
                     }
                 }
@@ -261,7 +213,6 @@ class TFSHooks(
                  * Сохраняем информацию об изменениях на основе хука для последующего анализа
                  * */
                 postCommand(ai.idReadable, commands.distinct().joinToString(" ")).body.toString()
-                /*pg.saveHookToDatabase(body, fieldState, fieldDetailedState, errorMessage, inferredState, commands, HookTypes.CHANGE.name)*/
                 pg.saveHookToDatabase(body, null, null, errorMessage, inferredState, commands, HookTypes.CHANGE.name, cases)
             }
             ResponseEntity.status(HttpStatus.CREATED).body(null)
@@ -274,21 +225,20 @@ class TFSHooks(
     override fun handleWiCommented(body: Hook?): ResponseEntity<Any> {
         return try {
             val emails = pg.getSupportEmployees().filter { e -> body?.getMentionedUsers()?.any { u -> e.email.contains(u) } ?: false }.map { it.email }
-            pg.saveHookToDatabase(body, null, null, null, null, arrayListOf("Should notify ${body?.getMentionedUsers()?.joinToString()} / ${emails.joinToString()}"), HookTypes.COMMENT.name, null)
+            pg.saveHookToDatabase(
+                body,
+                null,
+                null,
+                null,
+                null,
+                arrayListOf("Should notify ${body?.getMentionedUsers()?.joinToString()} - ${if (emails.isEmpty()) "no support employees" else emails.joinToString()}"),
+                HookTypes.COMMENT.name,
+                null
+            )
             ResponseEntity.status(HttpStatus.CREATED).body(null)
         } catch (e: Error) {
             mailSender.sendHtmlMessage(TEST_MAIL_RECEIVER, null, "Ошибка при обработке хука", e.localizedMessage)
             ResponseEntity.status(HttpStatus.CREATED).body(pg.saveHookToDatabase(body, null, null, e.localizedMessage, null, null, HookTypes.COMMENT.name, null))
         }
-    }
-
-    override fun getIssuesByWIId(id: Int): List<String> {
-        return dsl
-            .select(CUSTOM_FIELD_VALUES.ISSUE_ID, CUSTOM_FIELD_VALUES.FIELD_VALUE)
-            .from(CUSTOM_FIELD_VALUES)
-            .where(CUSTOM_FIELD_VALUES.FIELD_NAME.`in`(listOf("Issue", "Requirement")).and(CUSTOM_FIELD_VALUES.FIELD_VALUE.like("%%$id%%")))
-            .fetchInto(CustomFieldValuesRecord::class.java)
-            .filter { it.fieldValue.replace(" ", "").splitToList().contains(id.toString()) }
-            .map { it.issueId }
     }
 }
