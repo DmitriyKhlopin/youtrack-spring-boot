@@ -3,12 +3,14 @@ package fsight.youtrack.api.projects
 import fsight.youtrack.AUTH
 import fsight.youtrack.api.YouTrackAPI
 import fsight.youtrack.common.IResolver
+import fsight.youtrack.db.IPGProvider
 import fsight.youtrack.generated.jooq.tables.CustomFieldPresets.CUSTOM_FIELD_PRESETS
 import fsight.youtrack.generated.jooq.tables.PartnerCustomers.PARTNER_CUSTOMERS
 import fsight.youtrack.generated.jooq.tables.ProjectType.PROJECT_TYPE
 import fsight.youtrack.generated.jooq.tables.Projects.PROJECTS
 import fsight.youtrack.models.PartnerCustomerPair
 import fsight.youtrack.models.YouTrackProject
+import fsight.youtrack.models.web.ReactSelectOption
 import fsight.youtrack.models.youtrack.CustomField
 import fsight.youtrack.models.youtrack.isValid
 import org.jooq.DSLContext
@@ -20,6 +22,9 @@ class Project(private val dsl: DSLContext) : IProject {
     @Autowired
     lateinit var resolver: IResolver
 
+    @Autowired
+    private lateinit var pg: IPGProvider
+
     override fun getProjects(): List<YouTrackProject> {
         return dsl.select(
             PROJECTS.NAME.`as`("name"),
@@ -28,18 +33,8 @@ class Project(private val dsl: DSLContext) : IProject {
         ).from(PROJECTS).fetchInto(YouTrackProject::class.java)
     }
 
-    override fun getCommercialProjects(): List<YouTrackProject> {
-        return dsl.select(
-            PROJECTS.NAME.`as`("name"),
-            PROJECTS.SHORT_NAME.`as`("shortName"),
-            PROJECTS.ID.`as`("id")
-        )
-            .from(PROJECTS)
-            .leftJoin(PROJECT_TYPE).on(PROJECTS.SHORT_NAME.eq(PROJECT_TYPE.PROJECT_SHORT_NAME))
-            .where(PROJECT_TYPE.IS_PUBLIC.eq(true))
-            .or(PROJECT_TYPE.IS_PUBLIC.isNull)
-            .fetchInto(YouTrackProject::class.java)
-    }
+
+
 
     override fun getPartnerCustomers(): List<PartnerCustomerPair> {
         return dsl.select(
@@ -80,7 +75,7 @@ class Project(private val dsl: DSLContext) : IProject {
         if (!field.isValid()) return "You have failed"
 
         /*return this.getCommercialProjects()*/
-        val ids = this.getCommercialProjects().mapNotNull { it.id }/*.filter { it == "0-103" }*/
+        val ids = pg.getCommercialProjects().mapNotNull { it.id }/*.filter { it == "0-103" }*/
         ids.forEach {
             val body = "{\"field\": {\"id\":\"${field.id}\",\"\$type\":\"CustomField\"},\"\$type\":\"${resolver.valueTypeToYouTrackProjectFieldType(field.valueType ?: "")}\"}"
             println(body)

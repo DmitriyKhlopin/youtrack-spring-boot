@@ -2,6 +2,7 @@ package fsight.youtrack.api.issues
 
 import fsight.youtrack.api.dictionaries.IDictionary
 import fsight.youtrack.db.IDevOpsProvider
+import fsight.youtrack.db.IPGProvider
 import fsight.youtrack.generated.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALUES
 import fsight.youtrack.generated.jooq.tables.IssueTags.ISSUE_TAGS
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
@@ -22,6 +23,9 @@ import org.springframework.stereotype.Service
 class Issues(private val dslContext: DSLContext, @Qualifier("tfsDataSource") private val ms: Database) : IIssues {
     @Autowired
     private lateinit var dictionariesService: IDictionary
+
+    @Autowired
+    private lateinit var pg: IPGProvider
 
     @Autowired
     private lateinit var devops: IDevOpsProvider
@@ -242,9 +246,8 @@ WHERE issue.System_Id IN ($issueIds)
         return result
     }
 
-    /*fun getProjectsCondition(issueFilter: IssueFilter): Condition = if (issueFilter.projects.isEmpty()) DSL.and(DSL.trueCondition()) else DSL.and(issues.PROJECT_SHORT_NAME.`in`(issueFilter.projects))*/
     fun getProjectsCondition(issueFilter: IssueFilter): Condition =
-        if (issueFilter.projects.isEmpty()) DSL.and(issues.PROJECT_SHORT_NAME.`in`(dictionariesService.commercialProjects)) else DSL.and(issues.PROJECT_SHORT_NAME.`in`(issueFilter.projects))
+        if (issueFilter.projects.isEmpty()) DSL.and(issues.PROJECT_SHORT_NAME.`in`(dictionariesService.commercialProjects.map { it.value })) else DSL.and(issues.PROJECT_SHORT_NAME.`in`(issueFilter.projects))
 
     fun getPrioritiesCondition(issueFilter: IssueFilter): Condition = if (issueFilter.priorities.isEmpty()) DSL.and(DSL.trueCondition()) else DSL.and(issues.PRIORITY.`in`(issueFilter.priorities))
     fun getStatesCondition(issueFilter: IssueFilter): Condition = if (issueFilter.states.isEmpty()) DSL.and(DSL.trueCondition()) else DSL.and(issues.STATE.`in`(issueFilter.states))
@@ -323,18 +326,7 @@ WHERE issue.System_Id IN ($issueIds)
 
 
     override fun getIssuesBySigmaValue(days: Int, issueFilter: IssueFilter): Any {
-        val typesCondition: Condition = if (issueFilter.types.isEmpty()) DSL.trueCondition() else DSL.and(CUSTOM_FIELD_VALUES.FIELD_VALUE.`in`(issueFilter.types))
-        return dslContext.select(issues.ID)
-            .from(issues)
-            .leftJoin(CUSTOM_FIELD_VALUES)
-            .on(CUSTOM_FIELD_VALUES.ISSUE_ID.eq(issues.ID).and(CUSTOM_FIELD_VALUES.FIELD_NAME.eq("Type")))
-            .where()
-            .and(issues.RESOLVED_DATE.isNull)
-            .and(typesCondition)
-            .and(getProjectsCondition(issueFilter))
-            .and((((DSL.coalesce(issues.TIME_AGENT, 0) + DSL.coalesce(issues.TIME_DEVELOPER, 0)) / 32400) + 1).eq(days.toLong()))
-            .orderBy(issues.CREATED_DATE.asc())
-            .fetchInto(String::class.java)
+        return pg.getIssuesBySigmaValue(days, issueFilter)
     }
 }
 

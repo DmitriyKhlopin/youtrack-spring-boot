@@ -2,9 +2,9 @@ package fsight.youtrack.etl.issues
 
 import fsight.youtrack.*
 import fsight.youtrack.api.YouTrackAPI
+import fsight.youtrack.db.IPGProvider
 import fsight.youtrack.etl.IETLState
 import fsight.youtrack.etl.logs.IImportLog
-import fsight.youtrack.etl.timeline.ITimeline
 import fsight.youtrack.generated.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALUES
 import fsight.youtrack.generated.jooq.tables.ErrorLog.ERROR_LOG
 import fsight.youtrack.generated.jooq.tables.IssueComments.ISSUE_COMMENTS
@@ -23,6 +23,7 @@ import fsight.youtrack.models.youtrack.Issue
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.jooq.tools.json.JSONObject
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.sql.Timestamp
 import java.time.LocalDate
@@ -34,6 +35,9 @@ class Issue(
     private val importLogService: IImportLog,
     private val etlStateService: IETLState
 ) : IIssue {
+    @Autowired
+    private lateinit var pg: IPGProvider
+
     private val jsonApi: YouTrackAPI by lazy { YouTrackAPI.create(Converter.GSON) }
 
     override fun getIssues(customFilter: String?): ArrayList<String> {
@@ -84,6 +88,7 @@ class Issue(
                 it.saveComments()
                 it.saveCustomFields()
                 it.saveTags()
+                pg.updateIssueSpentTimeById(it.idReadable)
             }
             println("Loaded ${issueIds.size} issues, stored $stored\r")
         } while (result?.size ?: 0 > 0)
@@ -119,11 +124,15 @@ class Issue(
                 val dateFrom =
                     "${maxUpdateDate.toLocalDateTime().year}-${if (maxUpdateDate.toLocalDateTime().monthValue < 10) "0" else ""}${maxUpdateDate.toLocalDateTime().monthValue}-${if (maxUpdateDate.toLocalDateTime().dayOfMonth < 10) "0" else ""}${maxUpdateDate.toLocalDateTime().dayOfMonth}"
                 val dateTo =
-                    "${LocalDate.now().plusDays(1).year}-${if (LocalDate.now().plusDays(1).monthValue < 10) "0" else ""}${LocalDate.now().plusDays(
-                        1
-                    ).monthValue}-${if (LocalDate.now().plusDays(1).dayOfMonth < 10) "0" else ""}${LocalDate.now().plusDays(
-                        1
-                    ).dayOfMonth}"
+                    "${LocalDate.now().plusDays(1).year}-${if (LocalDate.now().plusDays(1).monthValue < 10) "0" else ""}${
+                        LocalDate.now().plusDays(
+                            1
+                        ).monthValue
+                    }-${if (LocalDate.now().plusDays(1).dayOfMonth < 10) "0" else ""}${
+                        LocalDate.now().plusDays(
+                            1
+                        ).dayOfMonth
+                    }"
                 "updated: $dateFrom .. $dateTo"
             } else null
         } catch (e: Exception) {

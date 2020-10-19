@@ -11,4 +11,7 @@ class DictionaryController(private val service: IDictionary) {
 
     @GetMapping("/api/dictionary/tags")
     fun getTags() = service.getTags()
+
+    @GetMapping("/api/dictionary/project/commercial")
+    fun getCommercialProjects() = service.commercialProjects
 }

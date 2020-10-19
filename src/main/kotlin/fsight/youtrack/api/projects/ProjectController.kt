@@ -11,8 +11,7 @@ class ProjectController(private val service: IProject) {
     @GetMapping("/api/project")
     fun getProjects() = service.getProjects()
 
-    @GetMapping("/api/project/commercial")
-    fun getCommercialProjects() = service.getCommercialProjects()
+
 
     @Deprecated("Use /dictionaries/partner_customers")
     @GetMapping("/api/partner_customers")

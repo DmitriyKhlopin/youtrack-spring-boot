@@ -1,15 +1,16 @@
 package fsight.youtrack.api.dictionaries
 
+import fsight.youtrack.db.models.devops.DevOpsStateOrder
 import fsight.youtrack.models.BundleValue
 import fsight.youtrack.models.YouTrackProject
 import fsight.youtrack.models.YouTrackUser
-import fsight.youtrack.db.models.devops.DevOpsStateOrder
+import fsight.youtrack.models.web.ReactSelectOption
 import java.sql.Timestamp
 import java.util.*
 
 interface IDictionary {
     val projects: List<YouTrackProject>
-    val commercialProjects: List<String>
+    val commercialProjects: List<ReactSelectOption>
     val innerProjects: List<String>
     val devOpsStates: List<DevOpsStateOrder>
     val priorities: HashMap<String, String>
