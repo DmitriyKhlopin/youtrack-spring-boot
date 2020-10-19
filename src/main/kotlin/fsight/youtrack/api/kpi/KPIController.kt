@@ -23,7 +23,7 @@ class KPIController(private val service: IKPI, private val dictionaries: IDictio
     ): Any {
         val df = dateFrom.toStartOfDate()
         val dt = dateTo.toEndOfDate()
-        val p = projects?.splitToList() ?: dictionaries.commercialProjects
+        val p = projects?.splitToList() ?: dictionaries.commercialProjects.map { it.value }
         return when (mode) {
             "result" -> service.getResult(p, emails, df, dt, withDetails)
             "overall" -> service.getOverallResult(p, df, dt)

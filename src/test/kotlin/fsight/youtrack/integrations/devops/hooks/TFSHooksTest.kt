@@ -35,7 +35,7 @@ internal class TFSHooksTest {
     fun includedToSprint() {
         val bugs = listOf<Int>()
         val issueService = Issue(db, ImportLog(db), ETLState())
-        val dictionaryService = Dictionary(db)
+        val dictionaryService = Dictionary()
         /*val hooksService = TFSHooks(*//*db, tfsConnection, issueService, dictionaryService*//*)*/
         val hooksService = TFSHooks(/*, issueService, dictionaryService*/)
         val file: File = ResourceUtils.getFile("classpath:test/hooks/includedToSprint.json")
@@ -84,7 +84,7 @@ internal class TFSHooksTest {
     fun excludedFromSprint() {
         val bugs = listOf<Int>()
         val issueService = Issue(db, ImportLog(db), ETLState())
-        val dictionaryService = Dictionary(db)
+        val dictionaryService = Dictionary()
         val hooksService = TFSHooks()
         val file: File = ResourceUtils.getFile("classpath:test/hooks/excludedFromSprint.json")
         assert(file.exists())
@@ -127,7 +127,7 @@ internal class TFSHooksTest {
         val bugs = listOf<Int>()
         val issueService = Issue(db, ImportLog(db), ETLState())
         val projectsService = Projects(db)
-        val dictionaryService = Dictionary(db)
+        val dictionaryService = Dictionary()
         val hooksService = TFSHooks(/*, issueService, dictionaryService*/)
         val file: File = ResourceUtils.getFile("classpath:test/hooks/activeToResolved.json")
         assert(file.exists())
@@ -158,7 +158,7 @@ internal class TFSHooksTest {
     @Test
     fun getDevOpsBugsState() {
         val issueService = Issue(db, ImportLog(db), ETLState())
-        val dictionaryService = Dictionary(db)
+        val dictionaryService = Dictionary()
         val issues = listOf("TEST-12", "TEST-13")
         val actualIssues = issueService.search(issues.joinToString(separator = " ") { "#$it" }, listOf("idReadable", "customFields(name,value(name))"))
         val hooksService = TFSHooks()
