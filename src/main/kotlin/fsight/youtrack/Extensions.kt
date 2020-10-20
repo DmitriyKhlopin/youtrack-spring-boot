@@ -274,11 +274,16 @@ class ExposedTransformations {
             sprintDates = null,
             priority = rs.getString("Microsoft_VSTS_Common_Priority"),
             createdDate = rs.getTimestamp("System_CreatedDate"),
+            updatedDate = rs.getTimestamp("System_ChangedDate"),
             assignee = rs.getString("System_AssignedTo"),
             type = rs.getString("System_WorkItemType"),
             area = rs.getString("AreaPath"),
             title = rs.getString("System_Title"),
-            author = rs.getString("System_CreatedBy") ?: null
+            author = rs.getString("System_CreatedBy") ?: null,
+            foundIn = rs.getString("Microsoft_VSTS_Build_FoundIn"),
+            integratedIn = rs.getString("Microsoft_VSTS_Build_IntegrationBuild"),
+            reason = rs.getString("System_Reason"),
+            severity = rs.getString("Microsoft_VSTS_Common_Severity")
         )
     }
 

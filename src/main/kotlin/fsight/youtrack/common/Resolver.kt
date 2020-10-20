@@ -41,6 +41,7 @@ class Resolver : IResolver {
         areas["\\AP\\Products\\Localization"] = "Documentation"
         areas["\\AP\\Products\\raining"] = "Education"
     }
+
     override fun valueTypeToYouTrackProjectFieldType(string: String): String? {
         return when (string) {
             "enum" -> "EnumProjectCustomField"
@@ -50,5 +51,13 @@ class Resolver : IResolver {
 
     override fun resolveAreaToTeam(area: String): String? {
         return areas.filter { area.contains(it.key) }.map { it.value }.firstOrNull()
+    }
+
+    override fun resolveTeamToPo(team: String): String? {
+        return "Some PO"
+    }
+
+    override fun resolveAreaToPo(area: String): String? {
+        return "Some PO"
     }
 }

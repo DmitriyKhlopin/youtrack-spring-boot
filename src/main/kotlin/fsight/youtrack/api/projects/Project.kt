@@ -34,15 +34,6 @@ class Project(private val dsl: DSLContext) : IProject {
     }
 
 
-
-
-    override fun getPartnerCustomers(): List<PartnerCustomerPair> {
-        return dsl.select(
-            PARTNER_CUSTOMERS.FIELD_VALUE.`as`("customer"),
-            PARTNER_CUSTOMERS.PROJECT_SHORT_NAME.`as`("project")
-        ).from(PARTNER_CUSTOMERS).fetchInto(PartnerCustomerPair::class.java)
-    }
-
     override fun attachWorkflow(data: ProjectWorkflow): Boolean {
         println(data)
         val ids = dsl.select(PROJECTS.ID)

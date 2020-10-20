@@ -11,6 +11,7 @@ data class HighPriorityIssue(
     var created: Timestamp? = null,
     var priority: String? = null,
     var state: String? = null,
+    var detailedState: String? = null,
     var type: String? = null,
     var assignee: String? = null,
     var comment: String? = null,
@@ -25,5 +26,8 @@ data class HighPriorityIssue(
     var timeAgent: Long? = null,
     var timeDeveloper: Long? = null,
     var plainTags: String? = null,
+    var team: String? = null,
+    var firstResponseViolation: String? = null,
+    var solutionViolation: String? = null,
     var tags: ArrayList<String> = arrayListOf()
 )

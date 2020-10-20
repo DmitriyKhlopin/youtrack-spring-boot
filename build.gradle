@@ -146,6 +146,7 @@ task deleteReact(type: Delete) {
 
 task copyReact(type: Copy) {
     from 'D:\\dev\\yt integrations\\frontend\\build'
+    from 'C:\\dev\\youtrack-react-js-frontend\\build'
     into 'src/main/resources/static'
 }
 

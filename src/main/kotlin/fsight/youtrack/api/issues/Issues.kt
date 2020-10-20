@@ -1,6 +1,7 @@
 package fsight.youtrack.api.issues
 
 import fsight.youtrack.api.dictionaries.IDictionary
+import fsight.youtrack.common.IResolver
 import fsight.youtrack.db.IDevOpsProvider
 import fsight.youtrack.db.IPGProvider
 import fsight.youtrack.generated.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALUES
@@ -29,6 +30,9 @@ class Issues(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pri
 
     @Autowired
     private lateinit var devops: IDevOpsProvider
+
+    @Autowired
+    private lateinit var resolver: IResolver
 
     private val issues = ISSUES.`as`("i")
     private val priority = CUSTOM_FIELD_VALUES.`as`("priority")
@@ -261,60 +265,18 @@ WHERE issue.System_Id IN ($issueIds)
             else -> DSL.and(DSL.trueCondition())
         }
 
-    fun getYouTrackIssuesQuery(issueFilter: IssueFilter): List<HighPriorityIssue> {
-        val query = dslContext
-            .select(
-                issues.ID.`as`("id"),
-                issues.PROJECT_SHORT_NAME.`as`("project"),
-                customer.FIELD_VALUE.`as`("customer"),
-                issues.SUMMARY.`as`("summary"),
-                issues.CREATED_DATE_TIME.`as`("created"),
-                issue.FIELD_VALUE.`as`("issue"),
-                requirement.FIELD_VALUE.`as`("requirement"),
-                state.FIELD_VALUE.`as`("state"),
-                comment.`as`("comment"),
-                commentAuthor.`as`("commentAuthor"),
-                priority.FIELD_VALUE.`as`("priority"),
-                issues.ISSUE_TYPE.`as`("type"),
-                responsible.FIELD_VALUE.`as`("assignee"),
-                issues.TIME_USER.`as`("timeUser"),
-                issues.TIME_AGENT.`as`("timeAgent"),
-                issues.TIME_DEVELOPER.`as`("timeDeveloper"),
-                DSL.field("\"A\".\"TAG\"").`as`("plainTags")
-            )
-            .from(issues)
-            .leftJoin(priority).on(issues.ID.eq(priority.ISSUE_ID)).and(priority.FIELD_NAME.eq("Priority"))
-            .leftJoin(customer).on(issues.ID.eq(customer.ISSUE_ID)).and(customer.FIELD_NAME.eq("Заказчик"))
-            .leftJoin(responsible).on(issues.ID.eq(responsible.ISSUE_ID)).and(responsible.FIELD_NAME.eq("Assignee"))
-            .leftJoin(issue).on(issues.ID.eq(issue.ISSUE_ID)).and(issue.FIELD_NAME.eq("Issue"))
-            .leftJoin(requirement).on(issues.ID.eq(requirement.ISSUE_ID)).and(requirement.FIELD_NAME.eq("Requirement"))
-            .leftJoin(type).on(issues.ID.eq(type.ISSUE_ID)).and(type.FIELD_NAME.eq("Type"))
-            .leftJoin(state).on(issues.ID.eq(state.ISSUE_ID)).and(state.FIELD_NAME.eq("State"))
-            .leftJoin(
-                DSL.select(tags.ISSUE_ID.`as`("ISSUE_ID"), DSL.arrayAgg(tags.TAG).`as`("TAG"))
-                    .from(tags)
-                    .groupBy(tags.ISSUE_ID)
-                    .asTable()
-                    .`as`("A")
-            )
-            .on(issues.ID.eq(DSL.field("\"A\".\"ISSUE_ID\"").cast(String::class.java)))
-            .where()
-            .and(getProjectsCondition(issueFilter))
-            .and(getPrioritiesCondition(issueFilter))
-            .and(getStatesCondition(issueFilter))
-            .and(getCustomersCondition(issueFilter))
-            .and(getTagsCondition(issueFilter))
-            .limit(issueFilter.limit)
-        return query.fetchInto(HighPriorityIssue::class.java)
-    }
-
 
     override fun getIssuesWithTFSDetails(issueFilter: IssueFilter): Any {
-        val issues = getYouTrackIssuesQuery(issueFilter)
+        val issues = pg.getYouTrackIssuesQuery(issueFilter)
+        println(issues.size)
         val bugs = issues.getBugs()
         val requirements = issues.getRequirements()
         val bugsDetails = devops.getDevOpsItemsByIdsAndType(bugs, "Bug")
         val requirementsDetails = devops.getDevOpsItemsByIdsAndType(requirements, "Feature")
+        bugsDetails.forEach { b ->
+            b.team = resolver.resolveAreaToTeam(b.area ?: "")
+            b.teamPo = resolver.resolveAreaToPo(b.area ?: "")
+        }
         /** Merging issues with bugs */
         issues.forEach { j ->
             j.devOpsBugs.addAll(j.getBugs().mapNotNull { b -> bugsDetails.firstOrNull { e -> e.systemId == b } })

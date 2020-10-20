@@ -128,6 +128,10 @@ class Dictionary(private val dsl: DSLContext) : IDictionary {
         return dsl.selectDistinct(ISSUE_TAGS.TAG).from(ISSUE_TAGS).fetchInto(String::class.java)
     }
 
+    override fun getPartnerCustomers(): Any {
+        return pg.getPartnerCustomers()
+    }
+
     @PostConstruct
     fun init() {
         preloadDevOpsStates()

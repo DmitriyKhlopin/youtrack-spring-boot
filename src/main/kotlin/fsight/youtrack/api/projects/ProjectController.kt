@@ -11,13 +11,6 @@ class ProjectController(private val service: IProject) {
     @GetMapping("/api/project")
     fun getProjects() = service.getProjects()
 
-
-
-    @Deprecated("Use /dictionaries/partner_customers")
-    @GetMapping("/api/partner_customers")
-    fun getPartnerCustomers() = service.getPartnerCustomers()
-
-
     @PostMapping("/api/projects/workflows")
     fun attachWorkflow(@RequestBody data: ProjectWorkflow): ResponseEntity<Any> {
         return ResponseEntity.ok(service.attachWorkflow(data))
