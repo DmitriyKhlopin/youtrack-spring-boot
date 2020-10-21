@@ -1,6 +1,6 @@
 package fsight.youtrack.db
 
-import fsight.youtrack.api.issues.HighPriorityIssue
+import fsight.youtrack.api.issues.IssueWiThDetails
 import fsight.youtrack.api.issues.IssueFilter
 import fsight.youtrack.db.models.pg.ETSNameRecord
 import fsight.youtrack.models.hooks.Hook
@@ -29,5 +29,5 @@ interface IPGProvider {
     fun getIssuesBySigmaValue(days: Int, issueFilter: IssueFilter): Any
     fun updateIssueSpentTimeById(issueId: String?)
     fun getPartnerCustomers(): List<PartnerCustomerPair>
-    fun getYouTrackIssuesQuery(issueFilter: IssueFilter): List<HighPriorityIssue>
+    fun getYouTrackIssuesWithDetails(issueFilter: IssueFilter): List<IssueWiThDetails>
 }

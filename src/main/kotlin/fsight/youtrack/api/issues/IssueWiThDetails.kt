@@ -3,7 +3,7 @@ package fsight.youtrack.api.issues
 import fsight.youtrack.models.DevOpsWorkItem
 import java.sql.Timestamp
 
-data class HighPriorityIssue(
+data class IssueWiThDetails(
     var id: String? = null,
     var project: String? = null,
     var customer: String? = null,
@@ -22,6 +22,7 @@ data class HighPriorityIssue(
     var tfsData: ArrayList<Issues.TFSPlainIssue> = arrayListOf(),
     var devOpsBugs: ArrayList<DevOpsWorkItem> = arrayListOf(),
     var devOpsRequirements: ArrayList<DevOpsWorkItem> = arrayListOf(),
+    /** Время хранится в секундах, в рабочем дне 9 часов*/
     var timeUser: Long? = null,
     var timeAgent: Long? = null,
     var timeDeveloper: Long? = null,

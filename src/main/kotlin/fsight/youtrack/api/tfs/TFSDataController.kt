@@ -77,7 +77,23 @@ class TFSDataController(private val dataService: ITFSData, private val hooksServ
             else -> dataService.getBuildsByIteration(iteration)
         }
 
-    @PostMapping(value = ["/api/tfs/serviceHooks", "/api/tfs/serviceHooks/wiUpdated"])
+    /*@PostMapping(value = ["/api/tfs/serviceHooks", "/api/tfs/serviceHooks/wiUpdated"])
+    fun postHookOnWIUpdated(
+        @RequestParam("bugs", required = false) bugs: List<Int>? = null,
+        @RequestBody body: String?
+    ): ResponseEntity<Any> {
+        return try {
+            val jsonBody = Gson().fromJson(body, Hook::class.java)
+            hooksService.handleWiUpdated(jsonBody)
+        } catch (e: Exception) {
+            println("WorkItem Updated: ${e.message}")
+            logger.info { "WorkItem Updated: ${e.message}" }
+            logger.info { body }
+            ResponseEntity.status(HttpStatus.OK).body(e.message)
+        }
+    }*/
+
+    @PostMapping("/api/tfs/serviceHooks/wiUpdated")
     fun postHookOnWIUpdated(
         @RequestParam("bugs", required = false) bugs: List<Int>? = null,
         @RequestBody body: String?
@@ -93,7 +109,7 @@ class TFSDataController(private val dataService: ITFSData, private val hooksServ
         }
     }
 
-    @PostMapping(value = ["/api/tfs/serviceHooks/wiCommented"])
+    @PostMapping("/api/tfs/serviceHooks/wiCommented")
     fun postHookOnWICommented(
         @RequestParam("bugs", required = false) bugs: List<Int>? = null,
         @RequestBody body: String?

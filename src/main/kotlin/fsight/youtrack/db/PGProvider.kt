@@ -1,7 +1,7 @@
 package fsight.youtrack.db
 
 import com.google.gson.Gson
-import fsight.youtrack.api.issues.HighPriorityIssue
+import fsight.youtrack.api.issues.IssueWiThDetails
 import fsight.youtrack.api.issues.IssueFilter
 import fsight.youtrack.db.models.pg.ETSNameRecord
 import fsight.youtrack.generated.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALUES
@@ -209,7 +209,7 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
         ).from(PARTNER_CUSTOMERS).fetchInto(PartnerCustomerPair::class.java)
     }
 
-    override fun getYouTrackIssuesQuery(issueFilter: IssueFilter): List<HighPriorityIssue> {
+    override fun getYouTrackIssuesWithDetails(issueFilter: IssueFilter): List<IssueWiThDetails> {
         val query = dsl
             .select(
                 issuesTable.ID.`as`("id"),
@@ -263,6 +263,6 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
             .and(issueFilter.toStatesCondition())
             .and(issueFilter.toTagsCondition())
             .limit(issueFilter.limit)
-        return query.fetchInto(HighPriorityIssue::class.java)
+        return query.fetchInto(IssueWiThDetails::class.java)
     }
 }

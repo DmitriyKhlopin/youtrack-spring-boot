@@ -9,6 +9,7 @@ data class DevOpsWorkItem(
     var sprintDates: Pair<Timestamp, Timestamp>?,
     var stateOrder: Int = -1,
     var priority: String? = null,
+    var priorityReason: String? = null,
     var createdDate: Timestamp? = null,
     var updatedDate: Timestamp? = null,
     var assignee: String? = null,

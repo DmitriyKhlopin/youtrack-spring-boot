@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service
 @Service
 class Resolver : IResolver {
     final val areas: HashMap<String, String> = HashMap()
+    final val productOwners: HashMap<String, String> = HashMap()
 
     init {
         areas["\\AP\\Products\\Development\\Core Functionality"] = "Core"
@@ -39,7 +40,25 @@ class Resolver : IResolver {
         areas["\\AP\\Products\\Design"] = "Design"
         areas["\\AP\\Products\\Documentation"] = "Documentation"
         areas["\\AP\\Products\\Localization"] = "Documentation"
-        areas["\\AP\\Products\\raining"] = "Education"
+        areas["\\AP\\Products\\Training"] = "Education"
+
+        productOwners["Core"] = "Алифанов Андрей"
+        productOwners["Data Engine"] = "Алифанов Андрей"
+        productOwners["Visualization"] = "Титов Василий"
+        productOwners["DevTools"] = "Титов Василий"
+        productOwners["SSBI"] = "Козырев Михаил"
+        productOwners["West BPM"] = "Курилов Денис"
+        productOwners["East BPM"] = "Курилов Денис"
+        productOwners["BPM"] = "Курилов Денис"
+        productOwners["Phobos"] = "Нохрин Максим"
+        productOwners["Deimos"] = "Нохрин Максим"
+        productOwners["Reporting"] = "Нохрин Максим"
+        productOwners["Modeling"] = "Титов Василий"
+        productOwners["Prime"] = "Михеев Роман"
+        productOwners["Nexus"] = "Михеев Роман"
+        productOwners["Corporate Products"] = "Логиш Антон"
+        productOwners["Data Storage Constructors"] = "Логиш Антон"
+        productOwners["Mobile Platform"] = "Богданов Евгений"
     }
 
     override fun valueTypeToYouTrackProjectFieldType(string: String): String? {
@@ -54,10 +73,11 @@ class Resolver : IResolver {
     }
 
     override fun resolveTeamToPo(team: String): String? {
-        return "Some PO"
+        return productOwners[team]
     }
 
     override fun resolveAreaToPo(area: String): String? {
-        return "Some PO"
+        val i = resolveAreaToTeam(area) ?: return null
+        return resolveTeamToPo(i)
     }
 }

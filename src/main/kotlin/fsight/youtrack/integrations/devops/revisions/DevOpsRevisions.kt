@@ -109,7 +109,7 @@ class DevOpsRevisions(private val dsl: DSLContext, @Qualifier("tfsDataSource") p
 
     override fun getDevOpsWorkItems(ids: List<Int>): List<DevOpsWorkItem> {
         val statement =
-            "select System_Id, System_State, Microsoft_VSTS_Common_Priority, IterationPath, System_CreatedDate, System_AssignedTo, System_WorkItemType, AreaPath, System_Title, System_CreatedBy from CurrentWorkItemView where System_Id in (${
+            "select System_Id, System_State, System_ChangedDate, Microsoft_VSTS_Common_Priority, IterationPath, System_CreatedDate, System_AssignedTo, System_WorkItemType, AreaPath, System_Title, System_CreatedBy from CurrentWorkItemView where System_Id in (${
                 ids.joinToString(
                     ","
                 )

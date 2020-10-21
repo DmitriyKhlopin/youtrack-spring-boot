@@ -175,7 +175,7 @@ class Issues(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pri
             .and(customer.FIELD_VALUE.`in`(customersFilter))
             .and(priority.FIELD_VALUE.`in`(prioritiesFilter))
             .and(statesCondition)
-        val result = query.fetchInto(HighPriorityIssue::class.java)
+        val result = query.fetchInto(IssueWiThDetails::class.java)
         result.forEachIndexed { index, item ->
             val issueIds = item.issue?.split(",")?.joinToString("','", prefix = "'", postfix = "'")
             if (issueIds != null && issueIds != "\'null\'") {
@@ -267,20 +267,21 @@ WHERE issue.System_Id IN ($issueIds)
 
 
     override fun getIssuesWithTFSDetails(issueFilter: IssueFilter): Any {
-        val issues = pg.getYouTrackIssuesQuery(issueFilter)
-        println(issues.size)
-        val bugs = issues.getBugs()
-        val requirements = issues.getRequirements()
-        val bugsDetails = devops.getDevOpsItemsByIdsAndType(bugs, "Bug")
-        val requirementsDetails = devops.getDevOpsItemsByIdsAndType(requirements, "Feature")
-        bugsDetails.forEach { b ->
+        val issues = pg.getYouTrackIssuesWithDetails(issueFilter)
+        /*val bugsDetails = devops.getDevOpsItemsByIdsAndType(issues.getBugs(), "Bug")
+        val requirementsDetails = devops.getDevOpsItemsByIdsAndType(issues.getRequirements(), "Feature")*/
+        val wiDetails = devops.getDevOpsItemsByIds(issues.getBugsAndFeatures())
+        val columns = listOf("Id", "FieldId", "IntValue", "FloatValue", "DateTimeValue", "StringValue")
+        val priorityReasons = devops.getCustomFieldsValues(issues.getBugsAndFeatures(), listOf(10346), columns)
+        wiDetails.forEach { b ->
             b.team = resolver.resolveAreaToTeam(b.area ?: "")
             b.teamPo = resolver.resolveAreaToPo(b.area ?: "")
+            b.priorityReason = priorityReasons.firstOrNull { e -> e.id == b.systemId }?.string
         }
         /** Merging issues with bugs */
         issues.forEach { j ->
-            j.devOpsBugs.addAll(j.getBugs().mapNotNull { b -> bugsDetails.firstOrNull { e -> e.systemId == b } })
-            j.devOpsRequirements.addAll(j.getRequirements().mapNotNull { b -> requirementsDetails.firstOrNull { e -> e.systemId == b } })
+            j.devOpsBugs.addAll(j.getBugs().mapNotNull { b -> wiDetails.firstOrNull { e -> e.systemId == b } })
+            j.devOpsRequirements.addAll(j.getRequirements().mapNotNull { b -> wiDetails.firstOrNull { e -> e.systemId == b } })
             j.plainTags?.removeSurrounding("{", "}")?.split(",")?.let { j.tags.addAll(it) }
         }
         return issues
