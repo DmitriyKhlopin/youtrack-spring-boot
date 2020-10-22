@@ -69,7 +69,7 @@ class Resolver : IResolver {
     }
 
     override fun resolveAreaToTeam(area: String): String? {
-        return areas.filter { area.contains(it.key) }.map { it.value }.firstOrNull()
+        return areas[area]
     }
 
     override fun resolveTeamToPo(team: String): String? {
