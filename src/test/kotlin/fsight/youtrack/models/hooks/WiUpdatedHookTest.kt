@@ -8,13 +8,13 @@ import org.junit.jupiter.api.Assertions.*
 import org.springframework.util.ResourceUtils
 import java.io.File
 
-internal class HookTest {
+internal class WiUpdatedHookTest {
 
     @Test
     fun wasIncludedToSprint() {
         val file: File = ResourceUtils.getFile("classpath:test/hooks/includedToSprint.json")
         assert(file.exists())
-        val hook: Hook = Gson().fromJson(String(file.readBytes()), object : TypeToken<Hook>() {}.type)
-        assertTrue(hook.wasIncludedToSprint(), "Bug was not included to sprint")
+        val wiUpdatedHook: WiUpdatedHook = Gson().fromJson(String(file.readBytes()), object : TypeToken<WiUpdatedHook>() {}.type)
+        assertTrue(wiUpdatedHook.wasIncludedToSprint(), "Bug was not included to sprint")
     }
 }

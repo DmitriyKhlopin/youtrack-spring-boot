@@ -1,13 +1,14 @@
 package fsight.youtrack.db
 
-import fsight.youtrack.api.issues.IssueWiThDetails
 import fsight.youtrack.api.issues.IssueFilter
+import fsight.youtrack.api.issues.IssueWiThDetails
 import fsight.youtrack.db.models.pg.ETSNameRecord
-import fsight.youtrack.models.hooks.Hook
-import java.sql.Timestamp
 import fsight.youtrack.models.Dynamics
 import fsight.youtrack.models.PartnerCustomerPair
 import fsight.youtrack.models.YouTrackProject
+import fsight.youtrack.models.hooks.Hook
+import fsight.youtrack.models.hooks.WiUpdatedHook
+import java.sql.Timestamp
 
 interface IPGProvider {
     fun saveHookToDatabase(
@@ -21,7 +22,7 @@ interface IPGProvider {
         rule: ArrayList<Pair<String, Int>>?
     ): Timestamp
     fun getDevOpsAssignees(): List<ETSNameRecord>
-    fun getSupportEmployees():List<ETSNameRecord>
+    fun getSupportEmployees(): List<ETSNameRecord>
     fun getIssueIdsByWIId(id: Int): List<String>
     fun getIssuesIdsInDevelopment(): List<String>
     fun getDynamicsData(projects: String, dateFrom: Timestamp, dateTo: Timestamp): List<Dynamics>

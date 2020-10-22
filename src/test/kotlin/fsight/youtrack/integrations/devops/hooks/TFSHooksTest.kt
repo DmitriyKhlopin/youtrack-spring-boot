@@ -9,7 +9,7 @@ import fsight.youtrack.etl.ETLState
 import fsight.youtrack.etl.issues.Issue
 import fsight.youtrack.etl.logs.ImportLog
 import fsight.youtrack.etl.projects.Projects
-import fsight.youtrack.models.hooks.Hook
+import fsight.youtrack.models.hooks.*
 import org.jetbrains.exposed.sql.Database
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
@@ -35,12 +35,12 @@ internal class TFSHooksTest {
     fun includedToSprint() {
         val bugs = listOf<Int>()
         val issueService = Issue(db, ImportLog(db), ETLState())
-        val dictionaryService = Dictionary()
+        val dictionaryService = Dictionary(db)
         /*val hooksService = TFSHooks(*//*db, tfsConnection, issueService, dictionaryService*//*)*/
         val hooksService = TFSHooks(/*, issueService, dictionaryService*/)
         val file: File = ResourceUtils.getFile("classpath:test/hooks/includedToSprint.json")
         assert(file.exists())
-        val body: Hook = Gson().fromJson(String(file.readBytes()), object : TypeToken<Hook>() {}.type)
+        val body: WiUpdatedHook = Gson().fromJson(String(file.readBytes()), object : TypeToken<WiUpdatedHook>() {}.type)
         assertTrue(body.wasIncludedToSprint(), "Bug was not included to sprint")
         val ytId = body.getYtId()
         assertEquals("TEST-2", ytId, "YT ids are not equal")
@@ -84,11 +84,11 @@ internal class TFSHooksTest {
     fun excludedFromSprint() {
         val bugs = listOf<Int>()
         val issueService = Issue(db, ImportLog(db), ETLState())
-        val dictionaryService = Dictionary()
+        val dictionaryService = Dictionary(db)
         val hooksService = TFSHooks()
         val file: File = ResourceUtils.getFile("classpath:test/hooks/excludedFromSprint.json")
         assert(file.exists())
-        val body: Hook = Gson().fromJson(String(file.readBytes()), object : TypeToken<Hook>() {}.type)
+        val body: WiUpdatedHook = Gson().fromJson(String(file.readBytes()), object : TypeToken<WiUpdatedHook>() {}.type)
         assertTrue(body.wasExcludedFromSprint(), "Bug was not excluded sprint")
         val ytId = body.getYtId()
         assertEquals("TEST-3", ytId, "YT ids are not equal")
@@ -127,11 +127,11 @@ internal class TFSHooksTest {
         val bugs = listOf<Int>()
         val issueService = Issue(db, ImportLog(db), ETLState())
         val projectsService = Projects(db)
-        val dictionaryService = Dictionary()
+        val dictionaryService = Dictionary(db)
         val hooksService = TFSHooks(/*, issueService, dictionaryService*/)
         val file: File = ResourceUtils.getFile("classpath:test/hooks/activeToResolved.json")
         assert(file.exists())
-        val body: Hook = Gson().fromJson(String(file.readBytes()), object : TypeToken<Hook>() {}.type)
+        val body: WiUpdatedHook = Gson().fromJson(String(file.readBytes()), object : TypeToken<WiUpdatedHook>() {}.type)
         assertTrue(body.oldFieldValue("System.State") == oldValue, "Previous state is not \"$oldValue\"")
         assertTrue(body.newFieldValue("System.State") == newValue, "New state is not \"$newValue\"")
         val ytId = body.getYtId()
@@ -151,21 +151,21 @@ internal class TFSHooksTest {
     fun wiTypeParseTest() {
         val file: File = ResourceUtils.getFile("classpath:test/hooks/wiType.json")
         assert(file.exists())
-        val body: Hook = Gson().fromJson(String(file.readBytes()), object : TypeToken<Hook>() {}.type)
+        val body: WiUpdatedHook = Gson().fromJson(String(file.readBytes()), object : TypeToken<WiUpdatedHook>() {}.type)
         assertTrue(body.isBug(), "This is not a \"Bug\"")
     }
 
     @Test
     fun getDevOpsBugsState() {
         val issueService = Issue(db, ImportLog(db), ETLState())
-        val dictionaryService = Dictionary()
+        val dictionaryService = Dictionary(db)
         val issues = listOf("TEST-12", "TEST-13")
         val actualIssues = issueService.search(issues.joinToString(separator = " ") { "#$it" }, listOf("idReadable", "customFields(name,value(name))"))
         val hooksService = TFSHooks()
         val file: File = ResourceUtils.getFile("classpath:test/hooks/wiType.json")
         assert(file.exists())
-        val hook: Hook = Gson().fromJson(String(file.readBytes()), object : TypeToken<Hook>() {}.type)
-        val a = devops.getDevOpsItemsByIds(actualIssues.getBugsAndFeatures()).mergeWithHookData(hook, dictionaryService.devOpsStates)
+        val wiUpdatedHook: WiUpdatedHook = Gson().fromJson(String(file.readBytes()), object : TypeToken<WiUpdatedHook>() {}.type)
+        val a = devops.getDevOpsItemsByIds(actualIssues.getBugsAndFeatures()).mergeWithHookData(wiUpdatedHook, dictionaryService.devOpsStates)
         a.forEach { println(it) }
         assertEquals(3, a.size, "Wrong number of work items")
     }
@@ -176,7 +176,7 @@ internal class TFSHooksTest {
         val newValue = "AP\\Backlog\\Q2 FY20\\Sprint 28"
         val file: File = ResourceUtils.getFile("classpath:test/hooks/sprintHasChanged.json")
         assert(file.exists())
-        val body: Hook = Gson().fromJson(String(file.readBytes()), object : TypeToken<Hook>() {}.type)
+        val body: WiUpdatedHook = Gson().fromJson(String(file.readBytes()), object : TypeToken<WiUpdatedHook>() {}.type)
         /*println(body.oldFieldValue("System.IterationPath"))*/
         assertTrue(body.oldFieldValue("System.IterationPath") == oldValue, "Previous sprint is not \"$oldValue\"")
         assertTrue(body.newFieldValue("System.IterationPath") == newValue, "New sprint is not \"$newValue\"")
@@ -197,19 +197,20 @@ internal class TFSHooksTest {
     fun getWiCommentedParse() {
         val file: File = ResourceUtils.getFile("classpath:test/hooks/t.json")
         assert(file.exists())
-        val body: Hook = Gson().fromJson(String(file.readBytes()), object : TypeToken<Hook>() {}.type)
+        val body: WiUpdatedHook = Gson().fromJson(String(file.readBytes()), object : TypeToken<WiUpdatedHook>() {}.type)
         println(body.isFieldChanged("System.State"))
         println(body.oldFieldValue("System.State"))
         println(body.newFieldValue("System.State"))
+        println(body.newFieldValue("System.IterationPath"))
 
 
-        val file2: File = ResourceUtils.getFile("classpath:test/hooks/t2.json")
+        /*val file2: File = ResourceUtils.getFile("classpath:test/hooks/t2.json")
         assert(file2.exists())
         val body2: Hook = Gson().fromJson(String(file2.readBytes()), object : TypeToken<Hook>() {}.type)
         println(body2.isFieldChanged("System.State"))
         println(body2.oldFieldValue("System.State"))
-        println(body2.newFieldValue("System.State"))
-        println(body2.getMentionedUsers())
+        println(body2.newFieldValue("System.State"))*/
+        /*println(body2.getMentionedUsers())*/
         /*assertTrue(body.wasIncludedToSprint(), "Bug was not included to sprint")*/
     }
 }

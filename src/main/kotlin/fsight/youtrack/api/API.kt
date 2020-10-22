@@ -1,12 +1,11 @@
 package fsight.youtrack.api
 
 import fsight.youtrack.Converter
-import fsight.youtrack.api.tfs.TFSData
 
 import fsight.youtrack.getConverterFactory
 import fsight.youtrack.getOkhttpClient
 import fsight.youtrack.models.ServerStatus
-import fsight.youtrack.models.hooks.Hook
+import fsight.youtrack.models.hooks.WiUpdatedHook
 import retrofit2.Call
 import retrofit2.Retrofit
 import retrofit2.http.Body
@@ -22,7 +21,7 @@ interface API {
     @Headers("Accept: application/json", "Content-Type: application/json;charset=UTF-8")
     @POST("api/tfs/serviceHooks")
     fun postHook(
-            @Body body: Hook?
+            @Body body: WiUpdatedHook?
     ): Call<Any>
 
     companion object Factory {

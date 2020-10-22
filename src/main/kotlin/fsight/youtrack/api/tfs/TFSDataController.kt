@@ -3,7 +3,8 @@ package fsight.youtrack.api.tfs
 import com.google.gson.Gson
 import fsight.youtrack.integrations.devops.hooks.ITFSHooks
 import fsight.youtrack.integrations.devops.revisions.IDevOpsRevisions
-import fsight.youtrack.models.hooks.Hook
+import fsight.youtrack.models.hooks.WiCommentedHook
+import fsight.youtrack.models.hooks.WiUpdatedHook
 import mu.KotlinLogging
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -99,8 +100,8 @@ class TFSDataController(private val dataService: ITFSData, private val hooksServ
         @RequestBody body: String?
     ): ResponseEntity<Any> {
         return try {
-            val jsonBody = Gson().fromJson(body, Hook::class.java)
-            hooksService.handleWiUpdated(jsonBody)
+            val jsonBody = Gson().fromJson(body, WiUpdatedHook::class.java)
+            return hooksService.handleWiUpdated(jsonBody)
         } catch (e: Exception) {
             println("WorkItem Updated: ${e.message}")
             logger.info { "WorkItem Updated: ${e.message}" }
@@ -115,7 +116,7 @@ class TFSDataController(private val dataService: ITFSData, private val hooksServ
         @RequestBody body: String?
     ): ResponseEntity<Any> {
         return try {
-            val jsonBody = Gson().fromJson(body, Hook::class.java)
+            val jsonBody = Gson().fromJson(body, WiCommentedHook::class.java)
             hooksService.handleWiCommented(jsonBody)
         } catch (e: Exception) {
             println("WorkItem Commented: ${e.message}")

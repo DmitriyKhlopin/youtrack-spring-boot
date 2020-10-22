@@ -9,7 +9,7 @@ import fsight.youtrack.db.IDevOpsProvider
 import fsight.youtrack.db.IPGProvider
 import fsight.youtrack.etl.issues.IIssue
 import fsight.youtrack.mail.IMailSender
-import fsight.youtrack.models.hooks.Hook
+import fsight.youtrack.models.hooks.*
 import fsight.youtrack.models.youtrack.Command
 import fsight.youtrack.models.youtrack.Issue
 import org.springframework.beans.factory.annotation.Autowired
@@ -50,7 +50,7 @@ class TFSHooks : ITFSHooks {
     /**
      * Обработка хука из DevOps.
      * */
-    override fun handleWiUpdated(body: Hook?): ResponseEntity<Any> {
+    override fun handleWiUpdated(body: WiUpdatedHook?): ResponseEntity<Any> {
         return try {
             if (body?.subscriptionId == "00000000-0000-0000-0000-000000000000") {
                 pg.saveHookToDatabase(body, null, null, "This is a test hook", "null", null, HookTypes.CHANGE.name, null)
@@ -222,8 +222,8 @@ class TFSHooks : ITFSHooks {
         }
     }
 
-    override fun handleWiCommented(body: Hook?): ResponseEntity<Any> {
-        return try {
+    override fun handleWiCommented(body: WiCommentedHook?): ResponseEntity<Any> {
+        return  try {
             val emails = pg.getSupportEmployees().filter { e -> body?.getMentionedUsers()?.any { u -> e.email.contains(u) } ?: false }.map { it.email }
             pg.saveHookToDatabase(
                 body,

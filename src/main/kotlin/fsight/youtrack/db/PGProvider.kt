@@ -1,8 +1,8 @@
 package fsight.youtrack.db
 
 import com.google.gson.Gson
-import fsight.youtrack.api.issues.IssueWiThDetails
 import fsight.youtrack.api.issues.IssueFilter
+import fsight.youtrack.api.issues.IssueWiThDetails
 import fsight.youtrack.db.models.pg.ETSNameRecord
 import fsight.youtrack.generated.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALUES
 import fsight.youtrack.generated.jooq.tables.Dynamics.DYNAMICS
@@ -53,7 +53,9 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
     private fun IssueFilter.toPrioritiesCondition() = if (this.priorities.isEmpty()) DSL.trueCondition() else DSL.and(prioritiesTable.FIELD_VALUE.`in`(this.priorities))
     private fun IssueFilter.toTypesCondition() = if (this.types.isEmpty()) DSL.trueCondition() else DSL.and(typesTable.FIELD_VALUE.`in`(this.types))
     private fun IssueFilter.toStatesCondition() = if (this.states.isEmpty()) DSL.trueCondition() else DSL.and(statesTable.FIELD_VALUE.`in`(this.states))
-    private fun IssueFilter.toTagsCondition() = if (this.tags.isEmpty()) DSL.trueCondition() else DSL.and(DSL.`val`(this.tags.size).eq(DSL.selectCount().from(tagsTable).where(tagsTable.TAG.`in`(this.tags)).and(tagsTable.ISSUE_ID.eq(issuesTable.ID))))
+    private fun IssueFilter.toTagsCondition() = if (this.tags.isEmpty()) DSL.trueCondition() else DSL.and(
+        DSL.`val`(this.tags.size).eq(DSL.selectCount().from(tagsTable).where(tagsTable.TAG.`in`(this.tags)).and(tagsTable.ISSUE_ID.eq(issuesTable.ID)))
+    )
 
 
     override fun saveHookToDatabase(
@@ -74,11 +76,12 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
             .set(HOOKS.FIELD_DETAILED_STATE, fieldDetailedState)
             .set(HOOKS.ERROR_MESSAGE, errorMessage)
             .set(HOOKS.INFERRED_STATE, inferredState)
-            .set(HOOKS.COMMANDS, commands?.joinToString(separator = " "))
+            .set(HOOKS.COMMANDS, commands?.joinToString(separator = " ") + rule.toString())
             .set(HOOKS.TYPE, type)
             .returning(HOOKS.RECORD_DATE_TIME)
             .fetchOne().recordDateTime
     }
+
 
     override fun getDevOpsAssignees(): List<ETSNameRecord> {
         return dsl.select(

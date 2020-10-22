@@ -15,7 +15,8 @@ import fsight.youtrack.db.models.devops.DevOpsStateOrder
 import fsight.youtrack.generated.jooq.tables.records.BundleValuesRecord
 import fsight.youtrack.models.BundleValue
 import fsight.youtrack.models.DevOpsWorkItem
-import fsight.youtrack.models.hooks.Hook
+import fsight.youtrack.models.hooks.WiUpdatedHook
+import fsight.youtrack.models.hooks.getFieldValue
 import fsight.youtrack.models.youtrack.Issue
 import okhttp3.OkHttpClient
 import org.jetbrains.exposed.sql.ColumnType
@@ -49,11 +50,11 @@ fun getYouTrackUrl(issueId: String?): String = "<a href=\"https://support.fsight
 
 fun List<Issue>.getBugsAndFeatures(): List<Int> = this.map { it.bugsAndFeatures() }.flatten().distinct()
 
-fun List<DevOpsWorkItem>.mergeWithHookData(hook: Hook, states: List<DevOpsStateOrder>): List<DevOpsWorkItem> {
+fun List<DevOpsWorkItem>.mergeWithHookData(wiUpdatedHook: WiUpdatedHook, states: List<DevOpsStateOrder>): List<DevOpsWorkItem> {
     return this.map {
-        if (it.systemId == hook.resource?.workItemId) {
-            it.state = hook.getFieldValue("System.State").toString()
-            it.sprint = hook.getFieldValue("System.IterationPath").toString()
+        if (it.systemId == wiUpdatedHook.resource?.workItemId) {
+            it.state = wiUpdatedHook.getFieldValue("System.State").toString()
+            it.sprint = wiUpdatedHook.getFieldValue("System.IterationPath").toString()
         }
         /*it.sprintDates = dictionaries.sprints[it.sprint]*/
         it.stateOrder = states.firstOrNull { k -> k.state == it.state }?.order ?: -1
