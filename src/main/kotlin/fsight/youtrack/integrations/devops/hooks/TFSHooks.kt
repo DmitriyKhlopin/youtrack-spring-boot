@@ -132,12 +132,12 @@ class TFSHooks : ITFSHooks {
                         commands.add("Sprints $sprint")
                     }
                 }
-
-                val team = devOpsItems.first { it.state !in listOf("Closed", "Resolved") }.area?.let { area -> resolver.resolveAreaToTeam(area) }
-                if (team != null && team != ai.unwrapEnumValue("Команда")) {
-                    commands.add("Команда $team")
+                val area = devOpsItems.firstOrNull { it.state !in listOf("Closed", "Resolved") }?.area
+                val team = if (area != null) resolver.resolveAreaToTeam(area) else null
+                when {
+                    team == null -> mailSender.sendMail(DEFAULT_MAIL_SENDER, TEST_MAIL_RECEIVER, "Area was not resolved to team", "Area = $area")
+                    team != ai.unwrapEnumValue("Команда") -> commands.add("Команда $team")
                 }
-
                 /**
                  * Отправляем команду в YT на основании выведенного состояния и прочих значений
                  * */
@@ -223,7 +223,7 @@ class TFSHooks : ITFSHooks {
     }
 
     override fun handleWiCommented(body: WiCommentedHook?): ResponseEntity<Any> {
-        return  try {
+        return try {
             val emails = pg.getSupportEmployees().filter { e -> body?.getMentionedUsers()?.any { u -> e.email.contains(u) } ?: false }.map { it.email }
             pg.saveHookToDatabase(
                 body,

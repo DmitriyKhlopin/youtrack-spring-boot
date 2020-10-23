@@ -4,6 +4,8 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import fsight.youtrack.*
 import fsight.youtrack.api.dictionaries.Dictionary
+import fsight.youtrack.common.IResolver
+import fsight.youtrack.common.Resolver
 import fsight.youtrack.db.IDevOpsProvider
 import fsight.youtrack.etl.ETLState
 import fsight.youtrack.etl.issues.Issue
@@ -15,9 +17,11 @@ import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
+import org.mockito.Mock
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.util.ResourceUtils
 import java.io.File
+
 
 internal class TFSHooksTest {
     private val tfsConnection: Database by lazy {
@@ -30,6 +34,9 @@ internal class TFSHooksTest {
 
     @Autowired
     private lateinit var devops: IDevOpsProvider
+
+    @Mock
+    private lateinit var resolver: IResolver
 
     @Test
     fun includedToSprint() {
@@ -213,4 +220,15 @@ internal class TFSHooksTest {
         /*println(body2.getMentionedUsers())*/
         /*assertTrue(body.wasIncludedToSprint(), "Bug was not included to sprint")*/
     }
+
+    @Test
+    fun testResolveAreaToTeam() {
+        resolver = Resolver()
+        val j = "\\AP\\Products\\Development\\Reporting\\Export\\AAA"
+        println(resolver.resolveAreaToTeam(j))
+        println(resolver.resolveTeamToPo(j))
+
+    }
+
+
 }

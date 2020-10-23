@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import fsight.youtrack.api.issues.IssueFilter
 import fsight.youtrack.api.issues.IssueWiThDetails
 import fsight.youtrack.db.models.pg.ETSNameRecord
+import fsight.youtrack.generated.jooq.tables.AreaTeam.AREA_TEAM
 import fsight.youtrack.generated.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALUES
 import fsight.youtrack.generated.jooq.tables.Dynamics.DYNAMICS
 import fsight.youtrack.generated.jooq.tables.EtsNames.ETS_NAMES
@@ -11,10 +12,13 @@ import fsight.youtrack.generated.jooq.tables.Hooks.HOOKS
 import fsight.youtrack.generated.jooq.tables.IssueTags.ISSUE_TAGS
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
 import fsight.youtrack.generated.jooq.tables.PartnerCustomers.PARTNER_CUSTOMERS
+import fsight.youtrack.generated.jooq.tables.ProductOwners.PRODUCT_OWNERS
 import fsight.youtrack.generated.jooq.tables.ProjectType.PROJECT_TYPE
 import fsight.youtrack.generated.jooq.tables.Projects.PROJECTS
 import fsight.youtrack.generated.jooq.tables.WorkItems.WORK_ITEMS
+import fsight.youtrack.generated.jooq.tables.records.AreaTeamRecord
 import fsight.youtrack.generated.jooq.tables.records.CustomFieldValuesRecord
+import fsight.youtrack.generated.jooq.tables.records.ProductOwnersRecord
 import fsight.youtrack.models.Dynamics
 import fsight.youtrack.models.PartnerCustomerPair
 import fsight.youtrack.models.YouTrackProject
@@ -267,5 +271,13 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
             .and(issueFilter.toTagsCondition())
             .limit(issueFilter.limit)
         return query.fetchInto(IssueWiThDetails::class.java)
+    }
+
+    override fun getAreasWithTeams(): List<AreaTeamRecord> {
+        return dsl.select(AREA_TEAM.AREA, AREA_TEAM.TEAM).from(AREA_TEAM).fetchInto(AreaTeamRecord::class.java)
+    }
+
+    override fun getProductOwners(): List<ProductOwnersRecord> {
+        return dsl.select(PRODUCT_OWNERS.TEAM, PRODUCT_OWNERS.OWNER).from(PRODUCT_OWNERS).fetchInto(ProductOwnersRecord::class.java)
     }
 }
