@@ -1,38 +1,32 @@
 package fsight.youtrack.integrations.devops.revisions
 
 import fsight.youtrack.*
+import fsight.youtrack.db.IDevOpsProvider
 import fsight.youtrack.generated.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALUES
 import fsight.youtrack.generated.jooq.tables.IssueTags.ISSUE_TAGS
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
 import fsight.youtrack.mail.IMailSender
 import fsight.youtrack.models.DevOpsWorkItem
-import org.jetbrains.exposed.sql.Database
 import org.jooq.DSLContext
 import org.jooq.Field
 import org.jooq.impl.DSL
 import org.jooq.impl.DSL.field
 import org.jooq.impl.DSL.name
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 
 @Service
-class DevOpsRevisions(private val dsl: DSLContext, @Qualifier("tfsDataSource") private val ms: Database) : IDevOpsRevisions {
+class DevOpsRevisions(private val dsl: DSLContext) : IDevOpsRevisions {
     @Autowired
     lateinit var mailSender: IMailSender
+
+    @Autowired
+    private lateinit var devops: IDevOpsProvider
 
     override fun startRevision() {
         mailSender.sendMail(DEFAULT_MAIL_SENDER, TEST_MAIL_RECEIVER, "Запущена проверка багов", "Выполняется поиска багов, не взятых в спринт.")
         getActiveBugsAndFeatures(9, null, null)
         mailSender.sendMail(DEFAULT_MAIL_SENDER, TEST_MAIL_RECEIVER, "Проверка багов завершена", "Проверка багов завершена")
-    }
-
-    override fun checkBugs(): List<Int> {
-        val statement = """select System_Id, System_State, IterationPath from CurrentWorkItemView where System_Id in (1) and TeamProjectCollectionSK = 37"""
-        val all = statement.execAndMap(ms) { ExposedTransformations().toJsonObject(it, listOf("System_Id", "System_State", "IterationPath")) }
-        val filtered = all.filter { it["IterationPath"].asString != "Backlog" && it["System_State"].asString != "Closed" && it["System_State"].asString != "Resolved" }
-        if (filtered.isEmpty()) all.minBy { it["order"].toString().toInt() } else filtered.minBy { it["order"].toString().toInt() }
-        return listOf()
     }
 
     override fun getActiveBugsAndFeatures(stage: Int?, limit: Int?, offset: Int?): List<Any> {
@@ -43,7 +37,7 @@ class DevOpsRevisions(private val dsl: DSLContext, @Qualifier("tfsDataSource") p
         val features = b.map { it.features }.flatten()
         val d = bugs.plus(features).distinct().filter { it < 1000000 }
         if (stage == 2) return d
-        val devOpsWorkItems = getDevOpsWorkItems(d)
+        val devOpsWorkItems = devops.getDevOpsItemsByIds(d)
         b.forEach { t2 -> t2.wiDetails.addAll(devOpsWorkItems.filter { wi -> t2.bugs.contains(wi.systemId) || t2.features.contains(wi.systemId) }) }
         if (stage == 3) return b
         val errors = b.map { it.check() }.filter { it.errors.isNotEmpty() }
@@ -107,18 +101,7 @@ class DevOpsRevisions(private val dsl: DSLContext, @Qualifier("tfsDataSource") p
         return q.fetchInto(T1::class.java)
     }
 
-    override fun getDevOpsWorkItems(ids: List<Int>): List<DevOpsWorkItem> {
-        val statement =
-            "select System_Id, System_State, System_ChangedDate, Microsoft_VSTS_Common_Priority, IterationPath, System_CreatedDate, System_AssignedTo, System_WorkItemType, AreaPath, System_Title, System_CreatedBy from CurrentWorkItemView where System_Id in (${
-                ids.joinToString(
-                    ","
-                )
-            })  and TeamProjectCollectionSK = 37 and System_WorkItemType in ('Bug', 'Feature')"
-        /*val statement = """select System_Id, System_State, IterationPath from CurrentWorkItemView where System_Id in (${ids.joinToString(",")}) and TeamProjectCollectionSK = 37"""*/
-        return statement.execAndMap(ms) { ExposedTransformations().toDevOpsWorkItem(it) }
-    }
-
-    fun notify(subject: String, body: String) {
+    private fun notify(subject: String, body: String) {
         mailSender.sendHtmlMessage(to = TEST_MAIL_RECEIVER, cc = null, subject = subject, text = body)
     }
 

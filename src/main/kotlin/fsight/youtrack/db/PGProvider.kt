@@ -80,7 +80,7 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
             .set(HOOKS.FIELD_DETAILED_STATE, fieldDetailedState)
             .set(HOOKS.ERROR_MESSAGE, errorMessage)
             .set(HOOKS.INFERRED_STATE, inferredState)
-            .set(HOOKS.COMMANDS, commands?.joinToString(separator = " ") + rule.toString())
+            .set(HOOKS.COMMANDS, commands?.joinToString(separator = " ") + rule?.toString())
             .set(HOOKS.TYPE, type)
             .returning(HOOKS.RECORD_DATE_TIME)
             .fetchOne().recordDateTime
