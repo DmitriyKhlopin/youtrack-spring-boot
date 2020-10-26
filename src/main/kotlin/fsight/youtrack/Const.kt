@@ -23,6 +23,8 @@ fun headers(): HttpHeaders {
     return h
 }
 
+const val TEST_HOOK_ID = "00000000-0000-0000-0000-000000000000"
+
 const val PRINT = true
 
 const val REACT_STATIC_DIR = "static"

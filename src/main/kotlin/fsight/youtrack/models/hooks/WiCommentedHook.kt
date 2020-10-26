@@ -16,7 +16,7 @@ data class WiCommentedHook(
 fun WiCommentedHook.getMentionedUsers(): List<String> =
     this.detailedMessage?.text?.split("(")?.map { it.substringBefore(")") }?.filter { it.startsWith("mailto:FS\\") }?.map { it.substringAfter("mailto:FS\\") } ?: listOf()
 fun WiCommentedHook.getYtId(): String = this.resource?.revision?.fields?.get("System.Title").toString().trimStart().substringBefore(delimiter = " ").substringBefore(delimiter = ".")
-fun WiCommentedHook.getDevOpsId(): Int? = this.resource?.workItemId
+fun WiCommentedHook.getDevOpsId(): Int? = this.resource?.id
 fun WiCommentedHook.getFieldValue(fieldName: String): Any? = this.resource?.revision?.fields?.get(fieldName)
 fun WiCommentedHook.newSprint(): String = this.resource?.revision?.fields?.get("System.IterationPath").toString()
 fun WiCommentedHook.isBug(): Boolean = this.resource?.revision?.fields?.get("System.WorkItemType").toString() == "Bug"

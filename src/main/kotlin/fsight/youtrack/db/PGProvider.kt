@@ -1,6 +1,7 @@
 package fsight.youtrack.db
 
 import com.google.gson.Gson
+import fsight.youtrack.HookTypes
 import fsight.youtrack.api.issues.IssueFilter
 import fsight.youtrack.api.issues.IssueWiThDetails
 import fsight.youtrack.db.models.pg.ETSNameRecord
@@ -69,7 +70,7 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
         errorMessage: String?,
         inferredState: String?,
         commands: ArrayList<String>?,
-        type: String,
+        type: HookTypes,
         rule: ArrayList<Pair<String, Int>>?
     ): Timestamp {
         return dsl
@@ -80,8 +81,9 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
             .set(HOOKS.FIELD_DETAILED_STATE, fieldDetailedState)
             .set(HOOKS.ERROR_MESSAGE, errorMessage)
             .set(HOOKS.INFERRED_STATE, inferredState)
-            .set(HOOKS.COMMANDS, commands?.joinToString(separator = " ") + rule?.toString())
-            .set(HOOKS.TYPE, type)
+            .set(HOOKS.COMMANDS, commands?.joinToString(separator = " "))
+            .set(HOOKS.TYPE, type.name)
+            .set(HOOKS.RULE, rule?.toString())
             .returning(HOOKS.RECORD_DATE_TIME)
             .fetchOne().recordDateTime
     }

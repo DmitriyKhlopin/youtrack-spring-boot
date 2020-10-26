@@ -5,8 +5,8 @@ import fsight.youtrack.models.hooks.WiUpdatedHook
 import org.springframework.http.ResponseEntity
 
 interface ITFSHooks {
-    fun handleWiUpdated(body: WiUpdatedHook?): ResponseEntity<Any>
-    fun handleWiCommented(body: WiCommentedHook?): ResponseEntity<Any>
-    fun postCommand(id: String?, command: String): ResponseEntity<Any>
+    fun handleWiUpdated(body: WiUpdatedHook?): Any
+    fun handleWiCommented(body: WiCommentedHook?): Any
+    fun postCommand(id: String?, command: String): Any
 
 }

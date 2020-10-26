@@ -13,7 +13,6 @@ import fsight.youtrack.models.hooks.*
 import fsight.youtrack.models.youtrack.Command
 import fsight.youtrack.models.youtrack.Issue
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 
@@ -50,15 +49,10 @@ class TFSHooks : ITFSHooks {
     /**
      * Обработка хука из DevOps.
      * */
-    override fun handleWiUpdated(body: WiUpdatedHook?): ResponseEntity<Any> {
-        return try {
-            if (body?.subscriptionId == "00000000-0000-0000-0000-000000000000") {
-                pg.saveHookToDatabase(body, null, null, "This is a test hook", "null", null, HookTypes.CHANGE.name, null)
-                ResponseEntity.status(HttpStatus.CREATED).body("This is a test hook")
-            }
-            if (body?.eventType == "workitem.commented") {
-                return ResponseEntity.status(HttpStatus.CREATED).body(pg.saveHookToDatabase(body, null, null, "Comment was added", null, null, HookTypes.CHANGE.name, null))
-            }
+    override fun handleWiUpdated(body: WiUpdatedHook?): Any {
+        try {
+            if (body?.subscriptionId == TEST_HOOK_ID) return pg.saveHookToDatabase(body = body, errorMessage = "This is a test hook", type = HookTypes.CHANGE)
+            if (body?.eventType == "workitem.commented") return pg.saveHookToDatabase(body = body, errorMessage = "Comment was added", type = HookTypes.CHANGE)
             /**
              * Выходим если не менялись состояние и не было включения/исключения из спринта
              * */
@@ -66,44 +60,41 @@ class TFSHooks : ITFSHooks {
                     "System.BoardColumn"
                 ) != true
             ) {
-                return ResponseEntity.status(HttpStatus.CREATED).body(pg.saveHookToDatabase(body, null, null, "Bug state and sprint didn't change", null, null, HookTypes.CHANGE.name, null))
+                return pg.saveHookToDatabase(body = body, errorMessage = "Bug state and sprint didn't change", type = HookTypes.CHANGE)
             }
             /**
              * Получаем номер WI из хука
              * */
-            val hookWIId =
-                body.getDevOpsId() ?: return ResponseEntity.status(HttpStatus.CREATED).body(pg.saveHookToDatabase(body, null, null, "Unable to parse WI ID", null, null, HookTypes.CHANGE.name, null))
-            /*
+            val hookWIId = body.getDevOpsId() ?: return pg.saveHookToDatabase(body = body, errorMessage = "Unable to parse WI ID", type = HookTypes.CHANGE)
+            /**
             * Получаем список issue, в которые указан id WI в полях "Issue" и "Requirement"
             * */
             val issues = pg.getIssueIdsByWIId(hookWIId)
             /**
              * Выходим, если не найдены связанные issue
              * */
-            if (issues.isEmpty()) return ResponseEntity.status(HttpStatus.CREATED)
-                .body(pg.saveHookToDatabase(body, null, null, "No issues are associated with WI", null, null, HookTypes.CHANGE.name, null))
+            if (issues.isEmpty()) return pg.saveHookToDatabase(body = body, errorMessage = "No issues are associated with WI", type = HookTypes.CHANGE)
             /**
              * Получаем информацию из YT по номерам issue
              * */
             val filter = "(${issues.joinToString(separator = " ") { "#$it" }}) и Состояние: {Направлена разработчику}"
             val actualIssues =
                 issueService.search(filter, listOf("idReadable", "customFields(name,value(name))"))
-            /*
+            /**
             * На основании всех issue получаем все привязанные к ним баги
             * */
             val linkedWIIds = actualIssues.getBugsAndFeatures()
 
-            /*
+            /**
             * Выходим, если нет багов и фич
             * */
-            if (linkedWIIds.isEmpty()) return ResponseEntity.status(HttpStatus.CREATED)
-                .body(pg.saveHookToDatabase(body, null, null, "No bugs found. Issues size = ${actualIssues.size}", null, null, HookTypes.CHANGE.name, null))
-            /*
+            if (linkedWIIds.isEmpty()) return pg.saveHookToDatabase(body = body, errorMessage = "No bugs found. Issues size = ${actualIssues.size}", type = HookTypes.CHANGE)
+            /**
             * Получаем состояния багов из DevOps и присваиваем порядок каждому состоянию
             * */
             val devOpsItems = devops.getDevOpsItemsByIds(linkedWIIds).mergeWithHookData(body, dictionaries.devOpsStates)
             var errorMessage: String? = null
-            /*
+            /**
             * Для каждого issue получаем выведенное состояние и отправляем команды в YT на его основании
             * */
 
@@ -112,7 +103,7 @@ class TFSHooks : ITFSHooks {
                 * Получаем только актуальные для конкретного issue баги
                 * */
                 val wi = devOpsItems.filter { w -> ai.bugsAndFeatures().indexOf(w.systemId) != -1 }
-                /*
+                /**
                 * Получаем выведенное состояние
                 * */
                 //TODO выведение состояния должно учитывать поле Reason
@@ -135,7 +126,12 @@ class TFSHooks : ITFSHooks {
                 val area = devOpsItems.firstOrNull { it.state !in listOf("Closed", "Resolved") }?.area
                 val team = if (area != null) resolver.resolveAreaToTeam(area) else null
                 when {
-                    team == null -> mailSender.sendMail(DEFAULT_MAIL_SENDER, TEST_MAIL_RECEIVER, "Area was not resolved to team", "Issues ID = ${ai.idReadable}, Area = $area, DevOpsItems = $devOpsItems")
+                    team == null -> mailSender.sendMail(
+                        DEFAULT_MAIL_SENDER,
+                        TEST_MAIL_RECEIVER,
+                        "Area was not resolved to team",
+                        "Issues ID = ${ai.idReadable}, Area = $area, DevOpsItems = $devOpsItems"
+                    )
                     team != ai.unwrapEnumValue("Команда") -> commands.add("Команда $team")
                 }
                 /**
@@ -159,7 +155,7 @@ class TFSHooks : ITFSHooks {
                         cases.add(Pair(ai.idReadable ?: "", 5))
                         errorMessage = "Нельзя применить изменения к issue в детализированном состоянии $issueDetailedState"
                     }
-                    /*
+                    /**
                     * Если выведенное состояние входит в ["Closed", "Resolved"], было изменено сосстояние и причина закрытия заявки входит в ["Fixed", "Verified"], то issue должен вернуться в состояние "Открыта", а детализированное состояние должно перейти в "Backlog проверки"
                     * */
                     inferredState in arrayOf("Closed", "Resolved")
@@ -179,7 +175,7 @@ class TFSHooks : ITFSHooks {
                         cases.add(Pair(ai.idReadable ?: "", 7))
                         commands.addAll(listOf("Состояние Открыта", "Детализированное состояние Backlog 2ЛП"))
                     }
-                    /*
+                    /**
                     * Если в хуке менялось состояние и выведенное состояние входит в ["Closed", "Proposed", "Resolved"] и причине изменение входит в ["Rejected", "As Designed", "Cannot Reproduce"],
                     * то issue должен вернуться в состояние "Открыта", а в детализированное состояние должно записаться выведенное состояние
                     * Пример: FSC-972, изменение от 14 июл. 2020 10:38
@@ -192,14 +188,14 @@ class TFSHooks : ITFSHooks {
                         cases.add(Pair(ai.idReadable ?: "", 8))
                         commands.addAll(listOf("Состояние Открыта", "Детализированное состояние $inferredState"))
                     }
-                    /*
+                    /**
                     * Если в хуке менялось состояние и выведенное состояние входит в ["Closed", "Proposed", "Resolved"], то issue должен вернуться в состояние "Открыта", а в детализированное состояние должно записаться выведенное состояние
                     * */
                     body.isFieldChanged("System.State") && inferredState in arrayOf("Closed", "Proposed", "Resolved") -> {
                         cases.add(Pair(ai.idReadable ?: "", 9))
                         commands.add("Детализированное состояние $inferredState")
                     }
-                    /*
+                    /**
                     * Если выведенное состояние != закрытому, задача не исключалась из спринта и было изменено сосстояние либо итерация, состояние не должно меняться, а в детализированное состояние должно записаться выведенное состояние
                     * */
                     inferredState !in arrayOf("Closed", "Resolved") && !body.wasExcludedFromSprint()
@@ -213,32 +209,32 @@ class TFSHooks : ITFSHooks {
                  * Сохраняем информацию об изменениях на основе хука для последующего анализа
                  * */
                 postCommand(ai.idReadable, commands.distinct().joinToString(" ")).body.toString()
-                pg.saveHookToDatabase(body, null, null, errorMessage, inferredState, commands, HookTypes.CHANGE.name, cases)
+                pg.saveHookToDatabase(body, null, null, errorMessage, inferredState, commands, HookTypes.CHANGE, cases)
             }
-            ResponseEntity.status(HttpStatus.CREATED).body(null)
+            return issues
         } catch (e: Error) {
             mailSender.sendHtmlMessage(TEST_MAIL_RECEIVER, null, "Ошибка при обработке хука", e.localizedMessage)
-            ResponseEntity.status(HttpStatus.CREATED).body(pg.saveHookToDatabase(body, null, null, e.localizedMessage, null, null, HookTypes.CHANGE.name, null))
+            return pg.saveHookToDatabase(body = body, errorMessage = e.localizedMessage, type = HookTypes.CHANGE)
         }
     }
 
-    override fun handleWiCommented(body: WiCommentedHook?): ResponseEntity<Any> {
+    override fun handleWiCommented(body: WiCommentedHook?): Any {
         return try {
-            val emails = pg.getSupportEmployees().filter { e -> body?.getMentionedUsers()?.any { u -> e.email.contains(u) } ?: false }.map { it.email }
-            pg.saveHookToDatabase(
-                body,
-                null,
-                null,
-                null,
-                null,
-                arrayListOf("Should notify ${body?.getMentionedUsers()?.joinToString()} - ${if (emails.isEmpty()) "no support employees" else emails.joinToString()}"),
-                HookTypes.COMMENT.name,
-                null
-            )
-            ResponseEntity.status(HttpStatus.CREATED).body(null)
+            val supportEmails = pg.getSupportEmployees().filter { e -> body?.getMentionedUsers()?.any { u -> e.email.contains(u) } ?: false }.map { it.email }
+            if (supportEmails.isEmpty()) return pg.saveHookToDatabase(body = body, errorMessage = "No no support employees", type = HookTypes.COMMENT)
+            val hookWIId = body?.getDevOpsId() ?: return pg.saveHookToDatabase(body = body, errorMessage = "Unable to parse WI ID", type = HookTypes.CHANGE)
+            val issues = pg.getIssueIdsByWIId(hookWIId)
+            if (issues.isEmpty()) return pg.saveHookToDatabase(body = body, errorMessage = "No issues are associated with WI", type = HookTypes.COMMENT)
+            val filter = "(${issues.joinToString(separator = " ") { "#$it" }}) и Состояние: {Направлена разработчику}"
+            val actualIssues = issueService.search(filter, listOf("idReadable", "customFields(name,value(name))"))
+            actualIssues.forEach { ai ->
+                postCommand(ai.idReadable, "Детализированное состояние Прокомментирована 3ЛП").body.toString()
+                pg.saveHookToDatabase(body, null, null, null, null, null, HookTypes.COMMENT, arrayListOf())
+            }
+            issues
         } catch (e: Error) {
             mailSender.sendHtmlMessage(TEST_MAIL_RECEIVER, null, "Ошибка при обработке хука", e.localizedMessage)
-            ResponseEntity.status(HttpStatus.CREATED).body(pg.saveHookToDatabase(body, null, null, e.localizedMessage, null, null, HookTypes.COMMENT.name, null))
+            pg.saveHookToDatabase(body = body, errorMessage = e.localizedMessage, type = HookTypes.COMMENT)
         }
     }
 }

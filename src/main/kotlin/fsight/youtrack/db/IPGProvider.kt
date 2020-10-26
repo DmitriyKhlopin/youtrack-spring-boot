@@ -1,5 +1,6 @@
 package fsight.youtrack.db
 
+import fsight.youtrack.HookTypes
 import fsight.youtrack.api.issues.IssueFilter
 import fsight.youtrack.api.issues.IssueWiThDetails
 import fsight.youtrack.db.models.pg.ETSNameRecord
@@ -14,13 +15,13 @@ import java.sql.Timestamp
 interface IPGProvider {
     fun saveHookToDatabase(
         body: Hook?,
-        fieldState: String?,
-        fieldDetailedState: String?,
-        errorMessage: String?,
-        inferredState: String?,
-        commands: ArrayList<String>?,
-        type: String,
-        rule: ArrayList<Pair<String, Int>>?
+        fieldState: String? = null,
+        fieldDetailedState: String? = null,
+        errorMessage: String? = null,
+        inferredState: String? = null,
+        commands: ArrayList<String>? = null,
+        type: HookTypes,
+        rule: ArrayList<Pair<String, Int>>? = null
     ): Timestamp
 
     fun getDevOpsAssignees(): List<ETSNameRecord>

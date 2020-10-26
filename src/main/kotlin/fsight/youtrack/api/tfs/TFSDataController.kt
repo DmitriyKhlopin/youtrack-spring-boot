@@ -101,9 +101,8 @@ class TFSDataController(private val dataService: ITFSData, private val hooksServ
     ): ResponseEntity<Any> {
         return try {
             val jsonBody = Gson().fromJson(body, WiUpdatedHook::class.java)
-            return hooksService.handleWiUpdated(jsonBody)
+            return ResponseEntity.status(HttpStatus.CREATED).body(hooksService.handleWiUpdated(jsonBody))
         } catch (e: Exception) {
-            println("WorkItem Updated: ${e.message}")
             logger.info { "WorkItem Updated: ${e.message}" }
             logger.info { body }
             ResponseEntity.status(HttpStatus.OK).body(e.message)
@@ -117,9 +116,8 @@ class TFSDataController(private val dataService: ITFSData, private val hooksServ
     ): ResponseEntity<Any> {
         return try {
             val jsonBody = Gson().fromJson(body, WiCommentedHook::class.java)
-            hooksService.handleWiCommented(jsonBody)
+            return ResponseEntity.status(HttpStatus.CREATED).body(hooksService.handleWiCommented(jsonBody))
         } catch (e: Exception) {
-            println("WorkItem Commented: ${e.message}")
             logger.info { "WorkItem Commented: ${e.message}" }
             logger.info { body }
             ResponseEntity.status(HttpStatus.OK).body(e.message)
@@ -128,7 +126,7 @@ class TFSDataController(private val dataService: ITFSData, private val hooksServ
 
     @GetMapping("/api/tfs/serviceHooks/post/{id}")
     fun postCommand(@PathVariable("id") id: String? = null): ResponseEntity<Any> {
-        return hooksService.postCommand(id, "Состояние Открыта")
+        return ResponseEntity.status(HttpStatus.CREATED).body(hooksService.postCommand(id, "Состояние Открыта"))
     }
 
 
