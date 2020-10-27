@@ -66,9 +66,10 @@ class TFSHooks : ITFSHooks {
              * Получаем номер WI из хука
              * */
             val hookWIId = body.getDevOpsId() ?: return pg.saveHookToDatabase(body = body, errorMessage = "Unable to parse WI ID", type = HookTypes.CHANGE)
+
             /**
-            * Получаем список issue, в которые указан id WI в полях "Issue" и "Requirement"
-            * */
+             * Получаем список issue, в которые указан id WI в полях "Issue" и "Requirement"
+             * */
             val issues = pg.getIssueIdsByWIId(hookWIId)
             /**
              * Выходим, если не найдены связанные issue
@@ -78,34 +79,35 @@ class TFSHooks : ITFSHooks {
              * Получаем информацию из YT по номерам issue
              * */
             val filter = "(${issues.joinToString(separator = " ") { "#$it" }}) и Состояние: {Направлена разработчику}"
-            val actualIssues =
-                issueService.search(filter, listOf("idReadable", "customFields(name,value(name))"))
+            val actualIssues = issueService.search(filter, listOf("idReadable", "customFields(name,value(name))"))
+
             /**
-            * На основании всех issue получаем все привязанные к ним баги
-            * */
+             * На основании всех issue получаем все привязанные к ним баги
+             * */
             val linkedWIIds = actualIssues.getBugsAndFeatures()
 
             /**
-            * Выходим, если нет багов и фич
-            * */
+             * Выходим, если нет багов и фич
+             * */
             if (linkedWIIds.isEmpty()) return pg.saveHookToDatabase(body = body, errorMessage = "No bugs found. Issues size = ${actualIssues.size}", type = HookTypes.CHANGE)
             /**
-            * Получаем состояния багов из DevOps и присваиваем порядок каждому состоянию
-            * */
+             * Получаем состояния багов из DevOps и присваиваем порядок каждому состоянию
+             * */
             val devOpsItems = devops.getDevOpsItemsByIds(linkedWIIds).mergeWithHookData(body, dictionaries.devOpsStates)
             var errorMessage: String? = null
             /**
-            * Для каждого issue получаем выведенное состояние и отправляем команды в YT на его основании
-            * */
+             * Для каждого issue получаем выведенное состояние и отправляем команды в YT на его основании
+             * */
 
             actualIssues.forEach { ai ->
                 /*
                 * Получаем только актуальные для конкретного issue баги
                 * */
                 val wi = devOpsItems.filter { w -> ai.bugsAndFeatures().indexOf(w.systemId) != -1 }
+
                 /**
-                * Получаем выведенное состояние
-                * */
+                 * Получаем выведенное состояние
+                 * */
                 //TODO выведение состояния должно учитывать поле Reason
                 val inferredState = wi.getInferredState()
                 val issueState = ai.unwrapFieldValue("State")
@@ -156,8 +158,8 @@ class TFSHooks : ITFSHooks {
                         errorMessage = "Нельзя применить изменения к issue в детализированном состоянии $issueDetailedState"
                     }
                     /**
-                    * Если выведенное состояние входит в ["Closed", "Resolved"], было изменено сосстояние и причина закрытия заявки входит в ["Fixed", "Verified"], то issue должен вернуться в состояние "Открыта", а детализированное состояние должно перейти в "Backlog проверки"
-                    * */
+                     * Если выведенное состояние входит в ["Closed", "Resolved"], было изменено сосстояние и причина закрытия заявки входит в ["Fixed", "Verified"], то issue должен вернуться в состояние "Открыта", а детализированное состояние должно перейти в "Backlog проверки"
+                     * */
                     inferredState in arrayOf("Closed", "Resolved")
                             && body.isFieldChanged("System.State")
                             && body.getFieldValue("Microsoft.VSTS.Common.ResolvedReason") in listOf("Fixed", "Verified")
@@ -176,32 +178,40 @@ class TFSHooks : ITFSHooks {
                         commands.addAll(listOf("Состояние Открыта", "Детализированное состояние Backlog 2ЛП"))
                     }
                     /**
-                    * Если в хуке менялось состояние и выведенное состояние входит в ["Closed", "Proposed", "Resolved"] и причине изменение входит в ["Rejected", "As Designed", "Cannot Reproduce"],
-                    * то issue должен вернуться в состояние "Открыта", а в детализированное состояние должно записаться выведенное состояние
-                    * Пример: FSC-972, изменение от 14 июл. 2020 10:38
-                    * */
+                     * Если в хуке менялось состояние и выведенное состояние входит в ["Closed", "Proposed", "Resolved"] и причине изменение входит в ["Rejected", "As Designed", "Cannot Reproduce"],
+                     * то issue должен вернуться в состояние "Открыта", а в детализированное состояние должно записаться выведенное состояние
+                     * Пример: FSC-972, изменение от 14 июл. 2020 10:38
+                     * */
                     body.isFieldChanged("System.State")
-                            && inferredState in arrayOf("Closed", "Proposed", "Resolved")
+                            && inferredState in arrayOf("Closed", "Resolved")
                             && (body.getFieldValue("Microsoft.VSTS.Common.ResolvedReason") in listOf("Rejected", "As Designed", "Cannot Reproduce") ||
                             body.getFieldValue("System.Reason") in listOf("Rejected", "As Designed", "Cannot Reproduce"))
                     -> {
                         cases.add(Pair(ai.idReadable ?: "", 8))
                         commands.addAll(listOf("Состояние Открыта", "Детализированное состояние $inferredState"))
                     }
-                    /**
-                    * Если в хуке менялось состояние и выведенное состояние входит в ["Closed", "Proposed", "Resolved"], то issue должен вернуться в состояние "Открыта", а в детализированное состояние должно записаться выведенное состояние
-                    * */
-                    body.isFieldChanged("System.State") && inferredState in arrayOf("Closed", "Proposed", "Resolved") -> {
+                    body.isFieldChanged("System.State") && inferredState == "Proposed"
+                            && (body.getFieldValue("Microsoft.VSTS.Common.ResolvedReason") in listOf("Rejected", "As Designed", "Cannot Reproduce") ||
+                            body.getFieldValue("System.Reason") in listOf("Rejected", "As Designed", "Cannot Reproduce"))
+                    -> {
                         cases.add(Pair(ai.idReadable ?: "", 9))
+                        commands.addAll(listOf("Состояние Открыта", "Детализированное состояние $inferredState"))
+                    }
+                    /**
+                     * Если в хуке менялось состояние и выведенное состояние входит в ["Closed", "Proposed", "Resolved"], то issue должен вернуться в состояние "Открыта", а в детализированное состояние должно записаться выведенное состояние
+                     * */
+                    body.isFieldChanged("System.State") && inferredState in arrayOf("Closed", "Proposed", "Resolved") -> {
+                        cases.add(Pair(ai.idReadable ?: "", 10))
                         commands.add("Детализированное состояние $inferredState")
                     }
                     /**
-                    * Если выведенное состояние != закрытому, задача не исключалась из спринта и было изменено сосстояние либо итерация, состояние не должно меняться, а в детализированное состояние должно записаться выведенное состояние
-                    * */
+                     * Если выведенное состояние != закрытому, задача не исключалась из спринта и было изменено сосстояние либо итерация, состояние не должно меняться, а в детализированное состояние должно записаться выведенное состояние
+                     * */
                     inferredState !in arrayOf("Closed", "Resolved") && !body.wasExcludedFromSprint()
                             && ((body.isFieldChanged("System.State") || body.isFieldChanged("System.IterationPath")))
                     -> {
-                        cases.add(Pair(ai.idReadable ?: "", 10))
+                        mailSender.sendHtmlMessage(TEST_MAIL_RECEIVER, null, "Не найдено правило для выведения состояния", body.toString())
+                        cases.add(Pair(ai.idReadable ?: "", 11))
                         commands.add("Детализированное состояние $inferredState")
                     }
                 }
