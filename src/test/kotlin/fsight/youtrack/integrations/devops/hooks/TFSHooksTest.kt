@@ -229,6 +229,4 @@ internal class TFSHooksTest {
         println(resolver.resolveTeamToPo(j))
 
     }
-
-
 }

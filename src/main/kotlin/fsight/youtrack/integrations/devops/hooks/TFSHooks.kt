@@ -210,9 +210,11 @@ class TFSHooks : ITFSHooks {
                     inferredState !in arrayOf("Closed", "Resolved") && !body.wasExcludedFromSprint()
                             && ((body.isFieldChanged("System.State") || body.isFieldChanged("System.IterationPath")))
                     -> {
-                        mailSender.sendHtmlMessage(TEST_MAIL_RECEIVER, null, "Не найдено правило для выведения состояния", body.toString())
                         cases.add(Pair(ai.idReadable ?: "", 11))
                         commands.add("Детализированное состояние $inferredState")
+                    }
+                    else -> {
+                        mailSender.sendHtmlMessage(TEST_MAIL_RECEIVER, null, "Не найдено правило для выведения состояния", body.toString())
                     }
                 }
                 /**

@@ -1,16 +1,15 @@
 package fsight.youtrack.etl.timeline
 
+import fsight.youtrack.db.IPGProvider
 import fsight.youtrack.generated.jooq.tables.IssueTimeline.ISSUE_TIMELINE
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
-import fsight.youtrack.generated.jooq.tables.IssuesTimelineView.ISSUES_TIMELINE_VIEW
 import fsight.youtrack.models.IssueTimelineItem
 import fsight.youtrack.models.Schedule
 import fsight.youtrack.models.toIssueTimelineRecord
-import fsight.youtrack.toEndOfDate
 import fsight.youtrack.toStartOfDate
 import fsight.youtrack.toTimestamp
 import org.jooq.DSLContext
-import org.jooq.impl.DSL
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.sql.Timestamp
 import java.time.Duration
@@ -21,6 +20,9 @@ import java.util.*
 
 @Service
 class Timeline(private val dsl: DSLContext) : ITimeline {
+    @Autowired
+    private lateinit var pg: IPGProvider;
+
     private val schedule = Schedule("Стандартный", 1, 5, 11, 19)
     private val userStates = listOf(
         "На проверке", "Исправлена", "Решена", "Дубликат", "Не удается воспроизвести",
@@ -49,7 +51,7 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
             .select(ISSUES.ID)
             .from(ISSUES)
             .where(ISSUES.UPDATED_DATE_TIME.ge(Timestamp.valueOf(LocalDateTime.now().toLocalDate().atStartOfDay())).or(ISSUES.RESOLVED_DATE_TIME.isNull))
-            .and(ISSUES.PROJECT_SHORT_NAME.notIn(listOf("SD", "TC", "SPAM", "PO", "TEST")))
+            .and(ISSUES.PROJECT_SHORT_NAME.notIn(listOf("SD", "TC", "SPAM", "PO", "TEST", "SPAM")))
             .fetchInto(String::class.java)
         println("Need to calculate timelines for ${i.size} items.")
         val size = i.size
@@ -57,85 +59,27 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
             calculateForId(s, index, size, false)
             println("Calculated timeline for ${index * 100 / size}% of issues")
         }
-        updateIssueSpentTime()
+        println("Calculated timeline for 100% of issues")
+        pg.updateAllIssuesSpentTime()
     }
 
     override fun launchCalculationForPeriod(dateFrom: String?, dateTo: String?) {
-        val i: List<String> = dsl
-            .select(ISSUES.ID)
-            .from(ISSUES)
-            .where(ISSUES.UPDATED_DATE.between(dateFrom?.toStartOfDate()).and(dateTo?.toEndOfDate()))
-            .and(ISSUES.PROJECT_SHORT_NAME.notIn(listOf("SD", "TC", "SPAM", "PO", "BL")))
-            .orderBy(ISSUES.UPDATED_DATE.asc())
-            .fetchInto(String::class.java)
-        println("Need to calculate timelines for ${i.size} items.")
+        val df = dateFrom?.toStartOfDate() ?: return
+        val dt = dateTo?.toStartOfDate() ?: return
+        val i: List<String> = pg.getIssuesUpdatedInPeriod(df, dt)
         val size = i.size
+        println("Need to calculate timelines for $size items.")
         i.asSequence().forEachIndexed { index, s ->
             calculateForId(s, index, size, true)
             print("Calculated timeline for ${index * 100 / size}% of issues\r")
         }
-    }
-
-    fun updateIssueSpentTime() {
-        dsl.execute(
-            """
-                update issues
-                set time_user     = a.time_user
-                  , time_agent    = a.time_agent
-                  , time_developer= a.time_developer
-                from (select sum(case when transition_owner = 'YouTrackUser' then time_spent else 0 end)          as time_user
-                           , sum(case when transition_owner in ('Agent', 'Undefined') then time_spent else 0 end) as time_agent
-                           , sum(case when transition_owner = 'Developer' then time_spent else 0 end)             as time_developer
-                           , issue_id
-                      from issue_timeline
-                      group by issue_id
-                     ) a
-                where issues.id = a.issue_id
-            """.trimIndent()
-        )
-    }
-
-    fun updateIssueSpentTimeById(issueId: String) {
-        try {
-            dsl.execute(
-                """
-                update issues
-                set time_user     = a.time_user
-                  , time_agent    = a.time_agent
-                  , time_developer= a.time_developer
-                from (select sum(case when transition_owner = 'YouTrackUser' then time_spent else 0 end)          as time_user
-                           , sum(case when transition_owner in ('Agent', 'Undefined') then time_spent else 0 end) as time_agent
-                           , sum(case when transition_owner = 'Developer' then time_spent else 0 end)             as time_developer
-                           , issue_id
-                      from issue_timeline
-                      group by issue_id
-                     ) a
-                where issues.id = a.issue_id
-                and issues.id = '$issueId'
-            """.trimIndent()
-            )
-        } catch (e: Exception) {
-            println(e.message)
-        }
+        pg.updateAllIssuesSpentTime()
     }
 
     override fun calculateForId(issueId: String, currentIndex: Int, issuesSize: Int, update: Boolean): List<IssueTimelineItem> {
         println("Calculating timeline for $issueId")
         dsl.deleteFrom(ISSUE_TIMELINE).where(ISSUE_TIMELINE.ISSUE_ID.eq(issueId)).execute()
-        val i: List<IssueTimelineItem> = dsl
-            .select(
-                ISSUES_TIMELINE_VIEW.ISSUE_ID.`as`("id"),
-                ISSUES_TIMELINE_VIEW.UPDATE_DATE_TIME.`as`("dateFrom"),
-                ISSUES_TIMELINE_VIEW.UPDATE_DATE_TIME.`as`("dateTo"),
-                ISSUES_TIMELINE_VIEW.OLD_VALUE_STRING.`as`("stateOld"),
-                ISSUES_TIMELINE_VIEW.NEW_VALUE_STRING.`as`("stateNew"),
-                ISSUES_TIMELINE_VIEW.TIME_SPENT.`as`("timeSpent"),
-                DSL.nullif(true, true).`as`("stateOwner")
-            )
-            .from(ISSUES_TIMELINE_VIEW)
-            .where(ISSUES_TIMELINE_VIEW.ISSUE_ID.eq(issueId))
-            .fetchInto(IssueTimelineItem::class.java)
-
+        val i: List<IssueTimelineItem> = pg.getIssueTimelineItemsById(issueId)
         val a = arrayListOf<IssueTimelineItem>()
         i.forEachIndexed { index, issueTimelineItem ->
             issueTimelineItem.dateFrom = if (index - 1 >= 0) i[index - 1].dateTo else issueTimelineItem.dateTo
@@ -229,10 +173,10 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
 
         a.forEachIndexed { index, it ->
             it.dateFrom = if (index == 0) it.dateTo else a[index - 1].dateTo
-            it.stateOwner = when {
-                it.stateOld in userStates -> "YouTrackUser"
-                it.stateOld in agentStates -> "Agent"
-                it.stateOld in developerStates -> "Developer"
+            it.stateOwner = when (it.stateOld) {
+                in userStates -> "YouTrackUser"
+                in agentStates -> "Agent"
+                in developerStates -> "Developer"
                 else -> "Undefined"
             }
             val start = it.dateFrom.toLocalDateTime()
@@ -273,17 +217,8 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
             }
             a[index].timeSpent = result
         }
-        val stored = dsl.loadInto(ISSUE_TIMELINE).loadRecords(a.map(IssueTimelineItem::toIssueTimelineRecord)).fields(
-            ISSUE_TIMELINE.ISSUE_ID,
-            ISSUE_TIMELINE.STATE_FROM,
-            ISSUE_TIMELINE.STATE_TO,
-            ISSUE_TIMELINE.STATE_FROM_DATE,
-            ISSUE_TIMELINE.STATE_TO_DATE,
-            ISSUE_TIMELINE.TIME_SPENT,
-            ISSUE_TIMELINE.TRANSITION_OWNER
-        ).execute().stored()
+        val stored = pg.saveIssueTimelineItems(a)
         println("Saved $stored timeline items")
-        updateIssueSpentTimeById(issueId)
         return a
     }
 }

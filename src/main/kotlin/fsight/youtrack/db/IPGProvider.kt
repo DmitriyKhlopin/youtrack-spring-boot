@@ -7,6 +7,7 @@ import fsight.youtrack.db.models.pg.ETSNameRecord
 import fsight.youtrack.generated.jooq.tables.records.AreaTeamRecord
 import fsight.youtrack.generated.jooq.tables.records.ProductOwnersRecord
 import fsight.youtrack.models.Dynamics
+import fsight.youtrack.models.IssueTimelineItem
 import fsight.youtrack.models.PartnerCustomerPair
 import fsight.youtrack.models.YouTrackProject
 import fsight.youtrack.models.hooks.Hook
@@ -23,12 +24,12 @@ interface IPGProvider {
         type: HookTypes,
         rule: ArrayList<Pair<String, Int>>? = null
     ): Timestamp
-
     fun getDevOpsAssignees(): List<ETSNameRecord>
     fun getSupportEmployees(): List<ETSNameRecord>
     fun getIssueIdsByWIId(id: Int): List<String>
     fun getIssuesIdsInDevelopment(): List<String>
     fun getDynamicsData(projects: String, dateFrom: Timestamp, dateTo: Timestamp): List<Dynamics>
+    fun getIssuesUpdatedInPeriod(dateFrom: Timestamp, dateTo: Timestamp): List<String>
     fun getCommercialProjects(): List<YouTrackProject>
     fun getIssuesBySigmaValue(days: Int, issueFilter: IssueFilter): Any
     fun updateIssueSpentTimeById(issueId: String?)
@@ -36,4 +37,7 @@ interface IPGProvider {
     fun getYouTrackIssuesWithDetails(issueFilter: IssueFilter): List<IssueWiThDetails>
     fun getAreasWithTeams(): List<AreaTeamRecord>
     fun getProductOwners(): List<ProductOwnersRecord>
+    fun updateAllIssuesSpentTime()
+    fun getIssueTimelineItemsById(issueId: String): List<IssueTimelineItem>
+    fun saveIssueTimelineItems(items: List<IssueTimelineItem>): Int
 }

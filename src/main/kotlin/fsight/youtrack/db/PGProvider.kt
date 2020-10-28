@@ -11,7 +11,10 @@ import fsight.youtrack.generated.jooq.tables.Dynamics.DYNAMICS
 import fsight.youtrack.generated.jooq.tables.EtsNames.ETS_NAMES
 import fsight.youtrack.generated.jooq.tables.Hooks.HOOKS
 import fsight.youtrack.generated.jooq.tables.IssueTags.ISSUE_TAGS
+import fsight.youtrack.generated.jooq.tables.IssueTimeline
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
+import fsight.youtrack.generated.jooq.tables.IssuesTimelineView
+import fsight.youtrack.generated.jooq.tables.IssuesTimelineView.ISSUES_TIMELINE_VIEW
 import fsight.youtrack.generated.jooq.tables.PartnerCustomers.PARTNER_CUSTOMERS
 import fsight.youtrack.generated.jooq.tables.ProductOwners.PRODUCT_OWNERS
 import fsight.youtrack.generated.jooq.tables.ProjectType.PROJECT_TYPE
@@ -20,11 +23,11 @@ import fsight.youtrack.generated.jooq.tables.WorkItems.WORK_ITEMS
 import fsight.youtrack.generated.jooq.tables.records.AreaTeamRecord
 import fsight.youtrack.generated.jooq.tables.records.CustomFieldValuesRecord
 import fsight.youtrack.generated.jooq.tables.records.ProductOwnersRecord
-import fsight.youtrack.models.Dynamics
-import fsight.youtrack.models.PartnerCustomerPair
-import fsight.youtrack.models.YouTrackProject
+import fsight.youtrack.models.*
 import fsight.youtrack.models.hooks.Hook
 import fsight.youtrack.splitToList
+import fsight.youtrack.toEndOfDate
+import fsight.youtrack.toStartOfDate
 import org.jooq.Condition
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
@@ -211,6 +214,25 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
         }
     }
 
+    override fun updateAllIssuesSpentTime(){
+        dsl.execute(
+            """
+                update issues
+                set time_user     = a.time_user
+                  , time_agent    = a.time_agent
+                  , time_developer= a.time_developer
+                from (select sum(case when transition_owner = 'YouTrackUser' then time_spent else 0 end)          as time_user
+                           , sum(case when transition_owner in ('Agent', 'Undefined') then time_spent else 0 end) as time_agent
+                           , sum(case when transition_owner = 'Developer' then time_spent else 0 end)             as time_developer
+                           , issue_id
+                      from issue_timeline
+                      group by issue_id
+                     ) a
+                where issues.id = a.issue_id
+            """.trimIndent()
+        )
+    }
+
     override fun getPartnerCustomers(): List<PartnerCustomerPair> {
         return dsl.select(
             PARTNER_CUSTOMERS.FIELD_VALUE.`as`("customer"),
@@ -281,5 +303,43 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
 
     override fun getProductOwners(): List<ProductOwnersRecord> {
         return dsl.select(PRODUCT_OWNERS.TEAM, PRODUCT_OWNERS.OWNER).from(PRODUCT_OWNERS).fetchInto(ProductOwnersRecord::class.java)
+    }
+
+    override fun getIssuesUpdatedInPeriod(dateFrom: Timestamp, dateTo: Timestamp): List<String> {
+        return dsl
+            .select(ISSUES.ID)
+            .from(ISSUES)
+            .where(ISSUES.UPDATED_DATE.between(dateFrom).and(dateTo))
+            .and(ISSUES.PROJECT_SHORT_NAME.notIn(listOf("SD", "TC", "SPAM", "PO", "BL", "SPAM")))
+            .orderBy(ISSUES.UPDATED_DATE.asc())
+            .fetchInto(String::class.java)
+    }
+
+    override fun getIssueTimelineItemsById(issueId: String): List<IssueTimelineItem> {
+        return dsl
+            .select(
+                ISSUES_TIMELINE_VIEW.ISSUE_ID.`as`("id"),
+                ISSUES_TIMELINE_VIEW.UPDATE_DATE_TIME.`as`("dateFrom"),
+                ISSUES_TIMELINE_VIEW.UPDATE_DATE_TIME.`as`("dateTo"),
+                ISSUES_TIMELINE_VIEW.OLD_VALUE_STRING.`as`("stateOld"),
+                ISSUES_TIMELINE_VIEW.NEW_VALUE_STRING.`as`("stateNew"),
+                ISSUES_TIMELINE_VIEW.TIME_SPENT.`as`("timeSpent"),
+                DSL.nullif(true, true).`as`("stateOwner")
+            )
+            .from(ISSUES_TIMELINE_VIEW)
+            .where(ISSUES_TIMELINE_VIEW.ISSUE_ID.eq(issueId))
+            .fetchInto(IssueTimelineItem::class.java)
+    }
+
+    override fun saveIssueTimelineItems(items: List<IssueTimelineItem>):Int{
+        return dsl.loadInto(IssueTimeline.ISSUE_TIMELINE).loadRecords(items.map(IssueTimelineItem::toIssueTimelineRecord)).fields(
+            IssueTimeline.ISSUE_TIMELINE.ISSUE_ID,
+            IssueTimeline.ISSUE_TIMELINE.STATE_FROM,
+            IssueTimeline.ISSUE_TIMELINE.STATE_TO,
+            IssueTimeline.ISSUE_TIMELINE.STATE_FROM_DATE,
+            IssueTimeline.ISSUE_TIMELINE.STATE_TO_DATE,
+            IssueTimeline.ISSUE_TIMELINE.TIME_SPENT,
+            IssueTimeline.ISSUE_TIMELINE.TRANSITION_OWNER
+        ).execute().stored()
     }
 }
