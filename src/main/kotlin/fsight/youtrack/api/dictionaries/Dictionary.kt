@@ -28,6 +28,8 @@ class Dictionary(private val dsl: DSLContext) : IDictionary {
     @Autowired
     private lateinit var projectsService: IProjects
 
+    override val areas: HashMap<String, String> = HashMap()
+    override val productOwners: HashMap<String, String> = HashMap()
     override val commercialProjects: ArrayList<ReactSelectOption> = arrayListOf()
     override val innerProjects: ArrayList<String> = arrayListOf()
     override val devOpsStates: ArrayList<DevOpsStateOrder> = arrayListOf()
@@ -36,16 +38,6 @@ class Dictionary(private val dsl: DSLContext) : IDictionary {
             it["High"] = "Major"
             it["Medium"] = "Normal"
             it["Low"] = "Minor"
-        }
-    }
-    override val areas: HashMap<String, String> by lazy {
-        hashMapOf<String, String>().also {
-            it["\\P7\\Components Library\\Web-Components\\Products\\Data Entry Forms"] = "1.5 Формы ввода"
-            it["\\P7\\Components Library\\Web-Components\\Reporting\\Dashboard"] = "1.1 Аналитические панели"
-            it["Budgeting"] = "9. Бюджетная модель"
-            it["TabSheet"] = "1.2 Регламентные отчеты"
-            it["Fore.NET Language"] = "2.3 Средства разработки (Fore)"
-            it["P7"] = "8. Прочее"
         }
     }
 
@@ -97,25 +89,21 @@ class Dictionary(private val dsl: DSLContext) : IDictionary {
     }
 
 
-    final override fun preloadCommercialProjects() {
+    override fun loadCommercialProjects() {
         commercialProjects.clear()
         val i = pg.getCommercialProjects().map { ReactSelectOption(it.shortName ?: "", it.name ?: "", "#00B8D9") }
         commercialProjects.addAll(i)
         println("${commercialProjects.size} commercial projects cached")
     }
 
-    final override fun preloadInnerProjects() {
+    override fun loadInnerProjects() {
         innerProjects.clear()
-        val i = dsl.select(PROJECTS.SHORT_NAME)
-            .from(PROJECTS)
-            .leftJoin(PROJECT_TYPE).on(PROJECTS.SHORT_NAME.eq(PROJECT_TYPE.PROJECT_SHORT_NAME))
-            .where(PROJECT_TYPE.IS_PUBLIC.eq(false))
-            .fetchInto(String::class.java)
+        val i = pg.getInnerProjects().mapNotNull { it.name }
         innerProjects.addAll(i)
         println("${innerProjects.size} inner projects cached")
     }
 
-    final override fun preloadDevOpsStates() {
+    override fun loadDevOpsStates() {
         devOpsStates.clear()
         val i = dsl.select(DEVOPS_STATES_ORDER.STATE.`as`("state"), DEVOPS_STATES_ORDER.ORD.`as`("order"))
             .from(DEVOPS_STATES_ORDER)
@@ -132,11 +120,23 @@ class Dictionary(private val dsl: DSLContext) : IDictionary {
         return pg.getPartnerCustomers()
     }
 
+    override fun loadAreasWithTeams() {
+        pg.getAreasWithTeams().forEach { areas[it.area] = it.team }
+        println("${areas.size} areas cached")
+    }
+
+    override fun loadProductOwners() {
+        pg.getProductOwners().forEach { productOwners[it.team] = it.owner }
+        println("${productOwners.size} product owners cached")
+    }
+
     @PostConstruct
     fun init() {
-        preloadDevOpsStates()
-        preloadCommercialProjects()
-        preloadInnerProjects()
+        loadDevOpsStates()
+        loadCommercialProjects()
+        loadInnerProjects()
+        loadAreasWithTeams()
+        loadProductOwners()
     }
 
 }

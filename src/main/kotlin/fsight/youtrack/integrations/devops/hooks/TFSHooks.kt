@@ -128,13 +128,16 @@ class TFSHooks : ITFSHooks {
                 val area = devOpsItems.firstOrNull { it.state !in listOf("Closed", "Resolved") }?.area
                 val team = if (area != null) resolver.resolveAreaToTeam(area) else null
                 when {
-                    team == null -> mailSender.sendMail(
+                    area != null && team == null -> mailSender.sendMail(
                         DEFAULT_MAIL_SENDER,
                         TEST_MAIL_RECEIVER,
                         "Area was not resolved to team",
                         "Issues ID = ${ai.idReadable}, Area = $area, DevOpsItems = $devOpsItems"
                     )
-                    team != ai.unwrapEnumValue("Команда") -> commands.add("Команда $team")
+                    team != ai.unwrapEnumValue("Команда") -> {
+                        cases.add(Pair(ai.idReadable ?: "", 12))
+                        commands.add("Команда $team")
+                    }
                 }
                 /**
                  * Отправляем команду в YT на основании выведенного состояния и прочих значений
@@ -213,8 +216,8 @@ class TFSHooks : ITFSHooks {
                         cases.add(Pair(ai.idReadable ?: "", 11))
                         commands.add("Детализированное состояние $inferredState")
                     }
-                    else -> {
-                        mailSender.sendHtmlMessage(TEST_MAIL_RECEIVER, null, "Не найдено правило для выведения состояния", body.toString())
+                    cases.isEmpty() -> {
+                        mailSender.sendHtmlMessage(TEST_MAIL_RECEIVER, null, "Не найдено правило для обработки задачи ${ai.idReadable}", Gson().toJson(body))
                     }
                 }
                 /**

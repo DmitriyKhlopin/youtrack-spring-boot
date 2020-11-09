@@ -13,12 +13,12 @@ import fsight.youtrack.generated.jooq.tables.Hooks.HOOKS
 import fsight.youtrack.generated.jooq.tables.IssueTags.ISSUE_TAGS
 import fsight.youtrack.generated.jooq.tables.IssueTimeline
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
-import fsight.youtrack.generated.jooq.tables.IssuesTimelineView
 import fsight.youtrack.generated.jooq.tables.IssuesTimelineView.ISSUES_TIMELINE_VIEW
 import fsight.youtrack.generated.jooq.tables.PartnerCustomers.PARTNER_CUSTOMERS
 import fsight.youtrack.generated.jooq.tables.ProductOwners.PRODUCT_OWNERS
 import fsight.youtrack.generated.jooq.tables.ProjectType.PROJECT_TYPE
 import fsight.youtrack.generated.jooq.tables.Projects.PROJECTS
+import fsight.youtrack.generated.jooq.tables.Weeks.WEEKS
 import fsight.youtrack.generated.jooq.tables.WorkItems.WORK_ITEMS
 import fsight.youtrack.generated.jooq.tables.records.AreaTeamRecord
 import fsight.youtrack.generated.jooq.tables.records.CustomFieldValuesRecord
@@ -26,11 +26,10 @@ import fsight.youtrack.generated.jooq.tables.records.ProductOwnersRecord
 import fsight.youtrack.models.*
 import fsight.youtrack.models.hooks.Hook
 import fsight.youtrack.splitToList
-import fsight.youtrack.toEndOfDate
-import fsight.youtrack.toStartOfDate
 import org.jooq.Condition
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
+import org.jooq.impl.DSL.*
 import org.springframework.stereotype.Service
 import java.sql.Timestamp
 import java.time.Instant
@@ -38,6 +37,7 @@ import java.time.Instant
 @Service
 class PGProvider(private val dsl: DSLContext) : IPGProvider {
     private val issuesTable = ISSUES.`as`("issuesTable")
+    private val weeksTable = WEEKS.`as`("weeksTable")
     private val projectTypesTable = PROJECT_TYPE.`as`("projectTypeTable")
     private val prioritiesTable = CUSTOM_FIELD_VALUES.`as`("priority")
     private val statesTable = CUSTOM_FIELD_VALUES.`as`("statesTable")
@@ -169,6 +169,18 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
             .fetchInto(YouTrackProject::class.java)
     }
 
+    override fun getInnerProjects(): List<YouTrackProject> {
+        return dsl.select(
+            PROJECTS.NAME.`as`("name"),
+            PROJECTS.SHORT_NAME.`as`("shortName"),
+            PROJECTS.ID.`as`("id")
+        )
+            .from(PROJECTS)
+            .leftJoin(projectTypesTable).on(PROJECTS.SHORT_NAME.eq(projectTypesTable.PROJECT_SHORT_NAME))
+            .where(projectTypesTable.IS_PUBLIC.eq(false))
+            .fetchInto(YouTrackProject::class.java)
+    }
+
     override fun getIssuesBySigmaValue(days: Int, issueFilter: IssueFilter): Any {
         val projectsCondition = if (issueFilter.projects.isEmpty()) DSL.trueCondition() else DSL.and(issuesTable.PROJECT_SHORT_NAME.`in`(issueFilter.projects))
         val typesCondition: Condition = if (issueFilter.types.isEmpty()) DSL.trueCondition() else DSL.and(typesTable.FIELD_VALUE.`in`(issueFilter.types))
@@ -214,7 +226,7 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
         }
     }
 
-    override fun updateAllIssuesSpentTime(){
+    override fun updateAllIssuesSpentTime() {
         dsl.execute(
             """
                 update issues
@@ -331,7 +343,7 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
             .fetchInto(IssueTimelineItem::class.java)
     }
 
-    override fun saveIssueTimelineItems(items: List<IssueTimelineItem>):Int{
+    override fun saveIssueTimelineItems(items: List<IssueTimelineItem>): Int {
         return dsl.loadInto(IssueTimeline.ISSUE_TIMELINE).loadRecords(items.map(IssueTimelineItem::toIssueTimelineRecord)).fields(
             IssueTimeline.ISSUE_TIMELINE.ISSUE_ID,
             IssueTimeline.ISSUE_TIMELINE.STATE_FROM,
@@ -341,5 +353,55 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
             IssueTimeline.ISSUE_TIMELINE.TIME_SPENT,
             IssueTimeline.ISSUE_TIMELINE.TRANSITION_OWNER
         ).execute().stored()
+    }
+
+    override fun getVelocity(issueFilter: IssueFilter): List<Velocity> {
+        /* return dsl.select(
+             issuesTable.RESOLVED_WEEK.`as`("week"),
+             DSL.coalesce(typesTable.FIELD_VALUE, "Все типы").`as`("type"),
+             DSL.count().`as`("result")
+         )
+             .from(issuesTable)
+             .leftJoin(prioritiesTable).on(issuesTable.ID.eq(prioritiesTable.ISSUE_ID)).and(prioritiesTable.FIELD_NAME.eq("Priority"))
+             .leftJoin(typesTable).on(issuesTable.ID.eq(typesTable.ISSUE_ID)).and(typesTable.FIELD_NAME.eq("Type"))
+             .leftJoin(statesTable).on(issuesTable.ID.eq(statesTable.ISSUE_ID)).and(statesTable.FIELD_NAME.eq("State"))
+             .leftJoin(projectTypesTable).on(issuesTable.PROJECT_SHORT_NAME.eq(projectTypesTable.PROJECT_SHORT_NAME))
+             .where()
+             .and((projectTypesTable.IS_PUBLIC.eq(true)).or(projectTypesTable.IS_PUBLIC.isNull))
+             .and(issueFilter.toProjectsCondition())
+             .and(issueFilter.toPrioritiesCondition())
+             .and(issueFilter.toStatesCondition())
+             .and(issuesTable.RESOLVED_WEEK.isNotNull)
+             .groupBy(DSL.groupingSets(arrayOf(issuesTable.RESOLVED_WEEK, typesTable.FIELD_VALUE), arrayOf(issuesTable.RESOLVED_WEEK)))
+             .orderBy(issuesTable.RESOLVED_WEEK.asc())
+             .fetchInto(Velocity::class.java)*/
+
+        val t1 = name("t1").fields("week", "type", "result").`as`(
+            select(
+                issuesTable.RESOLVED_WEEK.`as`("week"),
+                DSL.coalesce(typesTable.FIELD_VALUE, "Все типы").`as`("type"),
+                DSL.count().`as`("result")
+            )
+                .from(issuesTable)
+                .leftJoin(prioritiesTable).on(issuesTable.ID.eq(prioritiesTable.ISSUE_ID)).and(prioritiesTable.FIELD_NAME.eq("Priority"))
+                .leftJoin(typesTable).on(issuesTable.ID.eq(typesTable.ISSUE_ID)).and(typesTable.FIELD_NAME.eq("Type"))
+                .leftJoin(statesTable).on(issuesTable.ID.eq(statesTable.ISSUE_ID)).and(statesTable.FIELD_NAME.eq("State"))
+                .leftJoin(projectTypesTable).on(issuesTable.PROJECT_SHORT_NAME.eq(projectTypesTable.PROJECT_SHORT_NAME))
+                .where()
+                .and((projectTypesTable.IS_PUBLIC.eq(true)).or(projectTypesTable.IS_PUBLIC.isNull))
+                .and(issueFilter.toProjectsCondition())
+                .and(issueFilter.toPrioritiesCondition())
+                .and(issueFilter.toStatesCondition())
+                .and(issuesTable.RESOLVED_WEEK.isNotNull)
+                .groupBy(groupingSets(arrayOf(issuesTable.RESOLVED_WEEK, typesTable.FIELD_VALUE), arrayOf(issuesTable.RESOLVED_WEEK)))
+                .orderBy(issuesTable.RESOLVED_WEEK.asc())
+
+        )
+        return dsl.with(t1).select(
+            WEEKS.W.`as`("week"), t1.field("type"), t1.field("result")
+        )
+            .from(WEEKS)
+            .leftJoin(t1).on(WEEKS.W.eq(t1.field("week").cast(Timestamp::class.java)))
+            .fetchInto(Velocity::class.java)
     }
 }

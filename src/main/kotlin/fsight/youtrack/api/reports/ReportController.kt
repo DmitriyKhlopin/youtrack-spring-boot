@@ -1,7 +1,11 @@
 package fsight.youtrack.api.reports
 
+import fsight.youtrack.api.issues.IssueFilter
 import fsight.youtrack.models.PartnerFilter
-import org.springframework.web.bind.annotation.*
+import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class ReportController(private val service: IReport) {
@@ -29,5 +33,9 @@ class ReportController(private val service: IReport) {
     fun getProductsByPartner(@RequestBody filters: List<PartnerFilter>): Any {
         return service.getProductsByPartner(filters)
     }
-}
 
+    @PostMapping("/api/report/velocity")
+    fun getIssuesBySigmaValue(@RequestBody issueFilter: IssueFilter): Any {
+        return service.getVelocity(issueFilter)
+    }
+}

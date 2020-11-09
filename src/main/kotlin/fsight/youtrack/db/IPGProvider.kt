@@ -6,10 +6,7 @@ import fsight.youtrack.api.issues.IssueWiThDetails
 import fsight.youtrack.db.models.pg.ETSNameRecord
 import fsight.youtrack.generated.jooq.tables.records.AreaTeamRecord
 import fsight.youtrack.generated.jooq.tables.records.ProductOwnersRecord
-import fsight.youtrack.models.Dynamics
-import fsight.youtrack.models.IssueTimelineItem
-import fsight.youtrack.models.PartnerCustomerPair
-import fsight.youtrack.models.YouTrackProject
+import fsight.youtrack.models.*
 import fsight.youtrack.models.hooks.Hook
 import java.sql.Timestamp
 
@@ -24,6 +21,7 @@ interface IPGProvider {
         type: HookTypes,
         rule: ArrayList<Pair<String, Int>>? = null
     ): Timestamp
+
     fun getDevOpsAssignees(): List<ETSNameRecord>
     fun getSupportEmployees(): List<ETSNameRecord>
     fun getIssueIdsByWIId(id: Int): List<String>
@@ -40,4 +38,6 @@ interface IPGProvider {
     fun updateAllIssuesSpentTime()
     fun getIssueTimelineItemsById(issueId: String): List<IssueTimelineItem>
     fun saveIssueTimelineItems(items: List<IssueTimelineItem>): Int
+    fun getInnerProjects(): List<YouTrackProject>
+    fun getVelocity(issueFilter: IssueFilter): List<Velocity>
 }

@@ -15,14 +15,17 @@ interface IDictionary {
     val devOpsStates: List<DevOpsStateOrder>
     val priorities: HashMap<String, String>
     val areas: HashMap<String, String>
+    val productOwners: HashMap<String, String>
     val buildPrefixes: HashMap<String, String>
     val buildSuffixes: HashMap<String, String>
     val users: List<YouTrackUser>
     val customFieldValues: List<BundleValue>
     val sprints: HashMap<String, Pair<Timestamp, Timestamp>>
-    fun preloadCommercialProjects()
-    fun preloadInnerProjects()
-    fun preloadDevOpsStates()
+    fun loadCommercialProjects()
+    fun loadInnerProjects()
+    fun loadDevOpsStates()
     fun getTags(): List<String>
     fun getPartnerCustomers(): Any
+    fun loadAreasWithTeams()
+    fun loadProductOwners()
 }
