@@ -1,11 +1,10 @@
 package fsight.youtrack.api.charts
 
+import fsight.youtrack.api.issues.IssueFilter
 import fsight.youtrack.db.exposed.pg.TimeAccountingExtendedRepo
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.web.bind.annotation.CrossOrigin
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.*
 
 @CrossOrigin
 @RestController
@@ -16,29 +15,18 @@ class ChartDataController(
     @Autowired
     lateinit var service: ChartData
 
-    @GetMapping("/api/chart/dynamics")
-    fun getTimeLineData(
-        @RequestParam("projects", required = false) projects: String? = null,
-        @RequestParam("dateFrom", required = false) dateFrom: String? = null,
-        @RequestParam("dateTo", required = false) dateTo: String? = null
-    ) =
-        service.getDynamicsData(projects, dateFrom, dateTo)
+    @PostMapping("/api/chart/dynamics")
+    fun getTimeLineData(@RequestBody issueFilter: IssueFilter) = service.getDynamicsData(issueFilter)
 
-    @GetMapping("/api/chart/sigma")
+    @PostMapping("/api/chart/sigma")
     fun getSigmaData(
-        @RequestParam("projects", required = false) projects: String = "",
-        @RequestParam("types", required = false) types: String = "",
-        @RequestParam("states", required = false) states: String = "",
-        @RequestParam("dateFrom", required = false) dateFrom: String = "",
-        @RequestParam("dateTo", required = false) dateTo: String = ""
-    ) = service.getSigmaData(projects, types, states, dateFrom, dateTo)
+        @RequestBody issueFilter: IssueFilter
+    ) = service.getSigmaData(issueFilter)
 
-    @GetMapping("/api/chart/created_on_week")
+    @PostMapping("/api/chart/created_on_week")
     fun getCreatedCountOnWeek(
-        @RequestParam("projects", required = false) projects: String = "",
-        @RequestParam("dateFrom", required = false) dateFrom: String = "",
-        @RequestParam("dateTo", required = false) dateTo: String = ""
-    ) = service.getCreatedCountOnWeek(projects, dateFrom, dateTo)
+        @RequestBody issueFilter: IssueFilter
+    ) = service.getCreatedCountOnWeek(issueFilter)
 
     @GetMapping("/api/chart/time_accounting_extended_grouped")
     fun getGroupedTimeUnitsByProjectType(
@@ -55,5 +43,47 @@ class ChartDataController(
         @RequestParam("dateTo", required = false) dateTo: String = ""
     ): Any {
         return service.getProcessedDaily(projects, dateFrom, dateTo)
+    }
+
+    @PostMapping("/api/chart/priorities")
+    fun getPrioritiesStats(
+        @RequestBody issueFilter: IssueFilter
+    ): ResponseEntity<Any> {
+        return ResponseEntity.ok(service.getPrioritiesStats(issueFilter))
+    }
+
+    @PostMapping("/api/chart/types")
+    fun getTypesStats(
+        @RequestBody issueFilter: IssueFilter
+    ): ResponseEntity<Any> {
+        return ResponseEntity.ok(service.getTypesStats(issueFilter))
+    }
+
+    @PostMapping("/api/chart/avg_lifetime")
+    fun getAverageLifetime(
+        @RequestBody issueFilter: IssueFilter
+    ): ResponseEntity<Any> {
+        return ResponseEntity.ok(service.getAverageLifetime(issueFilter))
+    }
+
+    @PostMapping("/api/chart/avg_lifetime_unresolved")
+    fun getAverageLifetimeUnresolved(
+        @RequestBody issueFilter: IssueFilter
+    ): ResponseEntity<Any> {
+        return ResponseEntity.ok(service.getAverageLifetimeUnresolved(issueFilter))
+    }
+
+    @PostMapping("/api/chart/sla_violations")
+    fun getSLAStatsByPriority(
+        @RequestBody issueFilter: IssueFilter
+    ): ResponseEntity<Any> {
+        return ResponseEntity.ok(service.getSLAStatsByPriority(issueFilter))
+    }
+
+    @PostMapping("/api/chart/commercial_sla_violations")
+    fun getCommercialSLAStatsByPriority(
+        @RequestBody issueFilter: IssueFilter
+    ): ResponseEntity<Any> {
+        return ResponseEntity.ok(service.getCommercialSLAStatsByPriority(issueFilter))
     }
 }

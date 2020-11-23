@@ -128,7 +128,9 @@ class TFSHooks : ITFSHooks {
                 val area = devOpsItems.firstOrNull { it.state !in listOf("Closed", "Resolved") }?.area
                 val team = if (area != null) resolver.resolveAreaToTeam(area) else null
                 when {
-                    area != null && team == null -> mailSender.sendMail(
+                    area == null -> {
+                    }
+                    team == null -> mailSender.sendMail(
                         DEFAULT_MAIL_SENDER,
                         TEST_MAIL_RECEIVER,
                         "Area was not resolved to team",

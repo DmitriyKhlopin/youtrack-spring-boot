@@ -7,7 +7,8 @@ import fsight.youtrack.api.issues.IssueWiThDetails
 import fsight.youtrack.db.models.pg.ETSNameRecord
 import fsight.youtrack.generated.jooq.tables.AreaTeam.AREA_TEAM
 import fsight.youtrack.generated.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALUES
-import fsight.youtrack.generated.jooq.tables.Dynamics.DYNAMICS
+import fsight.youtrack.generated.jooq.tables.DictionaryProjectCustomerEts.DICTIONARY_PROJECT_CUSTOMER_ETS
+import fsight.youtrack.generated.jooq.tables.DynamicsWithTypes.DYNAMICS_WITH_TYPES
 import fsight.youtrack.generated.jooq.tables.EtsNames.ETS_NAMES
 import fsight.youtrack.generated.jooq.tables.Hooks.HOOKS
 import fsight.youtrack.generated.jooq.tables.IssueTags.ISSUE_TAGS
@@ -25,7 +26,11 @@ import fsight.youtrack.generated.jooq.tables.records.CustomFieldValuesRecord
 import fsight.youtrack.generated.jooq.tables.records.ProductOwnersRecord
 import fsight.youtrack.models.*
 import fsight.youtrack.models.hooks.Hook
+import fsight.youtrack.models.web.SimpleAggregatedValue1
+import fsight.youtrack.models.web.SimpleAggregatedValue2
 import fsight.youtrack.splitToList
+import fsight.youtrack.toStartOfDate
+import fsight.youtrack.toStartOfWeek
 import org.jooq.Condition
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
@@ -49,6 +54,7 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
     private val assigneesTable = CUSTOM_FIELD_VALUES.`as`("responsible")
     private val requirementsTable = CUSTOM_FIELD_VALUES.`as`("requirement")
     private val tagsTable = ISSUE_TAGS.`as`("tags")
+    private val etsProjectTable = DICTIONARY_PROJECT_CUSTOMER_ETS.`as`("etsProjectTable")
     private val stateCommentsTable = dsl.select(WORK_ITEMS.DESCRIPTION, WORK_ITEMS.AUTHOR_LOGIN, WORK_ITEMS.ISSUE_ID)
         .from(WORK_ITEMS)
         .where(WORK_ITEMS.WORK_NAME.eq("Анализ сроков выполнения"))
@@ -64,6 +70,9 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
     private fun IssueFilter.toTagsCondition() = if (this.tags.isEmpty()) DSL.trueCondition() else DSL.and(
         DSL.`val`(this.tags.size).eq(DSL.selectCount().from(tagsTable).where(tagsTable.TAG.`in`(this.tags)).and(tagsTable.ISSUE_ID.eq(issuesTable.ID)))
     )
+
+    private fun IssueFilter.toCreateDateCondition() =
+        if (this.dateFrom != null && this.dateTo != null) DSL.and(issuesTable.CREATED_DATE.between(this.dateFrom?.toStartOfDate()).and(this.dateTo?.toStartOfDate())) else DSL.trueCondition()
 
 
     override fun saveHookToDatabase(
@@ -140,19 +149,25 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
             .map { it.issueId }
     }
 
-    override fun getDynamicsData(projects: String, dateFrom: Timestamp, dateTo: Timestamp): List<Dynamics> {
+    override fun getDynamicsData(issueFilter: IssueFilter): List<Dynamics> {
+        val df = issueFilter.dateFrom?.toStartOfWeek() ?: return listOf()
+        val dt = issueFilter.dateTo?.toStartOfWeek() ?: return listOf()
+        val projectFilter = if (issueFilter.projects.isEmpty()) trueCondition() else and(DYNAMICS_WITH_TYPES.SHORT_NAME.`in`(issueFilter.projects))
+        val typesFilter = if (issueFilter.types.isEmpty()) trueCondition() else and(DYNAMICS_WITH_TYPES.TYPE.`in`(issueFilter.types))
         return dsl.select(
-            DYNAMICS.W.`as`("week"),
-            DSL.sum(DYNAMICS.ACTIVE).`as`("active"),
-            DSL.sum(DYNAMICS.CREATED).`as`("created"),
-            DSL.sum(DYNAMICS.RESOLVED).`as`("resolved")
+            DYNAMICS_WITH_TYPES.W.`as`("week"),
+            sum(DYNAMICS_WITH_TYPES.ACTIVE).`as`("active"),
+            sum(DYNAMICS_WITH_TYPES.CREATED).`as`("created"),
+            sum(DYNAMICS_WITH_TYPES.RESOLVED).`as`("resolved")
         )
-            .from(DYNAMICS)
-            .where(
-                DYNAMICS.W.between(dateFrom, dateTo)
-            )
-            .and(DYNAMICS.SHORT_NAME.`in`(projects.splitToList()))
-            .groupBy(DYNAMICS.W)
+            .from(DYNAMICS_WITH_TYPES)
+            .leftJoin(projectTypesTable).on(DYNAMICS_WITH_TYPES.SHORT_NAME.eq(projectTypesTable.PROJECT_SHORT_NAME))
+            .where()
+            .and(DYNAMICS_WITH_TYPES.W.between(df, dt))
+            .and(projectTypesTable.IS_PUBLIC.eq(true).or(projectTypesTable.IS_PUBLIC.isNull))
+            .and(projectFilter)
+            .and(typesFilter)
+            .groupBy(DYNAMICS_WITH_TYPES.W)
             .fetchInto(Dynamics::class.java)
     }
 
@@ -356,26 +371,6 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
     }
 
     override fun getVelocity(issueFilter: IssueFilter): List<Velocity> {
-        /* return dsl.select(
-             issuesTable.RESOLVED_WEEK.`as`("week"),
-             DSL.coalesce(typesTable.FIELD_VALUE, "Все типы").`as`("type"),
-             DSL.count().`as`("result")
-         )
-             .from(issuesTable)
-             .leftJoin(prioritiesTable).on(issuesTable.ID.eq(prioritiesTable.ISSUE_ID)).and(prioritiesTable.FIELD_NAME.eq("Priority"))
-             .leftJoin(typesTable).on(issuesTable.ID.eq(typesTable.ISSUE_ID)).and(typesTable.FIELD_NAME.eq("Type"))
-             .leftJoin(statesTable).on(issuesTable.ID.eq(statesTable.ISSUE_ID)).and(statesTable.FIELD_NAME.eq("State"))
-             .leftJoin(projectTypesTable).on(issuesTable.PROJECT_SHORT_NAME.eq(projectTypesTable.PROJECT_SHORT_NAME))
-             .where()
-             .and((projectTypesTable.IS_PUBLIC.eq(true)).or(projectTypesTable.IS_PUBLIC.isNull))
-             .and(issueFilter.toProjectsCondition())
-             .and(issueFilter.toPrioritiesCondition())
-             .and(issueFilter.toStatesCondition())
-             .and(issuesTable.RESOLVED_WEEK.isNotNull)
-             .groupBy(DSL.groupingSets(arrayOf(issuesTable.RESOLVED_WEEK, typesTable.FIELD_VALUE), arrayOf(issuesTable.RESOLVED_WEEK)))
-             .orderBy(issuesTable.RESOLVED_WEEK.asc())
-             .fetchInto(Velocity::class.java)*/
-
         val t1 = name("t1").fields("week", "type", "result").`as`(
             select(
                 issuesTable.RESOLVED_WEEK.`as`("week"),
@@ -385,23 +380,212 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
                 .from(issuesTable)
                 .leftJoin(prioritiesTable).on(issuesTable.ID.eq(prioritiesTable.ISSUE_ID)).and(prioritiesTable.FIELD_NAME.eq("Priority"))
                 .leftJoin(typesTable).on(issuesTable.ID.eq(typesTable.ISSUE_ID)).and(typesTable.FIELD_NAME.eq("Type"))
-                .leftJoin(statesTable).on(issuesTable.ID.eq(statesTable.ISSUE_ID)).and(statesTable.FIELD_NAME.eq("State"))
+                /*.leftJoin(statesTable).on(issuesTable.ID.eq(statesTable.ISSUE_ID)).and(statesTable.FIELD_NAME.eq("State"))*/
                 .leftJoin(projectTypesTable).on(issuesTable.PROJECT_SHORT_NAME.eq(projectTypesTable.PROJECT_SHORT_NAME))
                 .where()
                 .and((projectTypesTable.IS_PUBLIC.eq(true)).or(projectTypesTable.IS_PUBLIC.isNull))
                 .and(issueFilter.toProjectsCondition())
                 .and(issueFilter.toPrioritiesCondition())
-                .and(issueFilter.toStatesCondition())
+                .and(issueFilter.toTypesCondition())
+                /*.and(issueFilter.toStatesCondition())*/
                 .and(issuesTable.RESOLVED_WEEK.isNotNull)
                 .groupBy(groupingSets(arrayOf(issuesTable.RESOLVED_WEEK, typesTable.FIELD_VALUE), arrayOf(issuesTable.RESOLVED_WEEK)))
                 .orderBy(issuesTable.RESOLVED_WEEK.asc())
 
         )
-        return dsl.with(t1).select(
+        val q = dsl.with(t1).select(
             WEEKS.W.`as`("week"), t1.field("type"), t1.field("result")
         )
             .from(WEEKS)
             .leftJoin(t1).on(WEEKS.W.eq(t1.field("week").cast(Timestamp::class.java)))
-            .fetchInto(Velocity::class.java)
+        return q.fetchInto(Velocity::class.java)
+    }
+
+    override fun getPrioritiesStats(issueFilter: IssueFilter): List<SimpleAggregatedValue1> {
+        return dsl.select(
+            prioritiesTable.FIELD_VALUE.`as`("key"),
+            count().`as`("value")
+        ).from(issuesTable)
+            .leftJoin(prioritiesTable).on(issuesTable.ID.eq(prioritiesTable.ISSUE_ID)).and(prioritiesTable.FIELD_NAME.eq("Priority"))
+            .leftJoin(typesTable).on(issuesTable.ID.eq(typesTable.ISSUE_ID)).and(typesTable.FIELD_NAME.eq("Type"))
+            .leftJoin(statesTable).on(issuesTable.ID.eq(statesTable.ISSUE_ID)).and(statesTable.FIELD_NAME.eq("State"))
+            .leftJoin(projectTypesTable).on(issuesTable.PROJECT_SHORT_NAME.eq(projectTypesTable.PROJECT_SHORT_NAME))
+            .where()
+            .and((projectTypesTable.IS_PUBLIC.eq(true)).or(projectTypesTable.IS_PUBLIC.isNull))
+            .and(issueFilter.toProjectsCondition())
+            .and(issueFilter.toTypesCondition())
+            .and(issueFilter.toStatesCondition())
+            .and(issueFilter.toCreateDateCondition())
+            .groupBy(prioritiesTable.FIELD_VALUE)
+            .fetchInto(SimpleAggregatedValue1::class.java)
+    }
+
+    override fun getTypesStats(issueFilter: IssueFilter): List<SimpleAggregatedValue1> {
+        return dsl.select(
+            typesTable.FIELD_VALUE.`as`("key"),
+            count().`as`("value")
+        ).from(issuesTable)
+            .leftJoin(prioritiesTable).on(issuesTable.ID.eq(prioritiesTable.ISSUE_ID)).and(prioritiesTable.FIELD_NAME.eq("Priority"))
+            .leftJoin(typesTable).on(issuesTable.ID.eq(typesTable.ISSUE_ID)).and(typesTable.FIELD_NAME.eq("Type"))
+            .leftJoin(statesTable).on(issuesTable.ID.eq(statesTable.ISSUE_ID)).and(statesTable.FIELD_NAME.eq("State"))
+            .leftJoin(projectTypesTable).on(issuesTable.PROJECT_SHORT_NAME.eq(projectTypesTable.PROJECT_SHORT_NAME))
+            .where()
+            .and((projectTypesTable.IS_PUBLIC.eq(true)).or(projectTypesTable.IS_PUBLIC.isNull))
+            .and(issueFilter.toProjectsCondition())
+            .and(issueFilter.toPrioritiesCondition())
+            .and(issueFilter.toStatesCondition())
+            .and(issueFilter.toCreateDateCondition())
+            .groupBy(typesTable.FIELD_VALUE)
+            .fetchInto(SimpleAggregatedValue1::class.java)
+    }
+
+    override fun getAverageLifetime(issueFilter: IssueFilter): List<SimpleAggregatedValue1> {
+        return dsl.select(
+            coalesce(prioritiesTable.FIELD_VALUE, "Все задачи").`as`("key"),
+            (avg(((coalesce(issuesTable.TIME_AGENT, 0) + coalesce(issuesTable.TIME_DEVELOPER, 0)) / 32400) + 1)).`as`("value")
+        ).from(issuesTable)
+            .leftJoin(prioritiesTable).on(issuesTable.ID.eq(prioritiesTable.ISSUE_ID)).and(prioritiesTable.FIELD_NAME.eq("Priority"))
+            .leftJoin(typesTable).on(issuesTable.ID.eq(typesTable.ISSUE_ID)).and(typesTable.FIELD_NAME.eq("Type"))
+            .leftJoin(statesTable).on(issuesTable.ID.eq(statesTable.ISSUE_ID)).and(statesTable.FIELD_NAME.eq("State"))
+            .leftJoin(projectTypesTable).on(issuesTable.PROJECT_SHORT_NAME.eq(projectTypesTable.PROJECT_SHORT_NAME))
+            .where()
+            .and((projectTypesTable.IS_PUBLIC.eq(true)).or(projectTypesTable.IS_PUBLIC.isNull))
+            .and(issueFilter.toProjectsCondition())
+            .and(issueFilter.toTypesCondition())
+            .and(issueFilter.toStatesCondition())
+            .and(issueFilter.toCreateDateCondition())
+            .and(issuesTable.RESOLVED_DATE.isNotNull)
+            .groupBy(groupingSets(arrayOf(prioritiesTable.FIELD_VALUE), arrayOf()))
+            .fetchInto(SimpleAggregatedValue1::class.java)
+    }
+
+
+    override fun getAverageLifetimeUnresolved(issueFilter: IssueFilter): List<SimpleAggregatedValue1> {
+        return dsl.select(
+            coalesce(prioritiesTable.FIELD_VALUE, "Все задачи").`as`("key"),
+            (avg(((coalesce(issuesTable.TIME_AGENT, 0) + coalesce(issuesTable.TIME_DEVELOPER, 0)) / 32400) + 1)).`as`("value")
+        ).from(issuesTable)
+            .leftJoin(prioritiesTable).on(issuesTable.ID.eq(prioritiesTable.ISSUE_ID)).and(prioritiesTable.FIELD_NAME.eq("Priority"))
+            .leftJoin(typesTable).on(issuesTable.ID.eq(typesTable.ISSUE_ID)).and(typesTable.FIELD_NAME.eq("Type"))
+            .leftJoin(statesTable).on(issuesTable.ID.eq(statesTable.ISSUE_ID)).and(statesTable.FIELD_NAME.eq("State"))
+            .leftJoin(projectTypesTable).on(issuesTable.PROJECT_SHORT_NAME.eq(projectTypesTable.PROJECT_SHORT_NAME))
+            .where()
+            .and((projectTypesTable.IS_PUBLIC.eq(true)).or(projectTypesTable.IS_PUBLIC.isNull))
+            .and(issueFilter.toProjectsCondition())
+            .and(issueFilter.toTypesCondition())
+            .and(issueFilter.toStatesCondition())
+            .and(issueFilter.toCreateDateCondition())
+            .groupBy(groupingSets(arrayOf(prioritiesTable.FIELD_VALUE), arrayOf()))
+            .fetchInto(SimpleAggregatedValue1::class.java)
+    }
+
+    override fun getSigmaReferenceValues(issueFilter: IssueFilter): List<Int> {
+        val dt = issueFilter.dateTo?.toStartOfDate() ?: return listOf()
+        return dsl.select((coalesce(issuesTable.TIME_AGENT, 0) + coalesce(issuesTable.TIME_DEVELOPER, 0) + 32400) / 32400)
+            .from(issuesTable)
+            .leftJoin(typesTable).on(issuesTable.ID.eq(typesTable.ISSUE_ID)).and(typesTable.FIELD_NAME.eq("Type"))
+            .leftJoin(prioritiesTable).on(issuesTable.ID.eq(prioritiesTable.ISSUE_ID)).and(prioritiesTable.FIELD_NAME.eq("Priority"))
+            .leftJoin(projectTypesTable).on(issuesTable.PROJECT_SHORT_NAME.eq(projectTypesTable.PROJECT_SHORT_NAME))
+            .where()
+            .and((projectTypesTable.IS_PUBLIC.eq(true)).or(projectTypesTable.IS_PUBLIC.isNull))
+            .and(issuesTable.RESOLVED_DATE.lessOrEqual(dt))
+            .and(issuesTable.RESOLVED_DATE.isNotNull)
+            .and(issueFilter.toTypesCondition())
+            .and(issueFilter.toProjectsCondition())
+            .and(issueFilter.toPrioritiesCondition())
+            .orderBy(issuesTable.CREATED_DATE.desc())
+            .limit(100)
+            .fetchInto(Int::class.java)
+    }
+
+    override fun getSigmaActualValues(issueFilter: IssueFilter): List<Int> {
+        val df = issueFilter.dateFrom?.toStartOfDate() ?: return listOf()
+        return dsl.select((coalesce(issuesTable.TIME_AGENT, 0) + coalesce(issuesTable.TIME_DEVELOPER, 0) + 32400) / 32400)
+            .from(issuesTable)
+            .leftJoin(typesTable).on(issuesTable.ID.eq(typesTable.ISSUE_ID)).and(typesTable.FIELD_NAME.eq("Type"))
+            .leftJoin(prioritiesTable).on(issuesTable.ID.eq(prioritiesTable.ISSUE_ID)).and(prioritiesTable.FIELD_NAME.eq("Priority"))
+            .leftJoin(projectTypesTable).on(issuesTable.PROJECT_SHORT_NAME.eq(projectTypesTable.PROJECT_SHORT_NAME))
+            .where()
+            .and((projectTypesTable.IS_PUBLIC.eq(true)).or(projectTypesTable.IS_PUBLIC.isNull))
+            /*.and(issuesTable.CREATED_DATE.greaterOrEqual(df))*/
+            .and(issuesTable.RESOLVED_DATE.isNull)
+            .and(issueFilter.toTypesCondition())
+            .and(issueFilter.toProjectsCondition())
+            .and(issueFilter.toPrioritiesCondition())
+            .orderBy(issuesTable.CREATED_DATE.desc())
+            .fetchInto(Int::class.java)
+    }
+
+    override fun getCreatedOnWeekByPartner(issueFilter: IssueFilter): List<SimpleAggregatedValue1> {
+        val dt = issueFilter.dateTo?.toStartOfWeek() ?: return listOf()
+        return dsl
+            .select(
+                issuesTable.PROJECT_SHORT_NAME.`as`("key"),
+                count(issuesTable.PROJECT_SHORT_NAME).`as`("value")
+            )
+            .from(issuesTable)
+            .leftJoin(projectTypesTable).on(issuesTable.PROJECT_SHORT_NAME.eq(projectTypesTable.PROJECT_SHORT_NAME))
+            .leftJoin(typesTable).on(issuesTable.ID.eq(typesTable.ISSUE_ID)).and(typesTable.FIELD_NAME.eq("Type"))
+            .leftJoin(prioritiesTable).on(issuesTable.ID.eq(prioritiesTable.ISSUE_ID)).and(prioritiesTable.FIELD_NAME.eq("Priority"))
+            .where()
+            .and((projectTypesTable.IS_PUBLIC.eq(true)).or(projectTypesTable.IS_PUBLIC.isNull))
+            .and(issuesTable.CREATED_WEEK.eq(dt))
+            .and(issueFilter.toTypesCondition())
+            .and(issueFilter.toProjectsCondition())
+            .and(issueFilter.toPrioritiesCondition())
+            .groupBy(issuesTable.PROJECT_SHORT_NAME)
+            .fetch()
+            .map { SimpleAggregatedValue1(null, it["key"].toString(), it["value"].toString().toInt()) }
+            .sortedByDescending { it.value }
+    }
+
+    override fun getSLAStatsByPriority(issueFilter: IssueFilter): List<SimpleAggregatedValue2> {
+        return dsl.select(
+            coalesce(prioritiesTable.FIELD_VALUE, "Все приоритеты").`as`("key"),
+            sum(
+                `when`(issuesTable.SLA_FIRST_RESPONSE_INDEX.eq("Нарушен").or(issuesTable.SLA_SOLUTION_INDEX.eq("Нарушен")), 1)
+                    .otherwise(0)
+            ).`as`("value1"),
+            count().`as`("value2")
+        ).from(issuesTable)
+            .leftJoin(prioritiesTable).on(issuesTable.ID.eq(prioritiesTable.ISSUE_ID)).and(prioritiesTable.FIELD_NAME.eq("Priority"))
+            .leftJoin(typesTable).on(issuesTable.ID.eq(typesTable.ISSUE_ID)).and(typesTable.FIELD_NAME.eq("Type"))
+            .leftJoin(statesTable).on(issuesTable.ID.eq(statesTable.ISSUE_ID)).and(statesTable.FIELD_NAME.eq("State"))
+            .leftJoin(projectTypesTable).on(issuesTable.PROJECT_SHORT_NAME.eq(projectTypesTable.PROJECT_SHORT_NAME))
+            .where()
+            .and((projectTypesTable.IS_PUBLIC.eq(true)).or(projectTypesTable.IS_PUBLIC.isNull))
+            .and(issueFilter.toProjectsCondition())
+            .and(issueFilter.toTypesCondition())
+            .and(issueFilter.toStatesCondition())
+            .and(issueFilter.toCreateDateCondition())
+            .groupBy(groupingSets(arrayOf(prioritiesTable.FIELD_VALUE), arrayOf()))
+            .fetchInto(SimpleAggregatedValue2::class.java)
+    }
+
+    override fun getCommercialSLAStatsByPriority(issueFilter: IssueFilter): List<SimpleAggregatedValue2> {
+        return dsl.select(
+            coalesce(prioritiesTable.FIELD_VALUE, "Все приоритеты").`as`("key"),
+            sum(
+                `when`(issuesTable.SLA_FIRST_RESPONSE_INDEX.eq("Нарушен").or(issuesTable.SLA_SOLUTION_INDEX.eq("Нарушен")), 1)
+                    .otherwise(0)
+            ).`as`("value1"),
+            count().`as`("value2")
+        ).from(issuesTable)
+            .leftJoin(customersTable).on(issuesTable.ID.eq(customersTable.ISSUE_ID)).and(customersTable.FIELD_NAME.eq("Заказчик"))
+            .leftJoin(etsProjectTable).on(customersTable.FIELD_VALUE.eq(etsProjectTable.CUSTOMER)).and(issuesTable.PROJECT_SHORT_NAME.eq(etsProjectTable.PROJ_SHORT_NAME))
+            .and(issuesTable.CREATED_DATE_TIME.between(etsProjectTable.DATE_FROM, etsProjectTable.DATE_TO))
+            .leftJoin(prioritiesTable).on(issuesTable.ID.eq(prioritiesTable.ISSUE_ID)).and(prioritiesTable.FIELD_NAME.eq("Priority"))
+            .leftJoin(typesTable).on(issuesTable.ID.eq(typesTable.ISSUE_ID)).and(typesTable.FIELD_NAME.eq("Type"))
+            .leftJoin(statesTable).on(issuesTable.ID.eq(statesTable.ISSUE_ID)).and(statesTable.FIELD_NAME.eq("State"))
+            .leftJoin(projectTypesTable).on(issuesTable.PROJECT_SHORT_NAME.eq(projectTypesTable.PROJECT_SHORT_NAME))
+            .where()
+            .and(etsProjectTable.PROJ_ETS.similarTo("(FK%|FY%)"))
+            .and((projectTypesTable.IS_PUBLIC.eq(true)).or(projectTypesTable.IS_PUBLIC.isNull))
+            .and(issueFilter.toProjectsCondition())
+            .and(issueFilter.toTypesCondition())
+            .and(issueFilter.toStatesCondition())
+            .and(issueFilter.toCreateDateCondition())
+            .groupBy(groupingSets(arrayOf(prioritiesTable.FIELD_VALUE), arrayOf()))
+            .fetchInto(SimpleAggregatedValue2::class.java)
     }
 }
