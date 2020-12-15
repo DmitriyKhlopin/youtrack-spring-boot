@@ -17,4 +17,5 @@ interface IChartData {
     fun getTypesStats(issueFilter: IssueFilter): Any
     fun getSLAStatsByPriority(issueFilter: IssueFilter): Any
     fun getCommercialSLAStatsByPriority(issueFilter: IssueFilter): List<SimpleAggregatedValue2>
+    fun getVelocity(issueFilter: IssueFilter): Any
 }

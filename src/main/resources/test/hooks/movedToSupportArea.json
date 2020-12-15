@@ -1,0 +1,77 @@
+{
+  "subscriptionId": "a392aa4d-b54c-48b0-be25-10ad43183246",
+  "notificationId": 3366,
+  "id": "e9bc17f0-dfae-4ee2-8bbb-0a2683a62834",
+  "eventType": "workitem.updated",
+  "resource": {
+    "id": 25,
+    "workItemId": 73157,
+    "rev": 25,
+    "fields": {
+      "System.Watermark": {
+        "oldValue": 879752.0,
+        "newValue": 879850.0
+      },
+      "System.AuthorizedDate": {
+        "oldValue": "2020-12-07T11:24:08.467Z",
+        "newValue": "2020-12-07T12:13:13.35Z"
+      },
+      "System.BoardColumn": {
+        "oldValue": "Не в работе",
+        "newValue": "Proposed"
+      },
+      "System.NodeName": {
+        "oldValue": "Data Entry Forms",
+        "newValue": "Technical Support"
+      },
+      "System.AreaLevel2": {
+        "oldValue": "Products",
+        "newValue": "Technical Support"
+      },
+      "System.AreaId": {
+        "oldValue": 274.0,
+        "newValue": 359.0
+      },
+      "System.RevisedDate": {
+        "oldValue": "2020-12-07T12:13:13.35Z",
+        "newValue": "9999-01-01T00:00:00Z"
+      },
+      "System.AreaPath": {
+        "oldValue": "AP\\Products\\Development\\Reporting\\Data Entry Forms",
+        "newValue": "AP\\Technical Support"
+      }
+    },
+    "revision": {
+      "id": 73157,
+      "rev": 25,
+      "fields": {
+        "System.IterationPath": "AP\\Backlog\\Q3 FY20\\Sprint 35",
+        "System.CommentCount": 3.0,
+        "System.State": "Proposed",
+        "Microsoft.VSTS.Common.Triage": "Pending",
+        "System.BoardColumn": "Proposed",
+        "WEF_6D1DEFAB700149B8ABA2541428949D6E_Kanban.Column": "Не в работе",
+        "WEF_4EFECB41816D45249204D7C272A4F5D2_Kanban.Column.Done": false,
+        "System.AreaPath": "AP\\Technical Support",
+        "Microsoft.VSTS.Common.Severity": "3 - Medium",
+        "Microsoft.VSTS.Common.StackRank": 2944756.0,
+        "System.CreatedDate": "2020-08-11T15:24:19.297Z",
+        "FS.VSTS.Common.Version": "AP 9.2U13",
+        "System.TeamProject": "AP",
+        "Microsoft.VSTS.Common.ValueArea": "Business",
+        "FS.VSTS.Common.PriorityReason": "Не позволяет сохранять настройки объектов и оформления",
+        "Microsoft.VSTS.Common.Priority": 2.0,
+        "System.AssignedTo": "Козлов Павел \u003cFS\\pavel.kozlov\u003e",
+        "WEF_ED3AB14A3F2C434B966391A9E1E5183A_Kanban.Column": "Proposed",
+        "System.WorkItemType": "Bug",
+        "WEF_ED3AB14A3F2C434B966391A9E1E5183A_Kanban.Column.Done": false,
+        "WEF_4EFECB41816D45249204D7C272A4F5D2_Kanban.Column": "Proposed",
+        "System.BoardColumnDone": false,
+        "WEF_6D1DEFAB700149B8ABA2541428949D6E_Kanban.Column.Done": false,
+        "System.Reason": "New",
+        "System.ChangedDate": "2020-12-07T12:13:13.35Z",
+        "Microsoft.VSTS.CMMI.Blocked": "No"
+      }
+    }
+  }
+}

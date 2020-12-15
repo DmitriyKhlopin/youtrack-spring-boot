@@ -86,4 +86,9 @@ class ChartDataController(
     ): ResponseEntity<Any> {
         return ResponseEntity.ok(service.getCommercialSLAStatsByPriority(issueFilter))
     }
+
+    @PostMapping("/api/chart/velocity")
+    fun getVelocity(@RequestBody issueFilter: IssueFilter): Any {
+        return service.getVelocity(issueFilter)
+    }
 }

@@ -7,10 +7,12 @@ import fsight.youtrack.api.issues.IssueWiThDetails
 import fsight.youtrack.db.models.pg.ETSNameRecord
 import fsight.youtrack.generated.jooq.tables.AreaTeam.AREA_TEAM
 import fsight.youtrack.generated.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALUES
+import fsight.youtrack.generated.jooq.tables.DetailedStateTransitions.DETAILED_STATE_TRANSITIONS
 import fsight.youtrack.generated.jooq.tables.DictionaryProjectCustomerEts.DICTIONARY_PROJECT_CUSTOMER_ETS
 import fsight.youtrack.generated.jooq.tables.DynamicsWithTypes.DYNAMICS_WITH_TYPES
 import fsight.youtrack.generated.jooq.tables.EtsNames.ETS_NAMES
 import fsight.youtrack.generated.jooq.tables.Hooks.HOOKS
+import fsight.youtrack.generated.jooq.tables.IssueDetailedTimeline.ISSUE_DETAILED_TIMELINE
 import fsight.youtrack.generated.jooq.tables.IssueTags.ISSUE_TAGS
 import fsight.youtrack.generated.jooq.tables.IssueTimeline
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
@@ -33,6 +35,7 @@ import fsight.youtrack.toStartOfDate
 import fsight.youtrack.toStartOfWeek
 import org.jooq.Condition
 import org.jooq.DSLContext
+import org.jooq.DatePart
 import org.jooq.impl.DSL
 import org.jooq.impl.DSL.*
 import org.springframework.stereotype.Service
@@ -72,7 +75,8 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
     )
 
     private fun IssueFilter.toCreateDateCondition() =
-        if (this.dateFrom != null && this.dateTo != null) DSL.and(issuesTable.CREATED_DATE.between(this.dateFrom?.toStartOfDate()).and(this.dateTo?.toStartOfDate())) else DSL.trueCondition()
+        if (this.dateFrom != null && this.dateTo != null) DSL.and(issuesTable.CREATED_DATE.between(this.dateFrom?.toStartOfDate()).and(this.dateTo?.toStartOfDate()))
+        else DSL.trueCondition()
 
 
     override fun saveHookToDatabase(
@@ -104,7 +108,7 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
     override fun getDevOpsAssignees(): List<ETSNameRecord> {
         return dsl.select(
             ETS_NAMES.FSIGHT_EMAIL.`as`("email"),
-            ETS_NAMES.ETS_NAME.`as`("etsName"),
+            DSL.coalesce(ETS_NAMES.ETS_NAME, "undefined").`as`("etsName"),
             ETS_NAMES.FULL_NAME.`as`("fullName"),
             ETS_NAMES.SUPPORT.`as`("isSupport")
         )
@@ -115,7 +119,7 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
     override fun getSupportEmployees(): List<ETSNameRecord> {
         return dsl.select(
             ETS_NAMES.FSIGHT_EMAIL.`as`("email"),
-            ETS_NAMES.ETS_NAME.`as`("etsName"),
+            DSL.coalesce(ETS_NAMES.ETS_NAME, "undefined").`as`("etsName"),
             ETS_NAMES.FULL_NAME.`as`("fullName"),
             ETS_NAMES.SUPPORT.`as`("isSupport")
         )
@@ -206,7 +210,7 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
             .leftJoin(statesTable).on(issuesTable.ID.eq(statesTable.ISSUE_ID).and(statesTable.FIELD_NAME.eq("State")))
             .leftJoin(projectTypesTable).on(issuesTable.PROJECT_SHORT_NAME.eq(projectTypesTable.PROJECT_SHORT_NAME))
             .where()
-            /*.and(issuesTable.RESOLVED_DATE.isNull)*/
+            .and(issuesTable.RESOLVED_DATE.isNull)
             .and(typesCondition)
             .and(statesCondition)
             .and(projectsCondition)
@@ -358,6 +362,21 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
             .fetchInto(IssueTimelineItem::class.java)
     }
 
+    override fun getIssuesDetailedTimeline(issueId: String): List<IssueTimelineItem> {
+        return dsl.select(
+            DETAILED_STATE_TRANSITIONS.RN.`as`("order"),
+            DETAILED_STATE_TRANSITIONS.ISSUE_ID.`as`("id"),
+            DETAILED_STATE_TRANSITIONS.OLD_DT.`as`("dateFrom"),
+            DETAILED_STATE_TRANSITIONS.NEW_DT.`as`("dateTo"),
+            DETAILED_STATE_TRANSITIONS.O.`as`("stateOld"),
+            DETAILED_STATE_TRANSITIONS.N.`as`("stateNew"),
+            DETAILED_STATE_TRANSITIONS.OWNER.`as`("stateOwner")
+        )
+            .from(DETAILED_STATE_TRANSITIONS)
+            .where(DETAILED_STATE_TRANSITIONS.ISSUE_ID.eq(issueId))
+            .fetchInto(IssueTimelineItem::class.java)
+    }
+
     override fun saveIssueTimelineItems(items: List<IssueTimelineItem>): Int {
         return dsl.loadInto(IssueTimeline.ISSUE_TIMELINE).loadRecords(items.map(IssueTimelineItem::toIssueTimelineRecord)).fields(
             IssueTimeline.ISSUE_TIMELINE.ISSUE_ID,
@@ -371,6 +390,8 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
     }
 
     override fun getVelocity(issueFilter: IssueFilter): List<Velocity> {
+        val df = issueFilter.dateFrom?.toStartOfWeek() ?: return listOf()
+        val dt = issueFilter.dateTo?.toStartOfWeek() ?: return listOf()
         val t1 = name("t1").fields("week", "type", "result").`as`(
             select(
                 issuesTable.RESOLVED_WEEK.`as`("week"),
@@ -388,7 +409,7 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
                 .and(issueFilter.toPrioritiesCondition())
                 .and(issueFilter.toTypesCondition())
                 /*.and(issueFilter.toStatesCondition())*/
-                .and(issuesTable.RESOLVED_WEEK.isNotNull)
+                .and(issuesTable.RESOLVED_WEEK.between(df, dt))
                 .groupBy(groupingSets(arrayOf(issuesTable.RESOLVED_WEEK, typesTable.FIELD_VALUE), arrayOf(issuesTable.RESOLVED_WEEK)))
                 .orderBy(issuesTable.RESOLVED_WEEK.asc())
 
@@ -398,6 +419,8 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
         )
             .from(WEEKS)
             .leftJoin(t1).on(WEEKS.W.eq(t1.field("week").cast(Timestamp::class.java)))
+            .where()
+            .and(WEEKS.W.between(df, dt))
         return q.fetchInto(Velocity::class.java)
     }
 
@@ -452,7 +475,7 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
             .and((projectTypesTable.IS_PUBLIC.eq(true)).or(projectTypesTable.IS_PUBLIC.isNull))
             .and(issueFilter.toProjectsCondition())
             .and(issueFilter.toTypesCondition())
-            .and(issueFilter.toStatesCondition())
+            /*.and(issueFilter.toStatesCondition())*/
             .and(issueFilter.toCreateDateCondition())
             .and(issuesTable.RESOLVED_DATE.isNotNull)
             .groupBy(groupingSets(arrayOf(prioritiesTable.FIELD_VALUE), arrayOf()))
@@ -502,6 +525,7 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
         val df = issueFilter.dateFrom?.toStartOfDate() ?: return listOf()
         return dsl.select((coalesce(issuesTable.TIME_AGENT, 0) + coalesce(issuesTable.TIME_DEVELOPER, 0) + 32400) / 32400)
             .from(issuesTable)
+            .leftJoin(statesTable).on(issuesTable.ID.eq(statesTable.ISSUE_ID)).and(statesTable.FIELD_NAME.eq("State"))
             .leftJoin(typesTable).on(issuesTable.ID.eq(typesTable.ISSUE_ID)).and(typesTable.FIELD_NAME.eq("Type"))
             .leftJoin(prioritiesTable).on(issuesTable.ID.eq(prioritiesTable.ISSUE_ID)).and(prioritiesTable.FIELD_NAME.eq("Priority"))
             .leftJoin(projectTypesTable).on(issuesTable.PROJECT_SHORT_NAME.eq(projectTypesTable.PROJECT_SHORT_NAME))
@@ -511,6 +535,7 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
             .and(issuesTable.RESOLVED_DATE.isNull)
             .and(issueFilter.toTypesCondition())
             .and(issueFilter.toProjectsCondition())
+            .and(issueFilter.toStatesCondition())
             .and(issueFilter.toPrioritiesCondition())
             .orderBy(issuesTable.CREATED_DATE.desc())
             .fetchInto(Int::class.java)
@@ -526,13 +551,16 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
             .from(issuesTable)
             .leftJoin(projectTypesTable).on(issuesTable.PROJECT_SHORT_NAME.eq(projectTypesTable.PROJECT_SHORT_NAME))
             .leftJoin(typesTable).on(issuesTable.ID.eq(typesTable.ISSUE_ID)).and(typesTable.FIELD_NAME.eq("Type"))
+            .leftJoin(statesTable).on(issuesTable.ID.eq(statesTable.ISSUE_ID)).and(statesTable.FIELD_NAME.eq("State"))
             .leftJoin(prioritiesTable).on(issuesTable.ID.eq(prioritiesTable.ISSUE_ID)).and(prioritiesTable.FIELD_NAME.eq("Priority"))
             .where()
             .and((projectTypesTable.IS_PUBLIC.eq(true)).or(projectTypesTable.IS_PUBLIC.isNull))
-            .and(issuesTable.CREATED_WEEK.eq(dt))
+            /*.and(issuesTable.CREATED_WEEK.eq(dt))*/
             .and(issueFilter.toTypesCondition())
             .and(issueFilter.toProjectsCondition())
+            .and(issueFilter.toStatesCondition())
             .and(issueFilter.toPrioritiesCondition())
+            .and(issueFilter.toCreateDateCondition())
             .groupBy(issuesTable.PROJECT_SHORT_NAME)
             .fetch()
             .map { SimpleAggregatedValue1(null, it["key"].toString(), it["value"].toString().toInt()) }
@@ -556,7 +584,7 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
             .and((projectTypesTable.IS_PUBLIC.eq(true)).or(projectTypesTable.IS_PUBLIC.isNull))
             .and(issueFilter.toProjectsCondition())
             .and(issueFilter.toTypesCondition())
-            .and(issueFilter.toStatesCondition())
+            /*.and(issueFilter.toStatesCondition())*/
             .and(issueFilter.toCreateDateCondition())
             .groupBy(groupingSets(arrayOf(prioritiesTable.FIELD_VALUE), arrayOf()))
             .fetchInto(SimpleAggregatedValue2::class.java)
@@ -583,9 +611,35 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
             .and((projectTypesTable.IS_PUBLIC.eq(true)).or(projectTypesTable.IS_PUBLIC.isNull))
             .and(issueFilter.toProjectsCondition())
             .and(issueFilter.toTypesCondition())
-            .and(issueFilter.toStatesCondition())
+            /*.and(issueFilter.toStatesCondition())*/
             .and(issueFilter.toCreateDateCondition())
             .groupBy(groupingSets(arrayOf(prioritiesTable.FIELD_VALUE), arrayOf()))
             .fetchInto(SimpleAggregatedValue2::class.java)
+    }
+
+    override fun getIssuesForDetailedTimelineCalculation(): List<String> {
+        return dsl.selectDistinct(issuesTable.ID)
+            .from(issuesTable)
+            .leftJoin(projectTypesTable).on(issuesTable.PROJECT_SHORT_NAME.eq(projectTypesTable.PROJECT_SHORT_NAME))
+            .where()
+            .and((projectTypesTable.IS_PUBLIC.eq(true)).or(projectTypesTable.IS_PUBLIC.isNull))
+            .and(issuesTable.RESOLVED_DATE_TIME.isNull).or(issuesTable.RESOLVED_DATE_TIME.between(DSL.timestampSub(DSL.now(), 14, DatePart.DAY), DSL.now()))
+            .fetchInto(String::class.java)
+    }
+
+
+    override fun saveIssuesDetailedTimeline(items: List<IssueTimelineItem>): Int {
+        return dsl.loadInto(ISSUE_DETAILED_TIMELINE)
+            .onDuplicateKeyUpdate()
+            .loadRecords(items.map(IssueTimelineItem::toIssueDetailedTimelineRecord)).fields(
+                ISSUE_DETAILED_TIMELINE.RN,
+                ISSUE_DETAILED_TIMELINE.ID,
+                ISSUE_DETAILED_TIMELINE.DATE_FROM,
+                ISSUE_DETAILED_TIMELINE.DATE_TO,
+                ISSUE_DETAILED_TIMELINE.STATE_OLD,
+                ISSUE_DETAILED_TIMELINE.STATE_NEW,
+                ISSUE_DETAILED_TIMELINE.TIME_SPENT,
+                ISSUE_DETAILED_TIMELINE.STATE_OWNER
+            ).execute().stored()
     }
 }

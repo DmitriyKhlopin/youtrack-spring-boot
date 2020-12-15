@@ -8,6 +8,7 @@ import fsight.youtrack.generated.jooq.tables.records.AreaTeamRecord
 import fsight.youtrack.generated.jooq.tables.records.ProductOwnersRecord
 import fsight.youtrack.models.*
 import fsight.youtrack.models.hooks.Hook
+import fsight.youtrack.models.web.ComplexAggregatedValue
 import fsight.youtrack.models.web.SimpleAggregatedValue1
 import fsight.youtrack.models.web.SimpleAggregatedValue2
 import java.sql.Timestamp
@@ -39,6 +40,8 @@ interface IPGProvider {
     fun getProductOwners(): List<ProductOwnersRecord>
     fun updateAllIssuesSpentTime()
     fun getIssueTimelineItemsById(issueId: String): List<IssueTimelineItem>
+    fun getIssuesDetailedTimeline(issueId: String): List<IssueTimelineItem>
+    fun saveIssuesDetailedTimeline(items: List<IssueTimelineItem>): Int
     fun saveIssueTimelineItems(items: List<IssueTimelineItem>): Int
     fun getInnerProjects(): List<YouTrackProject>
     fun getVelocity(issueFilter: IssueFilter): List<Velocity>
@@ -51,4 +54,5 @@ interface IPGProvider {
     fun getTypesStats(issueFilter: IssueFilter): List<SimpleAggregatedValue1>
     fun getSLAStatsByPriority(issueFilter: IssueFilter): List<SimpleAggregatedValue2>
     fun getCommercialSLAStatsByPriority(issueFilter: IssueFilter): List<SimpleAggregatedValue2>
+    fun getIssuesForDetailedTimelineCalculation(): List<String>
 }

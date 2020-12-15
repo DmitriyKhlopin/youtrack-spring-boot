@@ -22,4 +22,13 @@ class IssueController(private val service: IIssue) {
     fun getSingleIssueHistory(
         @RequestParam("id", required = true) id: String
     ) = service.getSingleIssueHistory(id)
+
+    /*@GetMapping("/api/etl/issue/detailed_timeline_to_be_calculated")
+    fun getIssuesForDetailedTimelineCalculation() = service.calculateDetailedTimeline()*/
+
+    @GetMapping("/api/etl/issue/detailed_timeline_to_be_calculated")
+    fun calculateDetailedTimelineById(@RequestParam("id", required = false) id: String?) = when (id) {
+        null -> service.calculateDetailedTimeline()
+        else -> service.calculateDetailedTimelineById(id)
+    }
 }

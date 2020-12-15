@@ -112,27 +112,7 @@ class Report(private val dsl: DSLContext) : IReport {
             .fetchInto(PartnerIndicator::class.java)
     }
 
-    override fun getVelocity(issueFilter: IssueFilter): Any {
-        return pg.getVelocity(issueFilter).groupingBy { it.week }.aggregate { _, accumulator: VelocityAggregated?, element, first ->
-            if (first) {
-                VelocityAggregated(
-                    element.week,
-                    if (element.type == "Все типы") element.result else 0,
-                    if (element.type == "Bug") element.result else 0,
-                    if (element.type == "Feature") element.result else 0,
-                    if (element.type == "Консультация") element.result else 0
-                )
-            } else {
-                when (element.type) {
-                    "Bug" -> accumulator?.bugs = element.result ?: 0
-                    "Feature" -> accumulator?.features = element.result ?: 0
-                    "Консультация" -> accumulator?.consultations = element.result ?: 0
-                    "Все типы" -> accumulator?.all = element.result ?: 0
-                }
-                accumulator
-            }
-        }.map { it.value }.takeLast(issueFilter.limit)
-    }
+
 }
 
 

@@ -6,4 +6,6 @@ interface ITimeline {
     fun launchCalculation()
     fun launchCalculationForPeriod(dateFrom: String?, dateTo: String?)
     fun calculateForId(issueId: String, currentIndex: Int, issuesSize: Int, update:Boolean): List<IssueTimelineItem>
+    fun calculateForDetailedStateById(issueId: String): List<IssueTimelineItem>
+    fun calculatePeriod(item: IssueTimelineItem): Int
 }

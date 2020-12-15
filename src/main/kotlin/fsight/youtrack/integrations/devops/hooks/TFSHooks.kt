@@ -148,6 +148,10 @@ class TFSHooks : ITFSHooks {
                     /**
                      * Issue закрыт либо ожидает закрытия
                      * */
+                    body.movedToSupportArea() -> {
+                        cases.add(Pair(ai.idReadable ?: "", 13))
+                        commands.addAll(listOf("Состояние Открыта", "Детализированное состояние Прокомментирована 3ЛП"))
+                    }
                     body.isFeature()
                             && body.isFieldChanged("System.BoardColumn")
                             && body.newFieldValue("System.BoardColumn") in listOf("На уточнении", "Отклонено") -> {

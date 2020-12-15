@@ -19,6 +19,7 @@ import fsight.youtrack.models.hooks.WiUpdatedHook
 import fsight.youtrack.models.hooks.getFieldValue
 import fsight.youtrack.models.youtrack.Issue
 import okhttp3.OkHttpClient
+import okhttp3.internal.parseCookie
 import org.jetbrains.exposed.sql.ColumnType
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.ResultRow
@@ -203,8 +204,7 @@ fun Timestamp?.toStartOfDate(): Timestamp =
     Timestamp.valueOf(LocalDate.from(this?.toLocalDateTime()).atStartOfDay())
 
 fun Timestamp?.toEndOfDate(): Timestamp =
-
-    Timestamp.valueOf(LocalDate.from(this?.toLocalDateTime()).atTime(23, 59))
+    Timestamp.valueOf(LocalDate.from(this?.toLocalDateTime()).atTime(23, 59, 59))
 
 fun String.splitToList(prefix: String = "[", suffix: String = "]", delimiters: String = ",") =
     this.removeSurrounding(prefix, suffix).split(delimiters)

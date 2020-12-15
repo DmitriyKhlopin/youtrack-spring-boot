@@ -34,8 +34,5 @@ class ReportController(private val service: IReport) {
         return service.getProductsByPartner(filters)
     }
 
-    @PostMapping("/api/report/velocity")
-    fun getIssuesBySigmaValue(@RequestBody issueFilter: IssueFilter): Any {
-        return service.getVelocity(issueFilter)
-    }
+
 }

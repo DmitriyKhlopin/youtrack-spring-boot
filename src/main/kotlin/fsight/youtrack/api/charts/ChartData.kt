@@ -3,10 +3,9 @@ package fsight.youtrack.api.charts
 import fsight.youtrack.api.issues.IssueFilter
 import fsight.youtrack.db.IPGProvider
 import fsight.youtrack.generated.jooq.tables.DynamicsProcessedByDay.DYNAMICS_PROCESSED_BY_DAY
-import fsight.youtrack.models.Dynamics
-import fsight.youtrack.models.SigmaIntermediatePower
-import fsight.youtrack.models.SigmaItem
-import fsight.youtrack.models.SigmaResult
+import fsight.youtrack.models.*
+import fsight.youtrack.models.web.ComplexAggregatedValue1
+import fsight.youtrack.models.web.ComplexAggregatedValue2
 import fsight.youtrack.models.web.SimpleAggregatedValue1
 import fsight.youtrack.models.web.SimpleAggregatedValue2
 import org.jooq.DSLContext
@@ -47,7 +46,18 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
     override fun getCreatedCountOnWeek(
         issueFilter: IssueFilter
     ): List<SimpleAggregatedValue1> {
-        return pg.getCreatedOnWeekByPartner(issueFilter)
+        val items = pg.getCreatedOnWeekByPartner(issueFilter)
+        val l = items.sumBy { it.value }
+        var s = 0
+        val arr = arrayListOf<SimpleAggregatedValue1>()
+        for (item in items) {
+            if (s + item.value < l * 0.75 && items.size > 5) {
+                arr.add(item)
+                s += item.value
+            }
+        }
+        if (s != l) arr.add(SimpleAggregatedValue1(arr.size + 1, "Прочие проекты", l - s))
+        return arr
     }
 
     override fun getProcessedDaily(
@@ -127,5 +137,27 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
                 else -> SimpleAggregatedValue2(1, "Все задачи", it.value1, it.value2)
             }
         }.sortedBy { it.order }
+    }
+
+    override fun getVelocity(issueFilter: IssueFilter): Any {
+        return pg.getVelocity(issueFilter).groupingBy { it.week }.aggregate { _, accumulator: VelocityAggregated?, element, first ->
+            if (first) {
+                VelocityAggregated(
+                    element.week,
+                    if (element.type == "Все типы") element.result else 0,
+                    if (element.type == "Bug") element.result else 0,
+                    if (element.type == "Feature") element.result else 0,
+                    if (element.type == "Консультация") element.result else 0
+                )
+            } else {
+                when (element.type) {
+                    "Bug" -> accumulator?.bugs = element.result ?: 0
+                    "Feature" -> accumulator?.features = element.result ?: 0
+                    "Консультация" -> accumulator?.consultations = element.result ?: 0
+                    "Все типы" -> accumulator?.all = element.result ?: 0
+                }
+                accumulator
+            }
+        }.map { it.value }.takeLast(issueFilter.limit)
     }
 }

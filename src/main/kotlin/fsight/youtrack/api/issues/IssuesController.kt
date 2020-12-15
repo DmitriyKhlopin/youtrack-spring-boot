@@ -38,4 +38,9 @@ class IssuesController(private val service: IIssues, private val service2: ILice
         return ResponseEntity.ok(service.getIssuesBySigmaValue(days ?: 1, issueFilter))
         /*return ResponseEntity.ok().body(days)*/
     }
+
+    @GetMapping("/api/issues/detailed_state_transitions")
+    fun getDetailedStateTransitions(@RequestParam("issueId", required = true) issueId: String): Any {
+        return service.getDetailedStateTransitions(issueId)
+    }
 }

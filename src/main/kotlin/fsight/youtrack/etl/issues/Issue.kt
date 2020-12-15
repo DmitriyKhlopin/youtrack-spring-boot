@@ -5,6 +5,7 @@ import fsight.youtrack.api.YouTrackAPI
 import fsight.youtrack.db.IPGProvider
 import fsight.youtrack.etl.IETLState
 import fsight.youtrack.etl.logs.IImportLog
+import fsight.youtrack.etl.timeline.ITimeline
 import fsight.youtrack.generated.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALUES
 import fsight.youtrack.generated.jooq.tables.ErrorLog.ERROR_LOG
 import fsight.youtrack.generated.jooq.tables.IssueComments.ISSUE_COMMENTS
@@ -37,6 +38,9 @@ class Issue(
 ) : IIssue {
     @Autowired
     private lateinit var pg: IPGProvider
+
+    @Autowired
+    private lateinit var timelineService: ITimeline
 
     private val jsonApi: YouTrackAPI by lazy { YouTrackAPI.create(Converter.GSON) }
 
@@ -428,5 +432,26 @@ class Issue(
         } catch (e: Exception) {
             writeError("Cumulative flow: today", e.message ?: "")
         }
+    }
+
+
+    override fun calculateDetailedTimeline(): Any {
+        val i =  pg.getIssuesForDetailedTimelineCalculation().map { it to timelineService.calculateForDetailedStateById(it) }
+        var c = 0
+        for (item in i){
+            val j = pg.saveIssuesDetailedTimeline(item.second)
+            c += j
+        }
+        return c
+    }
+
+    override fun calculateDetailedTimelineById(id: String): Any {
+        val i = timelineService.calculateForDetailedStateById(id)
+        pg.saveIssuesDetailedTimeline(i)
+        return i
+    }
+
+    override fun getIssuesForDetailedTimelineCalculation(): List<String> {
+        return pg.getIssuesForDetailedTimelineCalculation()
     }
 }

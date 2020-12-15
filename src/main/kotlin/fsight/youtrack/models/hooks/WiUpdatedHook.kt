@@ -32,3 +32,5 @@ fun WiUpdatedHook.newSprint(): String = this.resource?.revision?.fields?.get("Sy
 fun WiUpdatedHook.stateHasChanged(): Boolean = true
 fun WiUpdatedHook.isBug(): Boolean = this.resource?.revision?.fields?.get("System.WorkItemType").toString() == "Bug"
 fun WiUpdatedHook.isFeature(): Boolean = this.resource?.revision?.fields?.get("System.WorkItemType").toString() == "Feature"
+fun WiUpdatedHook.movedToSupportArea():Boolean = this.resource?.fields?.get("System.AreaPath")?.newValue == "AP\\Technical Support"
+

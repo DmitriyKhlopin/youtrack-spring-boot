@@ -5,7 +5,7 @@ import fsight.youtrack.generated.jooq.tables.IssueTimeline.ISSUE_TIMELINE
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
 import fsight.youtrack.models.IssueTimelineItem
 import fsight.youtrack.models.Schedule
-import fsight.youtrack.models.toIssueTimelineRecord
+import fsight.youtrack.toEndOfDate
 import fsight.youtrack.toStartOfDate
 import fsight.youtrack.toTimestamp
 import org.jooq.DSLContext
@@ -46,6 +46,10 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
         "2021-06-14", "2021-11-04"
     ).map { LocalDate.parse(it, DateTimeFormatter.ISO_DATE) }
 
+    private val extraWorkingDays = listOf(
+        "2018-06-09"
+    ).map { LocalDate.parse(it, DateTimeFormatter.ISO_DATE) }
+
     override fun launchCalculation() {
         val i: List<String> = dsl
             .select(ISSUES.ID)
@@ -74,6 +78,94 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
             print("Calculated timeline for ${index * 100 / size}% of issues\r")
         }
         pg.updateAllIssuesSpentTime()
+    }
+
+    override fun calculateForDetailedStateById(issueId: String): List<IssueTimelineItem> {
+        val i =  pg.getIssuesDetailedTimeline(issueId)
+        i.forEach {
+            it.timeSpent = calculatePeriod(it).toLong()
+        }
+        return i.sortedBy { it.order }
+    }
+
+    override fun calculatePeriod(item: IssueTimelineItem): Int {
+        val start = item.dateFrom.toLocalDateTime()
+        val end = item.dateTo.toLocalDateTime()
+        val a = arrayListOf<IssueTimelineItem>()
+        /*Время между датами начали и конца периода*/
+        var agg = 0;
+        if (start.toLocalDate() == end.toLocalDate()) {
+            a.add(item)
+        } else {
+            /**Интервал от начала перехода до конца дня*/
+            val startingInterval = item.copy()
+            startingInterval.dateTo = startingInterval.dateFrom.toEndOfDate()
+            a.add(startingInterval)
+
+            /**Интервал от начала дня до конца перехода*/
+            val endingInterval = item.copy()
+            endingInterval.dateFrom = endingInterval.dateTo.toStartOfDate()
+            a.add(endingInterval)
+
+            /**Дни между началом и концом периода*/
+            val dateFrom = item.dateFrom.toStartOfDate().toLocalDateTime().plusDays(1)
+            val dateTo = item.dateTo.toEndOfDate().toLocalDateTime().minusDays(1)
+            val j = Duration.between(dateFrom, dateTo).toDays()
+            for (n in 0 until j) {
+                val df = dateFrom.plusDays(n).toLocalDate()
+                when {
+                    df in holidays -> {
+                    }
+                    df in extraWorkingDays -> agg += (schedule.lastHour - schedule.firstHour + 1) * 3600
+                    df.dayOfWeek.value !in schedule.firstDay..schedule.lastDay -> {
+                    }
+                    else -> agg += (schedule.lastHour - schedule.firstHour + 1) * 3600
+                }
+            }
+        }
+        a.forEachIndexed { index, it ->
+            /*it.dateFrom = if (index == 0) it.dateTo else a[index - 1].dateTo*/
+            val s = it.dateFrom.toLocalDateTime()
+            val e = (it.dateTo).toLocalDateTime()
+            val sd = s.toLocalDate()
+            val ed = e.toLocalDate()
+            val result: Long = when {
+                sd in holidays -> 0
+                s.dayOfWeek.value !in schedule.firstDay..schedule.lastDay -> 0
+                /**Обе даты приходятся на один день.
+                Начало и окончание вписываются в рабочие часы*/
+                sd == ed && s.hour in schedule.firstHour..schedule.lastHour && e.hour in schedule.firstHour..schedule.lastHour ->
+                    Duration.between(s, e).toMillis() / 1000
+                /**Обе даты приходятся на один день.
+                Начало до рабочих часов, окончание после*/
+                sd == ed && s.hour < schedule.firstHour && e.hour > schedule.lastHour -> ((schedule.lastHour - schedule.firstHour + 1) * 3600).toLong()
+                /**Обе даты приходятся на один день.
+                Начало и окончание после рабочих часов*/
+                sd == ed && s.hour < schedule.firstHour && e.hour < schedule.firstHour -> 0
+                /**Обе даты приходятся на один день.
+                Начало и окончание после рабочих часов*/
+                sd == ed && s.hour > schedule.lastHour && e.hour > schedule.lastHour -> 0
+                /**Обе даты приходятся на один день.
+                Начало в рабочее время, окончание после*/
+                sd == ed && s.hour in schedule.firstHour..schedule.lastHour && e.hour > schedule.lastHour ->
+                    ((schedule.lastHour - s.toLocalTime().hour) * 3600 + (60 - s.toLocalTime().minute) * 60).toLong()
+                /**Обе даты приходятся на один день.
+                Начало до рабочего времени, окончание в рабочее время*/
+                sd == ed && s.hour < schedule.firstHour && e.hour in schedule.firstHour..schedule.lastHour ->
+                    ((e.hour - schedule.firstHour) * 3600 + e.minute * 60 + e.second).toLong()
+                /**Разные даты*/
+                sd != ed && Duration.between(s, e).toMillis() == 0L -> 0
+                sd != ed ->
+                    Duration.between(s, e).toDays() * (schedule.lastHour - schedule.firstHour + 1) * 3600
+                else -> {
+                    println("Unhandled case ${a[index].id} $s // $e")
+                    println()
+                    0L
+                }
+            }
+            a[index].timeSpent = result
+        }
+        return a.sumBy { it.timeSpent?.toInt() ?: 0 } + agg;
     }
 
     override fun calculateForId(issueId: String, currentIndex: Int, issuesSize: Int, update: Boolean): List<IssueTimelineItem> {

@@ -4,10 +4,12 @@ import fsight.youtrack.api.dictionaries.IDictionary
 import fsight.youtrack.common.IResolver
 import fsight.youtrack.db.IDevOpsProvider
 import fsight.youtrack.db.IPGProvider
+import fsight.youtrack.etl.timeline.ITimeline
 import fsight.youtrack.generated.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALUES
 import fsight.youtrack.generated.jooq.tables.IssueTags.ISSUE_TAGS
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
 import fsight.youtrack.generated.jooq.tables.WorkItems.WORK_ITEMS
+import fsight.youtrack.models.toReadableItem
 import fsight.youtrack.splitToList
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.transactions.TransactionManager
@@ -33,6 +35,9 @@ class Issues(private val dslContext: DSLContext, @Qualifier("tfsDataSource") pri
 
     @Autowired
     private lateinit var resolver: IResolver
+
+    @Autowired
+    private lateinit var timelineService: ITimeline
 
     private val issues = ISSUES.`as`("i")
     private val priority = CUSTOM_FIELD_VALUES.`as`("priority")
@@ -290,6 +295,14 @@ WHERE issue.System_Id IN ($issueIds)
 
     override fun getIssuesBySigmaValue(days: Int, issueFilter: IssueFilter): Any {
         return pg.getIssuesBySigmaValue(days, issueFilter)
+    }
+
+    override fun getDetailedStateTransitions(issueId: String): Any {
+        val i = pg.getIssuesDetailedTimeline(issueId)
+        i.forEach {
+            it.timeSpent = timelineService.calculatePeriod(it).toLong()
+        }
+        return i.sortedBy { it.order }/*.map { it.toReadableItem() }*/
     }
 }
 

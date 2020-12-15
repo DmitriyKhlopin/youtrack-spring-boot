@@ -32,7 +32,7 @@ internal class TFSHooksTest {
         DSL.using("jdbc:postgresql://v-ctp-postgres.fs.fsight.world:5432/youtrack?autoReconnect=true", "postgres", "Qwerty1")
     }
 
-    @Autowired
+    @Mock
     private lateinit var devops: IDevOpsProvider
 
     @Mock
@@ -227,6 +227,13 @@ internal class TFSHooksTest {
         val j = "\\AP\\Products\\Development\\Reporting\\Export\\AAA"
         println(resolver.resolveAreaToTeam(j))
         println(resolver.resolveTeamToPo(j))
+    }
 
+    @Test
+    fun wiMovedToSupportAreaTest() {
+        val file: File = ResourceUtils.getFile("classpath:test/hooks/movedToSupportArea.json")
+        assert(file.exists())
+        val body: WiUpdatedHook = Gson().fromJson(String(file.readBytes()), object : TypeToken<WiUpdatedHook>() {}.type)
+        assert(body.movedToSupportArea())
     }
 }

@@ -11,4 +11,5 @@ interface IIssues {
     fun getIssuesWithTFSDetails(issueFilter: IssueFilter): Any
 
     fun getIssuesBySigmaValue(days: Int, issueFilter: IssueFilter): Any
+    fun getDetailedStateTransitions(issueId: String): Any
 }

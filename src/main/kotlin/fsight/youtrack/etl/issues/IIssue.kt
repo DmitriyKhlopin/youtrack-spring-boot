@@ -16,4 +16,7 @@ interface IIssue {
     fun search(filter: String, fields: List<String>): List<Issue>
     fun updateCumulativeFlow()
     fun updateCumulativeFlowToday()
+    fun getIssuesForDetailedTimelineCalculation(): List<String>
+    fun calculateDetailedTimeline(): Any
+    fun calculateDetailedTimelineById(id: String): Any
 }

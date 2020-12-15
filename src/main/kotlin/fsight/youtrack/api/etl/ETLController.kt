@@ -15,8 +15,6 @@ class ETLController {
     @Autowired
     lateinit var etlStateService: IETLState
 
-
-
     @GetMapping("/api/etl")
     fun loadData(
         @RequestParam("dateType", required = false) dateType: String? = "",
