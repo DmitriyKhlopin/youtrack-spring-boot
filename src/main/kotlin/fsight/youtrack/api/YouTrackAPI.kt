@@ -116,7 +116,7 @@ interface YouTrackAPI {
 
 
     @Headers("Accept: application/json")
-    @GET("hub/api/rest/users?&\$top=-1&fields=id,login,name,profile(email),groups(name)")
+    @GET("hub/api/rest/users?&\$top=-1&fields=id,login,name,profile(email),groups(name),banned")
     fun getUserDetails(
         @Header("Authorization") auth: String
     ): Call<HubResponse>

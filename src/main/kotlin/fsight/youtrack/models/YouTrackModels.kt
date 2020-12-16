@@ -4,6 +4,7 @@ import com.google.gson.internal.LinkedTreeMap
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
 import fsight.youtrack.generated.jooq.tables.records.IssueHistoryRecord
 import fsight.youtrack.generated.jooq.tables.records.IssuesRecord
+import fsight.youtrack.generated.jooq.tables.records.UsersRecord
 import fsight.youtrack.models.youtrack.Issue
 import fsight.youtrack.models.youtrack.Visibility
 import fsight.youtrack.toDate
@@ -236,8 +237,20 @@ data class YouTrackUser(
     var ringId: String? = null,
     var jabber: String? = null,
     var email: String? = null, var creationTime: Long? = null,
-    var lastAccessTime: Long? = null
+    var lastAccessTime: Long? = null,
+    var banned: Boolean? = null
 )
+
+fun YouTrackUser.toUserRecord(): UsersRecord =
+    UsersRecord().setUserLogin(this.login)
+        .setRingId(this.id)
+        .setUrl("")
+        .setEmail(this.profile?.email?.email)
+        .setFullName(this.name)
+        .setId(this.id)
+        .setCreationTime(this.creationTime?.toTimestamp())
+        .setLastAccessTime(this.lastAccessTime?.toTimestamp())
+        .setIsBanned(this.banned?:false)
 
 data class HubUserProfile(
     var email: HubUserEmail? = null
