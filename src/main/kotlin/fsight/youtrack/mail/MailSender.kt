@@ -17,31 +17,37 @@ class MailSender : IMailSender {
     private val logger = KotlinLogging.logger {}
 
     override fun sendMail(from: String, to: String, subject: String, text: String) {
-        val mailSender = JavaMailSenderImpl()
-        mailSender.host = MAIL_SERVER_ADDRESS
-        mailSender.port = MAIL_SERVER_PORT
-        val message = SimpleMailMessage()
-        message.setTo(to)
-        message.setFrom(from)
-        message.setSubject(subject)
-        message.setText(text)
-        mailSender.send(message);
-        logger.info { "Отправлено уведомление получателю $to с темой \"$subject\" и текстом \"$text\"" };
+        try {
+            val mailSender = JavaMailSenderImpl()
+            mailSender.host = MAIL_SERVER_ADDRESS
+            mailSender.port = MAIL_SERVER_PORT
+            val message = SimpleMailMessage()
+            message.setTo(to)
+            message.setFrom(from)
+            message.setSubject(subject)
+            message.setText(text)
+            mailSender.send(message);
+            logger.info { "Отправлено уведомление получателю $to с темой \"$subject\" и текстом \"$text\"" };
+        } catch (e: Exception) {
+        }
     }
 
     override fun sendHtmlMessage(to: String, cc: Array<String>?, subject: String, text: String) {
-        val mailSender = JavaMailSenderImpl()
-        mailSender.host = MAIL_SERVER_ADDRESS
-        mailSender.port = MAIL_SERVER_PORT
-        val message = mailSender.createMimeMessage()
-        val helper = MimeMessageHelper(message, true, "utf-8")
-        helper.setTo(to)
-        if (cc != null) helper.setCc(cc)
-        helper.setFrom(DEFAULT_MAIL_SENDER)
-        helper.setSubject(subject)
-        val htmlMsg = (text)
-        helper.setText("text", htmlMsg)
-        mailSender.send(message)
-        logger.info { "Отправлено уведомление получателю $to с темой \"$subject\" и текстом \"$text\"" };
+        try {
+            val mailSender = JavaMailSenderImpl()
+            mailSender.host = MAIL_SERVER_ADDRESS
+            mailSender.port = MAIL_SERVER_PORT
+            val message = mailSender.createMimeMessage()
+            val helper = MimeMessageHelper(message, true, "utf-8")
+            helper.setTo(to)
+            if (cc != null) helper.setCc(cc)
+            helper.setFrom(DEFAULT_MAIL_SENDER)
+            helper.setSubject(subject)
+            val htmlMsg = (text)
+            helper.setText("text", htmlMsg)
+            mailSender.send(message)
+            logger.info { "Отправлено уведомление получателю $to с темой \"$subject\" и текстом \"$text\"" };
+        } catch (e: Exception) {
+        }
     }
 }

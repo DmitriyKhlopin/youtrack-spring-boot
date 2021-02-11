@@ -12,15 +12,16 @@ import fsight.youtrack.generated.jooq.tables.DictionaryProjectCustomerEts.DICTIO
 import fsight.youtrack.generated.jooq.tables.DynamicsWithTypes.DYNAMICS_WITH_TYPES
 import fsight.youtrack.generated.jooq.tables.EtsNames.ETS_NAMES
 import fsight.youtrack.generated.jooq.tables.Hooks.HOOKS
-import fsight.youtrack.generated.jooq.tables.IssueDetailedTimeline.ISSUE_DETAILED_TIMELINE
 import fsight.youtrack.generated.jooq.tables.IssueTags.ISSUE_TAGS
 import fsight.youtrack.generated.jooq.tables.IssueTimeline
+import fsight.youtrack.generated.jooq.tables.IssueTimeline.ISSUE_TIMELINE
+import fsight.youtrack.generated.jooq.tables.IssueTimelineDetailed.ISSUE_TIMELINE_DETAILED
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
-import fsight.youtrack.generated.jooq.tables.IssuesTimelineView.ISSUES_TIMELINE_VIEW
 import fsight.youtrack.generated.jooq.tables.PartnerCustomers.PARTNER_CUSTOMERS
 import fsight.youtrack.generated.jooq.tables.ProductOwners.PRODUCT_OWNERS
 import fsight.youtrack.generated.jooq.tables.ProjectType.PROJECT_TYPE
 import fsight.youtrack.generated.jooq.tables.Projects.PROJECTS
+import fsight.youtrack.generated.jooq.tables.StateTransitions.STATE_TRANSITIONS
 import fsight.youtrack.generated.jooq.tables.Weeks.WEEKS
 import fsight.youtrack.generated.jooq.tables.WorkItems.WORK_ITEMS
 import fsight.youtrack.generated.jooq.tables.records.AreaTeamRecord
@@ -252,12 +253,14 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
                 set time_user     = a.time_user
                   , time_agent    = a.time_agent
                   , time_developer= a.time_developer
-                from (select sum(case when transition_owner = 'YouTrackUser' then time_spent else 0 end)          as time_user
-                           , sum(case when transition_owner in ('Agent', 'Undefined') then time_spent else 0 end) as time_agent
-                           , sum(case when transition_owner = 'Developer' then time_spent else 0 end)             as time_developer
-                           , issue_id
-                      from issue_timeline
-                      group by issue_id
+                from (
+                    select
+                        sum(case when transition_owner = 0 then time_spent_m else 0 end)           as time_user
+                        , sum(case when transition_owner in (1, 2, -1) then time_spent_m else 0 end) as time_agent
+                        , sum(case when transition_owner = 3 then time_spent_m else 0 end)           as time_developer
+                        , issue_id
+                    from issue_timeline
+                        group by issue_id
                      ) a
                 where issues.id = a.issue_id
             """.trimIndent()
@@ -338,31 +341,32 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
 
     override fun getIssuesUpdatedInPeriod(dateFrom: Timestamp, dateTo: Timestamp): List<String> {
         return dsl
-            .select(ISSUES.ID)
-            .from(ISSUES)
-            .where(ISSUES.UPDATED_DATE.between(dateFrom).and(dateTo))
-            .and(ISSUES.PROJECT_SHORT_NAME.notIn(listOf("SD", "TC", "SPAM", "PO", "BL", "SPAM")))
-            .orderBy(ISSUES.UPDATED_DATE.asc())
+            .select(issuesTable.ID)
+            .from(issuesTable)
+            .leftJoin(projectTypesTable).on(issuesTable.PROJECT_SHORT_NAME.eq(projectTypesTable.PROJECT_SHORT_NAME))
+            .where()
+            .and(issuesTable.UPDATED_DATE.between(dateFrom).and(dateTo))
+            .and(projectTypesTable.IS_PUBLIC.eq(true).or(projectTypesTable.IS_PUBLIC.isNull))
+            .orderBy(issuesTable.UPDATED_DATE.asc())
             .fetchInto(String::class.java)
     }
 
-    override fun getIssueTimelineItemsById(issueId: String): List<IssueTimelineItem> {
-        return dsl
-            .select(
-                ISSUES_TIMELINE_VIEW.ISSUE_ID.`as`("id"),
-                ISSUES_TIMELINE_VIEW.UPDATE_DATE_TIME.`as`("dateFrom"),
-                ISSUES_TIMELINE_VIEW.UPDATE_DATE_TIME.`as`("dateTo"),
-                ISSUES_TIMELINE_VIEW.OLD_VALUE_STRING.`as`("stateOld"),
-                ISSUES_TIMELINE_VIEW.NEW_VALUE_STRING.`as`("stateNew"),
-                ISSUES_TIMELINE_VIEW.TIME_SPENT.`as`("timeSpent"),
-                DSL.nullif(true, true).`as`("stateOwner")
-            )
-            .from(ISSUES_TIMELINE_VIEW)
-            .where(ISSUES_TIMELINE_VIEW.ISSUE_ID.eq(issueId))
+    override fun getIssueTimelineById(issueId: String): List<IssueTimelineItem> {
+        return dsl.select(
+            STATE_TRANSITIONS.RN.`as`("order"),
+            STATE_TRANSITIONS.ISSUE_ID.`as`("id"),
+            STATE_TRANSITIONS.OLD_DT.`as`("dateFrom"),
+            STATE_TRANSITIONS.NEW_DT.`as`("dateTo"),
+            STATE_TRANSITIONS.O.`as`("stateOld"),
+            STATE_TRANSITIONS.N.`as`("stateNew"),
+            STATE_TRANSITIONS.OWNER.`as`("stateOwner")
+        )
+            .from(STATE_TRANSITIONS)
+            .where(STATE_TRANSITIONS.ISSUE_ID.eq(issueId))
             .fetchInto(IssueTimelineItem::class.java)
     }
 
-    override fun getIssuesDetailedTimeline(issueId: String): List<IssueTimelineItem> {
+    override fun getIssuesDetailedTimelineById(issueId: String): List<IssueTimelineItem> {
         return dsl.select(
             DETAILED_STATE_TRANSITIONS.RN.`as`("order"),
             DETAILED_STATE_TRANSITIONS.ISSUE_ID.`as`("id"),
@@ -378,15 +382,33 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
     }
 
     override fun saveIssueTimelineItems(items: List<IssueTimelineItem>): Int {
-        return dsl.loadInto(IssueTimeline.ISSUE_TIMELINE).loadRecords(items.map(IssueTimelineItem::toIssueTimelineRecord)).fields(
-            IssueTimeline.ISSUE_TIMELINE.ISSUE_ID,
-            IssueTimeline.ISSUE_TIMELINE.STATE_FROM,
-            IssueTimeline.ISSUE_TIMELINE.STATE_TO,
-            IssueTimeline.ISSUE_TIMELINE.STATE_FROM_DATE,
-            IssueTimeline.ISSUE_TIMELINE.STATE_TO_DATE,
-            IssueTimeline.ISSUE_TIMELINE.TIME_SPENT,
-            IssueTimeline.ISSUE_TIMELINE.TRANSITION_OWNER
-        ).execute().stored()
+        return dsl.loadInto(ISSUE_TIMELINE)
+            .onDuplicateKeyUpdate()
+            .loadRecords(items.map(IssueTimelineItem::toIssueTimelineRecord)).fields(
+                ISSUE_TIMELINE.RN,
+                ISSUE_TIMELINE.ISSUE_ID,
+                ISSUE_TIMELINE.STATE_FROM,
+                ISSUE_TIMELINE.STATE_TO,
+                ISSUE_TIMELINE.DATE_FROM,
+                ISSUE_TIMELINE.DATE_TO,
+                ISSUE_TIMELINE.TIME_SPENT_M,
+                ISSUE_TIMELINE.TRANSITION_OWNER
+            ).execute().stored()
+    }
+
+    override fun saveIssueTimelineDetailedItems(items: List<IssueTimelineItem>): Int {
+        return dsl.loadInto(ISSUE_TIMELINE_DETAILED)
+            .onDuplicateKeyUpdate()
+            .loadRecords(items.map(IssueTimelineItem::toIssueDetailedTimelineRecord)).fields(
+                ISSUE_TIMELINE_DETAILED.RN,
+                ISSUE_TIMELINE_DETAILED.ISSUE_ID,
+                ISSUE_TIMELINE_DETAILED.STATE_FROM,
+                ISSUE_TIMELINE_DETAILED.STATE_TO,
+                ISSUE_TIMELINE_DETAILED.DATE_FROM,
+                ISSUE_TIMELINE_DETAILED.DATE_TO,
+                ISSUE_TIMELINE_DETAILED.TIME_SPENT_M,
+                ISSUE_TIMELINE_DETAILED.TRANSITION_OWNER
+            ).execute().stored()
     }
 
     override fun getVelocity(issueFilter: IssueFilter): List<Velocity> {
@@ -625,21 +647,5 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
             .and((projectTypesTable.IS_PUBLIC.eq(true)).or(projectTypesTable.IS_PUBLIC.isNull))
             .and(issuesTable.RESOLVED_DATE_TIME.isNull).or(issuesTable.RESOLVED_DATE_TIME.between(DSL.timestampSub(DSL.now(), 14, DatePart.DAY), DSL.now()))
             .fetchInto(String::class.java)
-    }
-
-
-    override fun saveIssuesDetailedTimeline(items: List<IssueTimelineItem>): Int {
-        return dsl.loadInto(ISSUE_DETAILED_TIMELINE)
-            .onDuplicateKeyUpdate()
-            .loadRecords(items.map(IssueTimelineItem::toIssueDetailedTimelineRecord)).fields(
-                ISSUE_DETAILED_TIMELINE.RN,
-                ISSUE_DETAILED_TIMELINE.ID,
-                ISSUE_DETAILED_TIMELINE.DATE_FROM,
-                ISSUE_DETAILED_TIMELINE.DATE_TO,
-                ISSUE_DETAILED_TIMELINE.STATE_OLD,
-                ISSUE_DETAILED_TIMELINE.STATE_NEW,
-                ISSUE_DETAILED_TIMELINE.TIME_SPENT,
-                ISSUE_DETAILED_TIMELINE.STATE_OWNER
-            ).execute().stored()
     }
 }

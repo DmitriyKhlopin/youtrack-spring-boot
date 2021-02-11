@@ -43,9 +43,10 @@ class ETL(
         }
 
         if (time.get(Calendar.MINUTE) == 0 && time.get(Calendar.HOUR_OF_DAY) == 2) {
-            val dateFrom = LocalDateTime.now().minusMonths(2).toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+            val dateFrom = LocalDateTime.now().minusMonths(1).toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
             val dateTo = LocalDateTime.now().toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
             timeline.launchCalculationForPeriod(dateFrom, dateTo)
+            timeline.launchDetailedCalculationForPeriod(dateFrom, dateTo)
         }
 
         if (time.get(Calendar.MINUTE) == 30 && time.get(Calendar.HOUR_OF_DAY) == 0) {
@@ -82,6 +83,7 @@ class ETL(
                 "users" -> users.getUsers()
                 "timeline" -> timeline.launchCalculation()
                 "timelineAll" -> timeline.launchCalculationForPeriod(dateFrom, dateTo)
+                "timelineDetailedForPeriod" -> timeline.launchDetailedCalculationForPeriod(dateFrom, dateTo)
                 "deleted" -> issue.findDeletedIssues()
                 "projects" -> projects.saveProjects()
                 "pending" -> issue.checkPendingIssues()
@@ -114,12 +116,13 @@ class ETL(
     }
 
     override fun getTimelineById(idReadable: String): ResponseEntity<Any> {
-        return ResponseEntity.ok(timeline.calculateForId(idReadable, 1, 1, true))
+        return ResponseEntity.ok(timeline.calculateDetailedStateByIssueId(idReadable))
     }
 
     override fun launchCalculationForPeriod() {
         val dateFrom = LocalDateTime.now().minusMonths(2).toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
         val dateTo = LocalDateTime.now().toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
         timeline.launchCalculationForPeriod(dateFrom, dateTo)
+        timeline.launchDetailedCalculationForPeriod(dateFrom, dateTo)
     }
 }

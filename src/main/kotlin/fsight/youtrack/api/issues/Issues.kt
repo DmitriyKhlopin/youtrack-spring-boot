@@ -9,7 +9,6 @@ import fsight.youtrack.generated.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALU
 import fsight.youtrack.generated.jooq.tables.IssueTags.ISSUE_TAGS
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
 import fsight.youtrack.generated.jooq.tables.WorkItems.WORK_ITEMS
-import fsight.youtrack.models.toReadableItem
 import fsight.youtrack.splitToList
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.transactions.TransactionManager
@@ -298,11 +297,11 @@ WHERE issue.System_Id IN ($issueIds)
     }
 
     override fun getDetailedStateTransitions(issueId: String): Any {
-        val i = pg.getIssuesDetailedTimeline(issueId)
+        val i = pg.getIssuesDetailedTimelineById(issueId)
         i.forEach {
-            it.timeSpent = timelineService.calculatePeriod(it).toLong()
+            it.timeSpent = timelineService.calculatePeriod(it)
         }
-        return i.sortedBy { it.order }/*.map { it.toReadableItem() }*/
+        return i.sortedBy { it.order }
     }
 }
 

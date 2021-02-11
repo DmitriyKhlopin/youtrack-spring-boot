@@ -38,11 +38,13 @@ interface IPGProvider {
     fun getYouTrackIssuesWithDetails(issueFilter: IssueFilter): List<IssueWiThDetails>
     fun getAreasWithTeams(): List<AreaTeamRecord>
     fun getProductOwners(): List<ProductOwnersRecord>
+    /** Timeline */
     fun updateAllIssuesSpentTime()
-    fun getIssueTimelineItemsById(issueId: String): List<IssueTimelineItem>
-    fun getIssuesDetailedTimeline(issueId: String): List<IssueTimelineItem>
-    fun saveIssuesDetailedTimeline(items: List<IssueTimelineItem>): Int
+    fun getIssueTimelineById(issueId: String): List<IssueTimelineItem>
+    fun getIssuesDetailedTimelineById(issueId: String): List<IssueTimelineItem>
     fun saveIssueTimelineItems(items: List<IssueTimelineItem>): Int
+    fun saveIssueTimelineDetailedItems(items: List<IssueTimelineItem>): Int
+    /** -- */
     fun getInnerProjects(): List<YouTrackProject>
     fun getVelocity(issueFilter: IssueFilter): List<Velocity>
     fun getPrioritiesStats(issueFilter: IssueFilter): List<SimpleAggregatedValue1>

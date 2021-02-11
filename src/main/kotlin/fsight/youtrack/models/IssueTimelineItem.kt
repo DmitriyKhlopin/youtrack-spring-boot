@@ -1,6 +1,6 @@
 package fsight.youtrack.models
 
-import fsight.youtrack.generated.jooq.tables.records.IssueDetailedTimelineRecord
+import fsight.youtrack.generated.jooq.tables.records.IssueTimelineDetailedRecord
 import fsight.youtrack.generated.jooq.tables.records.IssueTimelineRecord
 import java.sql.Timestamp
 
@@ -11,31 +11,32 @@ data class IssueTimelineItem(
     var dateTo: Timestamp,
     var stateOld: String?,
     var stateNew: String?,
-    var timeSpent: Long?,
-    var stateOwner: String? = "unassigned"
+    var timeSpent: Int?,
+    var stateOwner: Int? = -1
 )
 
 fun IssueTimelineItem.toIssueTimelineRecord() =
     IssueTimelineRecord(
+        this.order,
         this.id,
-        this.stateOld,
-        this.stateNew,
+        this.stateOld ?: "undefined",
+        this.stateNew ?: "undefined",
         this.dateFrom,
         this.dateTo,
         this.timeSpent,
-        this.stateOwner
+        this.stateOwner ?: -1
     )
 
 fun IssueTimelineItem.toIssueDetailedTimelineRecord() =
-    IssueDetailedTimelineRecord(
+    IssueTimelineDetailedRecord(
         this.order,
         this.id,
-        this.dateFrom,
-        this.dateTo,
         this.stateOld ?: "undefined",
         this.stateNew ?: "undefined",
-        this.timeSpent?.toInt() ?: 0,
-        this.stateOwner?.toInt() ?: -1
+        this.dateFrom,
+        this.dateTo,
+        this.timeSpent,
+        this.stateOwner ?: -1
     )
 
 fun IssueTimelineItem.toReadableItem() =
@@ -47,7 +48,7 @@ fun IssueTimelineItem.toReadableItem() =
         this.stateOld,
         this.stateNew,
         this.timeSpent,
-        this.stateOwner
+        this.stateOwner.toString()
     )
 
 data class IssueTimelineItemForWeb(
@@ -57,6 +58,6 @@ data class IssueTimelineItemForWeb(
     var dateTo: String,
     var stateOld: String?,
     var stateNew: String?,
-    var timeSpent: Long?,
+    var timeSpent: Int?,
     var stateOwner: String? = "unassigned"
 )
