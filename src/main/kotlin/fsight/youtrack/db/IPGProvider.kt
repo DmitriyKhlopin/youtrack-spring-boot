@@ -56,5 +56,8 @@ interface IPGProvider {
     fun getTypesStats(issueFilter: IssueFilter): List<SimpleAggregatedValue1>
     fun getSLAStatsByPriority(issueFilter: IssueFilter): List<SimpleAggregatedValue2>
     fun getCommercialSLAStatsByPriority(issueFilter: IssueFilter): List<SimpleAggregatedValue2>
-    fun getIssuesForDetailedTimelineCalculation(): List<String>
+    fun getUnresolvedIssuesForTimelineCalculation(): List<String>
+    fun getUnresolvedIssuesWithLastCommentByUser(): List<IssueWiThDetails>
+    fun getFirstLineEmployees(): List<ETSNameRecord>
+    fun getFirstLineLeadEmployees(): List<ETSNameRecord>
 }

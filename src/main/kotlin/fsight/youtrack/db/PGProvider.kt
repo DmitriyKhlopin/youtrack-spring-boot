@@ -13,10 +13,10 @@ import fsight.youtrack.generated.jooq.tables.DynamicsWithTypes.DYNAMICS_WITH_TYP
 import fsight.youtrack.generated.jooq.tables.EtsNames.ETS_NAMES
 import fsight.youtrack.generated.jooq.tables.Hooks.HOOKS
 import fsight.youtrack.generated.jooq.tables.IssueTags.ISSUE_TAGS
-import fsight.youtrack.generated.jooq.tables.IssueTimeline
 import fsight.youtrack.generated.jooq.tables.IssueTimeline.ISSUE_TIMELINE
 import fsight.youtrack.generated.jooq.tables.IssueTimelineDetailed.ISSUE_TIMELINE_DETAILED
 import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
+import fsight.youtrack.generated.jooq.tables.LastUserCommentUnresolved.LAST_USER_COMMENT_UNRESOLVED
 import fsight.youtrack.generated.jooq.tables.PartnerCustomers.PARTNER_CUSTOMERS
 import fsight.youtrack.generated.jooq.tables.ProductOwners.PRODUCT_OWNERS
 import fsight.youtrack.generated.jooq.tables.ProjectType.PROJECT_TYPE
@@ -126,6 +126,30 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
         )
             .from(ETS_NAMES)
             .where(ETS_NAMES.SUPPORT)
+            .fetchInto(ETSNameRecord::class.java)
+    }
+
+    override fun getFirstLineEmployees(): List<ETSNameRecord> {
+        return dsl.select(
+            ETS_NAMES.FSIGHT_EMAIL.`as`("email"),
+            DSL.coalesce(ETS_NAMES.ETS_NAME, "undefined").`as`("etsName"),
+            ETS_NAMES.FULL_NAME.`as`("fullName"),
+            ETS_NAMES.SUPPORT.`as`("isSupport")
+        )
+            .from(ETS_NAMES)
+            .where(ETS_NAMES.LINE.eq(1))
+            .fetchInto(ETSNameRecord::class.java)
+    }
+
+    override fun getFirstLineLeadEmployees(): List<ETSNameRecord> {
+        return dsl.select(
+            ETS_NAMES.FSIGHT_EMAIL.`as`("email"),
+            DSL.coalesce(ETS_NAMES.ETS_NAME, "undefined").`as`("etsName"),
+            ETS_NAMES.FULL_NAME.`as`("fullName"),
+            ETS_NAMES.SUPPORT.`as`("isSupport")
+        )
+            .from(ETS_NAMES)
+            .where(ETS_NAMES.LINE.eq(11))
             .fetchInto(ETSNameRecord::class.java)
     }
 
@@ -639,13 +663,26 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
             .fetchInto(SimpleAggregatedValue2::class.java)
     }
 
-    override fun getIssuesForDetailedTimelineCalculation(): List<String> {
+    override fun getUnresolvedIssuesForTimelineCalculation(): List<String> {
         return dsl.selectDistinct(issuesTable.ID)
             .from(issuesTable)
             .leftJoin(projectTypesTable).on(issuesTable.PROJECT_SHORT_NAME.eq(projectTypesTable.PROJECT_SHORT_NAME))
             .where()
             .and((projectTypesTable.IS_PUBLIC.eq(true)).or(projectTypesTable.IS_PUBLIC.isNull))
-            .and(issuesTable.RESOLVED_DATE_TIME.isNull).or(issuesTable.RESOLVED_DATE_TIME.between(DSL.timestampSub(DSL.now(), 14, DatePart.DAY), DSL.now()))
+            .and((issuesTable.RESOLVED_DATE_TIME.isNull).or(issuesTable.RESOLVED_DATE_TIME.between(DSL.timestampSub(DSL.now(), 14, DatePart.DAY), DSL.now())))
             .fetchInto(String::class.java)
+    }
+
+    override fun getUnresolvedIssuesWithLastCommentByUser(): List<IssueWiThDetails> {
+        return dsl.select(
+            LAST_USER_COMMENT_UNRESOLVED.ID.`as`("id"),
+            LAST_USER_COMMENT_UNRESOLVED.SUMMARY.`as`("summary"),
+            LAST_USER_COMMENT_UNRESOLVED.STATE.`as`("state"),
+            LAST_USER_COMMENT_UNRESOLVED.DETAILED_STATE.`as`("detailedState"),
+            LAST_USER_COMMENT_UNRESOLVED.AUTHOR.`as`("commentAuthor"),
+            LAST_USER_COMMENT_UNRESOLVED.CREATED.`as`("created")
+        ).from(LAST_USER_COMMENT_UNRESOLVED)
+            .orderBy(LAST_USER_COMMENT_UNRESOLVED.CREATED.asc())
+            .fetchInto(IssueWiThDetails::class.java)
     }
 }

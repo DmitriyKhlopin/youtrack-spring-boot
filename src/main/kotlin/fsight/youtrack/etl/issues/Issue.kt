@@ -436,7 +436,7 @@ class Issue(
 
 
     override fun calculateDetailedTimeline(): Any {
-        val i =  pg.getIssuesForDetailedTimelineCalculation().map { it to timelineService.calculateDetailedStateByIssueId(it) }
+        val i =  pg.getUnresolvedIssuesForTimelineCalculation().map { it to timelineService.calculateDetailedStateByIssueId(it) }
 
         return i
     }
@@ -446,6 +446,6 @@ class Issue(
     }
 
     override fun getIssuesForDetailedTimelineCalculation(): List<String> {
-        return pg.getIssuesForDetailedTimelineCalculation()
+        return pg.getUnresolvedIssuesForTimelineCalculation()
     }
 }

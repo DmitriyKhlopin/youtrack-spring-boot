@@ -91,6 +91,7 @@ class ETL(
             }
         }
         etlStateService.state = ETLState.IDLE
+        println()
         println("done")
         return ids.size
     }

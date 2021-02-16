@@ -32,7 +32,7 @@ class MailSender : IMailSender {
         }
     }
 
-    override fun sendHtmlMessage(to: String, cc: Array<String>?, subject: String, text: String) {
+    override fun sendHtmlMessage(to: Array<String>, cc: Array<String>?, subject: String, text: String) {
         try {
             val mailSender = JavaMailSenderImpl()
             mailSender.host = MAIL_SERVER_ADDRESS

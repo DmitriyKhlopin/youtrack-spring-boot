@@ -223,7 +223,7 @@ class TFSHooks : ITFSHooks {
                         commands.add("Детализированное состояние $inferredState")
                     }
                     cases.isEmpty() -> {
-                        mailSender.sendHtmlMessage(TEST_MAIL_RECEIVER, null, "Не найдено правило для обработки задачи ${ai.idReadable}", Gson().toJson(body))
+                        mailSender.sendHtmlMessage(arrayOf(TEST_MAIL_RECEIVER), null, "Не найдено правило для обработки задачи ${ai.idReadable}", Gson().toJson(body))
                     }
                 }
                 /**
@@ -234,7 +234,7 @@ class TFSHooks : ITFSHooks {
             }
             return issues
         } catch (e: Error) {
-            mailSender.sendHtmlMessage(TEST_MAIL_RECEIVER, null, "Ошибка при обработке хука", e.localizedMessage)
+            mailSender.sendHtmlMessage(arrayOf(TEST_MAIL_RECEIVER), null, "Ошибка при обработке хука", e.localizedMessage)
             return pg.saveHookToDatabase(body = body, errorMessage = e.localizedMessage, type = HookTypes.CHANGE)
         }
     }
@@ -254,7 +254,7 @@ class TFSHooks : ITFSHooks {
             }
             issues
         } catch (e: Error) {
-            mailSender.sendHtmlMessage(TEST_MAIL_RECEIVER, null, "Ошибка при обработке хука", e.localizedMessage)
+            mailSender.sendHtmlMessage(arrayOf(TEST_MAIL_RECEIVER), null, "Ошибка при обработке хука", e.localizedMessage)
             pg.saveHookToDatabase(body = body, errorMessage = e.localizedMessage, type = HookTypes.COMMENT)
         }
     }

@@ -1,4 +1,4 @@
-package fsight.youtrack.api.integrations.features
+package fsight.youtrack.api.integrations.devops.features
 
 import fsight.youtrack.integrations.devops.features.IFeaturesAnalyzer
 import org.springframework.beans.factory.annotation.Autowired
@@ -11,7 +11,7 @@ class FeaturesAnalyzerController {
     @Autowired
     private lateinit var f: IFeaturesAnalyzer
 
-    @GetMapping("/api/integrations/features/analyze")
+    @GetMapping("/api/integrations/devops/features/analyze")
     fun analyze(): ResponseEntity<Any> {
         return ResponseEntity.ok(
             f.analyze()

@@ -50,7 +50,7 @@ class FeaturesAnalyzer : IFeaturesAnalyzer {
             }
             .forEach { m ->
                 mailSender.sendHtmlMessage(
-                    assignees.firstOrNull { a -> a.fullName.contains(m.first) }?.email ?: TEST_MAIL_RECEIVER,
+                    arrayOf(assignees.firstOrNull { a -> a.fullName.contains(m.first) }?.email ?: TEST_MAIL_RECEIVER),
                     CC.splitToList(delimiters = ",").toTypedArray(),
                     "Оценка внешних запросов на доработку",
                     htmlBuilder.createFeaturesMessage(m.first, m.second)

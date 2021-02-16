@@ -1,33 +1,22 @@
 package fsight.youtrack.etl.timeline
 
 import fsight.youtrack.db.IPGProvider
-import fsight.youtrack.generated.jooq.tables.Issues.ISSUES
 import fsight.youtrack.models.IssueTimelineItem
 import fsight.youtrack.models.Schedule
 import fsight.youtrack.toEndOfDate
 import fsight.youtrack.toStartOfDate
-import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
-import java.sql.Timestamp
 import java.time.Duration
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @Service
-class Timeline(private val dsl: DSLContext) : ITimeline {
+class Timeline : ITimeline {
     @Autowired
     private lateinit var pg: IPGProvider;
 
     private val schedule = Schedule("Стандартный", 1, 5, 11, 19)
-    private val userStates = listOf(
-        "На проверке", "Исправлена", "Решена", "Дубликат", "Не удается воспроизвести",
-        "Проверена", "Подлежит проверке", "Требуется уточнение", "Готово", "Неполная", "Не существует",
-        "Ожидает подтверждения", "Ожидает ответа", "Без подтверждения", "Подтверждена"
-    )
-    private val agentStates = listOf("Открыта", "backlog", "В обработке", "Зарегистрирована", "Создана")
-    private val developerStates = listOf("Направлена разработчику", "Исследуется в JetBrains")
 
     private val holidays = listOf(
         "2018-11-05", "2019-01-01", "2019-01-02", "2019-01-03",
@@ -48,16 +37,12 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
     ).map { LocalDate.parse(it, DateTimeFormatter.ISO_DATE) }
 
     override fun launchCalculation() {
-        val i: List<String> = dsl
-            .select(ISSUES.ID)
-            .from(ISSUES)
-            .where(ISSUES.UPDATED_DATE_TIME.ge(Timestamp.valueOf(LocalDateTime.now().toLocalDate().atStartOfDay())).or(ISSUES.RESOLVED_DATE_TIME.isNull))
-            .and(ISSUES.PROJECT_SHORT_NAME.notIn(listOf("SD", "TC", "SPAM", "PO", "TEST", "SPAM")))
-            .fetchInto(String::class.java)
+        val i: List<String> = pg.getUnresolvedIssuesForTimelineCalculation()
         println("Need to calculate timelines for ${i.size} items.")
         val size = i.size
-        i.asSequence().forEachIndexed { index, s ->
-            calculateDetailedStateByIssueId(s)
+        i.asSequence().forEachIndexed { index, id ->
+            calculateStateByIssueId(id)
+            calculateDetailedStateByIssueId(id)
             print("Calculated timeline for ${index * 100 / size}% of issues\r")
         }
         println("Calculated timeline for 100% of issues")
@@ -69,7 +54,7 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
         val dt = dateTo?.toStartOfDate() ?: return
         val i: List<String> = pg.getIssuesUpdatedInPeriod(df, dt)
         val size = i.size
-        println("Need to calculate timelines for $size items.")
+        println("\nNeed to calculate timelines for $size items.")
         i.asSequence().forEachIndexed { index, s ->
             calculateStateByIssueId(s)
             print("Calculated timeline for ${index * 100 / size}% of issues\r")
@@ -91,7 +76,7 @@ class Timeline(private val dsl: DSLContext) : ITimeline {
         val dt = dateTo?.toStartOfDate() ?: return
         val i: List<String> = pg.getIssuesUpdatedInPeriod(df, dt)
         val size = i.size
-        println("Need to calculate detailed timelines for $size items.")
+        println("\nNeed to calculate detailed timelines for $size items.")
         i.asSequence().forEachIndexed { index, s ->
             calculateDetailedStateByIssueId(s)
             print("Calculated detailed timeline for ${index * 100 / size}% of issues\r")

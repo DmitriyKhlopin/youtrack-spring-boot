@@ -2,6 +2,8 @@ package fsight.youtrack.api.issues
 
 import fsight.youtrack.models.DevOpsWorkItem
 import java.sql.Timestamp
+import java.time.Duration
+import java.time.LocalDateTime
 
 data class IssueWiThDetails(
     var id: String? = null,
@@ -32,3 +34,15 @@ data class IssueWiThDetails(
     var solutionViolation: String? = null,
     var tags: ArrayList<String> = arrayListOf()
 )
+
+fun IssueWiThDetails.toTableRow(index: Int): String {
+    val d = Duration.between(this.created?.toLocalDateTime(), LocalDateTime.now()).toDays()
+    return """<tr>
+            <td><p>${index}</p></td>
+            <td><p>${d}</p></td>
+            <td><p><a href='https://support.fsight.ru/issue/${this.id}'>${this.summary}</a></p></td>         
+            <td><p>${this.state}<br>${this.detailedState}</p></td>
+            <td><p>${this.commentAuthor}</p></td>
+            <td><p>${this.created?.toLocalDateTime()?.toLocalDate()}</p></td>
+        </tr>""".trimIndent().replace("[\n\r]".toRegex(), "").replace("\\s+".toRegex(), " ").replace("> <", "><")
+}

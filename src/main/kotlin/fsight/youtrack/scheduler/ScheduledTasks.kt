@@ -5,6 +5,7 @@ import fsight.youtrack.etl.IETL
 import fsight.youtrack.etl.IETLState
 import fsight.youtrack.integrations.devops.features.IFeaturesAnalyzer
 import fsight.youtrack.integrations.devops.revisions.IDevOpsRevisions
+import fsight.youtrack.integrations.youtrack.IIssuesAnalyzer
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.CommandLineRunner
 import org.springframework.scheduling.annotation.Scheduled
@@ -20,6 +21,9 @@ class ScheduledTasks(private val service: IETL, private val state: IETLState) : 
     @Autowired
     lateinit var featuresAnalyzer: IFeaturesAnalyzer
 
+    @Autowired
+    lateinit var issuesAnalyzer: IIssuesAnalyzer
+
     private val runOnStartup = false
     private val testServers = listOf(
         "SPB-FSIGHT11",
@@ -32,16 +36,16 @@ class ScheduledTasks(private val service: IETL, private val state: IETLState) : 
         when {
             state.state == ETLState.RUNNING -> println("ETL is already running")
             InetAddress.getLocalHost().hostName !in testServers && state.state != ETLState.RUNNING -> {
-                println("*** Scheduled task started ***")
+                println("\n*** Scheduled task started ***")
                 state.state = ETLState.RUNNING
                 val result = service.runScheduledExport()
                 state.state = ETLState.IDLE
-                println("*** Scheduled task finished. Processed ${result?.issues} issues***")
+                println("\n*** Scheduled task finished. Processed ${result?.issues} issues***")
             }
             InetAddress.getLocalHost().hostName !in testServers && state.state == ETLState.RUNNING -> {
-                println("Service is running in production mode, but previous ETL is not finished")
+                println("\nService is running in production mode, but previous ETL is not finished")
             }
-            else -> println("Service is running in dev mode, ETL will not be launched")
+            else -> println("\nService is running in dev mode, ETL will not be launched")
         }
     }
 
@@ -62,6 +66,13 @@ class ScheduledTasks(private val service: IETL, private val state: IETLState) : 
     fun analyzeFeatures() {
         if (InetAddress.getLocalHost().hostName !in testServers) {
             featuresAnalyzer.analyzePendingFeatures()
+        }
+    }
+
+    @Scheduled(cron = "0 0 10 * * MON-FRI")
+    fun analyzeCommentedIssues() {
+        if (InetAddress.getLocalHost().hostName !in testServers) {
+            issuesAnalyzer.analyze()
         }
     }
 

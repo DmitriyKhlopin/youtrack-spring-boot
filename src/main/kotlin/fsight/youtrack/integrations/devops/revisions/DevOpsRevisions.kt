@@ -48,7 +48,7 @@ class DevOpsRevisions(private val dsl: DSLContext) : IDevOpsRevisions {
             7 -> errors.toT4List()
             8 -> errors.toT4List().map { it.recipient }.distinct()
             9 -> {
-                errors.toT4List().forEach { mailSender.sendHtmlMessage(/*TEST_MAIL_RECEIVER*/it.recipient, null, "Автоматическая провека заявок (${it.errors.size})", it.body) }
+                errors.toT4List().forEach { mailSender.sendHtmlMessage(/*TEST_MAIL_RECEIVER*/arrayOf(it.recipient), null, "Автоматическая провека заявок (${it.errors.size})", it.body) }
                 errors
             }
             else -> errors
@@ -102,7 +102,7 @@ class DevOpsRevisions(private val dsl: DSLContext) : IDevOpsRevisions {
     }
 
     private fun notify(subject: String, body: String) {
-        mailSender.sendHtmlMessage(to = TEST_MAIL_RECEIVER, cc = null, subject = subject, text = body)
+        mailSender.sendHtmlMessage(to = arrayOf(TEST_MAIL_RECEIVER), cc = null, subject = subject, text = body)
     }
 
     /**
