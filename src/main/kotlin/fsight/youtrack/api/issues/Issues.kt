@@ -303,5 +303,7 @@ WHERE issue.System_Id IN ($issueIds)
         }
         return i.sortedBy { it.order }
     }
+
+    override fun getUnresolved(): List<String> = pg.getUnresolvedIssues()
 }
 

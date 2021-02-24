@@ -11,6 +11,8 @@ import fsight.youtrack.generated.jooq.tables.DetailedStateTransitions.DETAILED_S
 import fsight.youtrack.generated.jooq.tables.DictionaryProjectCustomerEts.DICTIONARY_PROJECT_CUSTOMER_ETS
 import fsight.youtrack.generated.jooq.tables.DynamicsWithTypes.DYNAMICS_WITH_TYPES
 import fsight.youtrack.generated.jooq.tables.EtsNames.ETS_NAMES
+import fsight.youtrack.generated.jooq.tables.ExtraWorkDays.EXTRA_WORK_DAYS
+import fsight.youtrack.generated.jooq.tables.Holidays.HOLIDAYS
 import fsight.youtrack.generated.jooq.tables.Hooks.HOOKS
 import fsight.youtrack.generated.jooq.tables.IssueTags.ISSUE_TAGS
 import fsight.youtrack.generated.jooq.tables.IssueTimeline.ISSUE_TIMELINE
@@ -34,7 +36,6 @@ import fsight.youtrack.models.web.SimpleAggregatedValue2
 import fsight.youtrack.splitToList
 import fsight.youtrack.toStartOfDate
 import fsight.youtrack.toStartOfWeek
-import org.jooq.Condition
 import org.jooq.DSLContext
 import org.jooq.DatePart
 import org.jooq.impl.DSL
@@ -226,19 +227,18 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
     }
 
     override fun getIssuesBySigmaValue(days: Int, issueFilter: IssueFilter): Any {
-        val projectsCondition = if (issueFilter.projects.isEmpty()) DSL.trueCondition() else DSL.and(issuesTable.PROJECT_SHORT_NAME.`in`(issueFilter.projects))
-        val typesCondition: Condition = if (issueFilter.types.isEmpty()) DSL.trueCondition() else DSL.and(typesTable.FIELD_VALUE.`in`(issueFilter.types))
-        val statesCondition: Condition = if (issueFilter.states.isEmpty()) DSL.trueCondition() else DSL.and(statesTable.FIELD_VALUE.`in`(issueFilter.states))
         return dsl.select(issuesTable.ID)
             .from(issuesTable)
+            .leftJoin(prioritiesTable).on(issuesTable.ID.eq(prioritiesTable.ISSUE_ID)).and(prioritiesTable.FIELD_NAME.eq("Priority"))
             .leftJoin(typesTable).on(typesTable.ISSUE_ID.eq(issuesTable.ID).and(typesTable.FIELD_NAME.eq("Type")))
             .leftJoin(statesTable).on(issuesTable.ID.eq(statesTable.ISSUE_ID).and(statesTable.FIELD_NAME.eq("State")))
             .leftJoin(projectTypesTable).on(issuesTable.PROJECT_SHORT_NAME.eq(projectTypesTable.PROJECT_SHORT_NAME))
             .where()
             .and(issuesTable.RESOLVED_DATE.isNull)
-            .and(typesCondition)
-            .and(statesCondition)
-            .and(projectsCondition)
+            .and(issueFilter.toTypesCondition())
+            .and(issueFilter.toStatesCondition())
+            .and(issueFilter.toPrioritiesCondition())
+            .and(issueFilter.toProjectsCondition())
             .and((projectTypesTable.IS_PUBLIC.eq(true)).or(projectTypesTable.IS_PUBLIC.isNull))
             .and((((DSL.coalesce(issuesTable.TIME_AGENT, 0) + DSL.coalesce(issuesTable.TIME_DEVELOPER, 0)) / 32400) + 1).eq(days.toLong()))
             .orderBy(issuesTable.CREATED_DATE.asc())
@@ -254,12 +254,14 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
                 set time_user     = a.time_user
                   , time_agent    = a.time_agent
                   , time_developer= a.time_developer
-                from (select sum(case when transition_owner = 'YouTrackUser' then time_spent else 0 end)          as time_user
-                           , sum(case when transition_owner in ('Agent', 'Undefined') then time_spent else 0 end) as time_agent
-                           , sum(case when transition_owner = 'Developer' then time_spent else 0 end)             as time_developer
-                           , issue_id
-                      from issue_timeline
-                      group by issue_id
+                from (
+                    select
+                        sum(case when transition_owner = 0 then time_spent_m else 0 end)           as time_user
+                        , sum(case when transition_owner in (1, 2, -1) then time_spent_m else 0 end) as time_agent
+                        , sum(case when transition_owner = 3 then time_spent_m else 0 end)           as time_developer
+                        , issue_id
+                    from issue_timeline
+                        group by issue_id
                      ) a
                 where issues.id = a.issue_id
                 and issues.id = '$issueId'
@@ -550,7 +552,7 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
 
     override fun getSigmaReferenceValues(issueFilter: IssueFilter): List<Int> {
         val dt = issueFilter.dateTo?.toStartOfDate() ?: return listOf()
-        return dsl.select((coalesce(issuesTable.TIME_AGENT, 0) + coalesce(issuesTable.TIME_DEVELOPER, 0) + 32400) / 32400)
+        val q = dsl.select((coalesce(issuesTable.TIME_AGENT, 0) + coalesce(issuesTable.TIME_DEVELOPER, 0) + 32400) / 32400)
             .from(issuesTable)
             .leftJoin(typesTable).on(issuesTable.ID.eq(typesTable.ISSUE_ID)).and(typesTable.FIELD_NAME.eq("Type"))
             .leftJoin(prioritiesTable).on(issuesTable.ID.eq(prioritiesTable.ISSUE_ID)).and(prioritiesTable.FIELD_NAME.eq("Priority"))
@@ -564,12 +566,13 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
             .and(issueFilter.toPrioritiesCondition())
             .orderBy(issuesTable.CREATED_DATE.desc())
             .limit(100)
-            .fetchInto(Int::class.java)
+        println(q.sql)
+        return q.fetchInto(Int::class.java)
     }
 
     override fun getSigmaActualValues(issueFilter: IssueFilter): List<Int> {
         val df = issueFilter.dateFrom?.toStartOfDate() ?: return listOf()
-        return dsl.select((coalesce(issuesTable.TIME_AGENT, 0) + coalesce(issuesTable.TIME_DEVELOPER, 0) + 32400) / 32400)
+        val q = dsl.select((coalesce(issuesTable.TIME_AGENT, 0) + coalesce(issuesTable.TIME_DEVELOPER, 0) + 32400) / 32400)
             .from(issuesTable)
             .leftJoin(statesTable).on(issuesTable.ID.eq(statesTable.ISSUE_ID)).and(statesTable.FIELD_NAME.eq("State"))
             .leftJoin(typesTable).on(issuesTable.ID.eq(typesTable.ISSUE_ID)).and(typesTable.FIELD_NAME.eq("Type"))
@@ -584,7 +587,8 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
             .and(issueFilter.toStatesCondition())
             .and(issueFilter.toPrioritiesCondition())
             .orderBy(issuesTable.CREATED_DATE.desc())
-            .fetchInto(Int::class.java)
+        println(q.sql)
+        return q.fetchInto(Int::class.java)
     }
 
     override fun getCreatedOnWeekByPartner(issueFilter: IssueFilter): List<SimpleAggregatedValue1> {
@@ -684,5 +688,25 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
         ).from(LAST_USER_COMMENT_UNRESOLVED)
             .orderBy(LAST_USER_COMMENT_UNRESOLVED.CREATED.asc())
             .fetchInto(IssueWiThDetails::class.java)
+    }
+
+    override fun getUnresolvedIssues(): List<String> {
+        return dsl
+            .select(issuesTable.ID)
+            .from(issuesTable)
+            .where(issuesTable.RESOLVED_DATE_TIME.isNull)
+            .fetchInto(String::class.java)
+    }
+
+    override fun getHolidays(): List<String> {
+        return dsl.select(DSL.cast(HOLIDAYS.HOLIDAY, String::class.java))
+            .from(HOLIDAYS)
+            .fetchInto(String::class.java)
+    }
+
+    override fun getExtraWorkDays(): List<String> {
+        return dsl.select(DSL.cast(EXTRA_WORK_DAYS.WORK_DAY, String::class.java))
+            .from(EXTRA_WORK_DAYS)
+            .fetchInto(String::class.java)
     }
 }

@@ -1,5 +1,6 @@
 package fsight.youtrack.etl.timeline
 
+import fsight.youtrack.api.dictionaries.IDictionary
 import fsight.youtrack.db.IPGProvider
 import fsight.youtrack.models.IssueTimelineItem
 import fsight.youtrack.models.Schedule
@@ -9,34 +10,28 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.time.Duration
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
 @Service
 class Timeline : ITimeline {
     @Autowired
     private lateinit var pg: IPGProvider;
 
+    @Autowired
+    private lateinit var dictionaries: IDictionary
+
     private val schedule = Schedule("Стандартный", 1, 5, 11, 19)
+    private val holidays: ArrayList<LocalDate> = arrayListOf()
+    private val extraWorkDays: ArrayList<LocalDate> = arrayListOf()
 
-    private val holidays = listOf(
-        "2018-11-05", "2019-01-01", "2019-01-02", "2019-01-03",
-        "2019-01-04", "2019-01-07", "2019-01-08", "2019-03-08",
-        "2019-05-01", "2019-05-02", "2019-05-03", "2019-05-09",
-        "2019-05-10", "2019-06-12", "2019-11-04", "2020-01-01",
-        "2020-01-02", "2020-01-03", "2020-01-06", "2020-01-07",
-        "2020-01-08", "2020-02-24", "2020-03-09", "2020-05-01",
-        "2020-05-04", "2020-05-05", "2020-05-11", "2020-06-12",
-        "2020-11-04", "2021-01-01", "2021-01-02", "2021-01-04",
-        "2021-01-05", "2021-01-06", "2021-01-07", "2021-01-08",
-        "2021-02-23", "2021-03-08", "2021-05-03", "2021-05-10",
-        "2021-06-14", "2021-11-04"
-    ).map { LocalDate.parse(it, DateTimeFormatter.ISO_DATE) }
-
-    private val extraWorkingDays = listOf(
-        "2018-06-09"
-    ).map { LocalDate.parse(it, DateTimeFormatter.ISO_DATE) }
+    override fun updateDictionaryValues() {
+        holidays.clear()
+        extraWorkDays.clear()
+        holidays.addAll(dictionaries.holidays)
+        extraWorkDays.addAll(dictionaries.extraWorkDays)
+    }
 
     override fun launchCalculation() {
+        updateDictionaryValues()
         val i: List<String> = pg.getUnresolvedIssuesForTimelineCalculation()
         println("Need to calculate timelines for ${i.size} items.")
         val size = i.size
@@ -46,10 +41,11 @@ class Timeline : ITimeline {
             print("Calculated timeline for ${index * 100 / size}% of issues\r")
         }
         println("Calculated timeline for 100% of issues")
-        pg.updateAllIssuesSpentTime()
+        updateAllIssuesSpentTime()
     }
 
     override fun launchCalculationForPeriod(dateFrom: String?, dateTo: String?) {
+        updateDictionaryValues()
         val df = dateFrom?.toStartOfDate() ?: return
         val dt = dateTo?.toStartOfDate() ?: return
         val i: List<String> = pg.getIssuesUpdatedInPeriod(df, dt)
@@ -59,7 +55,7 @@ class Timeline : ITimeline {
             calculateStateByIssueId(s)
             print("Calculated timeline for ${index * 100 / size}% of issues\r")
         }
-        pg.updateAllIssuesSpentTime()
+        updateAllIssuesSpentTime()
     }
 
     override fun calculateStateByIssueId(issueId: String) {
@@ -119,7 +115,7 @@ class Timeline : ITimeline {
                 when {
                     df in holidays -> {
                     }
-                    df in extraWorkingDays -> agg += (schedule.lastHour - schedule.firstHour + 1) * 3600
+                    df in extraWorkDays -> agg += (schedule.lastHour - schedule.firstHour + 1) * 3600
                     df.dayOfWeek.value !in schedule.firstDay..schedule.lastDay -> {
                     }
                     else -> agg += (schedule.lastHour - schedule.firstHour + 1) * 3600
@@ -169,5 +165,9 @@ class Timeline : ITimeline {
         }
         /** Результат возвращается в минутах */
         return a.sumBy { it.timeSpent ?: 0 } + agg;
+    }
+
+    override fun updateAllIssuesSpentTime() {
+        pg.updateAllIssuesSpentTime()
     }
 }

@@ -12,4 +12,5 @@ interface IIssues {
 
     fun getIssuesBySigmaValue(days: Int, issueFilter: IssueFilter): Any
     fun getDetailedStateTransitions(issueId: String): Any
+    fun getUnresolved(): List<String>
 }

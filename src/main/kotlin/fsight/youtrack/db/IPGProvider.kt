@@ -8,7 +8,6 @@ import fsight.youtrack.generated.jooq.tables.records.AreaTeamRecord
 import fsight.youtrack.generated.jooq.tables.records.ProductOwnersRecord
 import fsight.youtrack.models.*
 import fsight.youtrack.models.hooks.Hook
-import fsight.youtrack.models.web.ComplexAggregatedValue
 import fsight.youtrack.models.web.SimpleAggregatedValue1
 import fsight.youtrack.models.web.SimpleAggregatedValue2
 import java.sql.Timestamp
@@ -38,12 +37,14 @@ interface IPGProvider {
     fun getYouTrackIssuesWithDetails(issueFilter: IssueFilter): List<IssueWiThDetails>
     fun getAreasWithTeams(): List<AreaTeamRecord>
     fun getProductOwners(): List<ProductOwnersRecord>
+
     /** Timeline */
     fun updateAllIssuesSpentTime()
     fun getIssueTimelineById(issueId: String): List<IssueTimelineItem>
     fun getIssuesDetailedTimelineById(issueId: String): List<IssueTimelineItem>
     fun saveIssueTimelineItems(items: List<IssueTimelineItem>): Int
     fun saveIssueTimelineDetailedItems(items: List<IssueTimelineItem>): Int
+
     /** -- */
     fun getInnerProjects(): List<YouTrackProject>
     fun getVelocity(issueFilter: IssueFilter): List<Velocity>
@@ -60,4 +61,7 @@ interface IPGProvider {
     fun getUnresolvedIssuesWithLastCommentByUser(): List<IssueWiThDetails>
     fun getFirstLineEmployees(): List<ETSNameRecord>
     fun getFirstLineLeadEmployees(): List<ETSNameRecord>
+    fun getHolidays(): List<String>
+    fun getExtraWorkDays(): List<String>
+    fun getUnresolvedIssues(): List<String>
 }

@@ -6,8 +6,6 @@ import fsight.youtrack.etl.projects.IProjects
 import fsight.youtrack.generated.jooq.tables.BundleValues.BUNDLE_VALUES
 import fsight.youtrack.generated.jooq.tables.DevopsStatesOrder.DEVOPS_STATES_ORDER
 import fsight.youtrack.generated.jooq.tables.IssueTags.ISSUE_TAGS
-import fsight.youtrack.generated.jooq.tables.ProjectType.PROJECT_TYPE
-import fsight.youtrack.generated.jooq.tables.Projects.PROJECTS
 import fsight.youtrack.models.BundleValue
 import fsight.youtrack.models.YouTrackProject
 import fsight.youtrack.models.YouTrackUser
@@ -17,6 +15,8 @@ import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.sql.Timestamp
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.util.*
 import javax.annotation.PostConstruct
 
@@ -35,11 +35,16 @@ class Dictionary(private val dsl: DSLContext) : IDictionary {
     override val devOpsStates: ArrayList<DevOpsStateOrder> = arrayListOf()
     override val priorities: HashMap<String, String> by lazy {
         hashMapOf<String, String>().also {
+            it["Критичный"] = "Критичный"
             it["High"] = "Major"
             it["Medium"] = "Normal"
             it["Low"] = "Minor"
         }
     }
+
+    override val holidays: ArrayList<LocalDate> = arrayListOf()
+    override val extraWorkDays: ArrayList<LocalDate> = arrayListOf()
+
 
     override val buildPrefixes: HashMap<String, String> by lazy {
         hashMapOf<String, String>().also { it["\\P7\\PP9\\9.0\\1.0\\Update 1"] = "9.0." }
@@ -130,13 +135,33 @@ class Dictionary(private val dsl: DSLContext) : IDictionary {
         println("${productOwners.size} product owners cached")
     }
 
-    @PostConstruct
-    fun init() {
+    override fun loadHolidays() {
+        holidays.clear()
+        val i = pg.getHolidays().map { LocalDate.parse(it, DateTimeFormatter.ISO_DATE) }
+        holidays.addAll(i)
+        println("${holidays.size} holidays cached")
+    }
+
+    override fun loadExtraWorkDays() {
+        extraWorkDays.clear()
+        val i = pg.getExtraWorkDays().map { LocalDate.parse(it, DateTimeFormatter.ISO_DATE) }
+        extraWorkDays.addAll(i)
+        println("${extraWorkDays.size} extra work days cached")
+    }
+
+    override fun loadAll() {
         loadDevOpsStates()
         loadCommercialProjects()
         loadInnerProjects()
         loadAreasWithTeams()
         loadProductOwners()
+        loadHolidays()
+        loadExtraWorkDays()
+    }
+
+    @PostConstruct
+    fun init() {
+        loadAll()
     }
 
 }

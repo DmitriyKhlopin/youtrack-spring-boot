@@ -10,7 +10,7 @@ interface IIssue {
     fun getIssuesHistory(ids: ArrayList<String>)
     fun getWorkItems(ids: ArrayList<String>)
     fun findDeletedIssues()
-    fun checkPendingIssues()
+    fun checkUnresolvedIssues()
     fun checkIfIssueExists(id: String, filter: String): JSONObject
     fun getIssueById(id: String): Issue
     fun search(filter: String, fields: List<String>): List<Issue>

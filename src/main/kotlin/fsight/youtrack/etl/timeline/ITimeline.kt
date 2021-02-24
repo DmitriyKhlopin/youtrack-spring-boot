@@ -9,4 +9,6 @@ interface ITimeline {
     fun calculateStateByIssueId(issueId: String)
     fun calculateDetailedStateByIssueId(issueId: String)
     fun calculatePeriod(item: IssueTimelineItem): Int
+    fun updateAllIssuesSpentTime()
+    fun updateDictionaryValues()
 }

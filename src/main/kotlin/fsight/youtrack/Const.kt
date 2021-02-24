@@ -7,6 +7,17 @@ enum class HookTypes {
     COMMENT
 }
 
+enum class LogType(val type: String) {
+    DebugView("log"),
+    DebugViewPlusPlus("dblog"),
+    DEFAULT("unresolved");
+
+    companion object {
+        fun from(type: String?): LogType = values().find { it.type == type } ?: DEFAULT
+    }
+}
+
+
 enum class ETLState(val state: Int) {
     IDLE(0),
     RUNNING(1),

@@ -6,6 +6,7 @@ import fsight.youtrack.models.YouTrackProject
 import fsight.youtrack.models.YouTrackUser
 import fsight.youtrack.models.web.ReactSelectOption
 import java.sql.Timestamp
+import java.time.LocalDate
 import java.util.*
 
 interface IDictionary {
@@ -21,6 +22,8 @@ interface IDictionary {
     val users: List<YouTrackUser>
     val customFieldValues: List<BundleValue>
     val sprints: HashMap<String, Pair<Timestamp, Timestamp>>
+    val holidays: List<LocalDate>
+    val extraWorkDays: List<LocalDate>
     fun loadCommercialProjects()
     fun loadInnerProjects()
     fun loadDevOpsStates()
@@ -28,4 +31,7 @@ interface IDictionary {
     fun getPartnerCustomers(): Any
     fun loadAreasWithTeams()
     fun loadProductOwners()
+    fun loadHolidays()
+    fun loadExtraWorkDays()
+    fun loadAll()
 }

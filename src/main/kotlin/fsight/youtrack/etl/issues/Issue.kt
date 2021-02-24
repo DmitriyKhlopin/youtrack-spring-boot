@@ -46,7 +46,6 @@ class Issue(
 
     override fun getIssues(customFilter: String?): ArrayList<String> {
         val issueIds = arrayListOf<String>()
-
         val fields =
             listOf(
                 "idReadable",
@@ -83,11 +82,9 @@ class Issue(
                 writeError("Access error", e.localizedMessage)
                 break
             }
-
             issueIds.addAll(result?.mapNotNull { it.idReadable } ?: listOf())
             skip += result?.size ?: 0
             stored += result?.map { it.toIssueRecord() }?.loadToDatabase(dslContext) ?: 0
-
             result?.forEach {
                 it.saveComments()
                 it.saveCustomFields()
@@ -96,7 +93,6 @@ class Issue(
             }
             println("Loaded ${issueIds.size} issues, stored $stored\r")
         } while (result?.size ?: 0 > 0)
-
         println("Loaded $skip issues\r")
         importLogService.saveLog(
             ImportLogModel(
@@ -108,7 +104,6 @@ class Issue(
         )
         return issueIds
     }
-
 
     override fun getIssuesHistory(ids: ArrayList<String>) {
         ids.forEach { getSingleIssueHistory(it) }
@@ -128,15 +123,9 @@ class Issue(
                 val dateFrom =
                     "${maxUpdateDate.toLocalDateTime().year}-${if (maxUpdateDate.toLocalDateTime().monthValue < 10) "0" else ""}${maxUpdateDate.toLocalDateTime().monthValue}-${if (maxUpdateDate.toLocalDateTime().dayOfMonth < 10) "0" else ""}${maxUpdateDate.toLocalDateTime().dayOfMonth}"
                 val dateTo =
-                    "${LocalDate.now().plusDays(1).year}-${if (LocalDate.now().plusDays(1).monthValue < 10) "0" else ""}${
-                        LocalDate.now().plusDays(
-                            1
-                        ).monthValue
-                    }-${if (LocalDate.now().plusDays(1).dayOfMonth < 10) "0" else ""}${
-                        LocalDate.now().plusDays(
-                            1
-                        ).dayOfMonth
-                    }"
+                    "${LocalDate.now().plusDays(1).year}-${if (LocalDate.now().plusDays(1).monthValue < 10) "0" else ""}${LocalDate.now().plusDays(1).monthValue}-${
+                        if (LocalDate.now().plusDays(1).dayOfMonth < 10) "0" else ""
+                    }${LocalDate.now().plusDays(1).dayOfMonth}"
                 "updated: $dateFrom .. $dateTo"
             } else null
         } catch (e: Exception) {
@@ -353,20 +342,13 @@ class Issue(
         return 0
     }
 
-    override fun checkPendingIssues() {
+    override fun checkUnresolvedIssues() {
         try {
-            val i = dslContext
-                .select(ISSUES.ID)
-                .from(ISSUES)
-                .leftJoin(CUSTOM_FIELD_VALUES)
-                .on(ISSUES.ID.eq(CUSTOM_FIELD_VALUES.ISSUE_ID).and(CUSTOM_FIELD_VALUES.FIELD_NAME.eq("State")))
-                .where(CUSTOM_FIELD_VALUES.FIELD_VALUE.`in`(listOf("Ожидает ответа", "Ожидает подтверждения")))
-                /*.and(ISSUES.PROJECT_SHORT_NAME.notIn(listOf("TC")))*/
-                .fetchInto(String::class.java)
-            println("Found ${i.size} pending issues")
+            val i = pg.getUnresolvedIssues()
+            println("Found ${i.size} unresolved issues")
             i.forEach { getIssues(it) }
         } catch (e: Exception) {
-            println(e)
+            etlStateService.state = ETLState.DONE
         }
     }
 
@@ -418,7 +400,6 @@ class Issue(
         }
     }
 
-
     override fun updateCumulativeFlowToday() {
         try {
             dslContext.execute(
@@ -434,11 +415,8 @@ class Issue(
         }
     }
 
-
     override fun calculateDetailedTimeline(): Any {
-        val i =  pg.getUnresolvedIssuesForTimelineCalculation().map { it to timelineService.calculateDetailedStateByIssueId(it) }
-
-        return i
+        return pg.getUnresolvedIssuesForTimelineCalculation().map { it to timelineService.calculateDetailedStateByIssueId(it) }
     }
 
     override fun calculateDetailedTimelineById(id: String): Any {

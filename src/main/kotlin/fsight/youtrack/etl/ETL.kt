@@ -35,6 +35,7 @@ class ETL(
             issue.getIssuesHistory(ids)
             issue.getWorkItems(ids)
             issue.updateCumulativeFlowToday()
+            timeline.updateAllIssuesSpentTime()
             ids.size
         } else 0
 
@@ -55,8 +56,9 @@ class ETL(
             bundle.getBundles()
             users.getUsers()
             issue.findDeletedIssues()
-            issue.checkPendingIssues()
+            issue.checkUnresolvedIssues()
             issue.updateCumulativeFlow()
+            timeline.updateAllIssuesSpentTime()
         }
         lastResult = ETLResult(state = ETLState.DONE, issues = issuesCount, timeUnit = 0)
         return lastResult
@@ -70,7 +72,10 @@ class ETL(
         var ids: ArrayList<String> = arrayListOf()
         p.forEach {
             when (it) {
-                "issues" -> ids = issue.getIssues(customFilter)
+                "issues" -> {
+                    ids = issue.getIssues(customFilter)
+                    timeline.updateAllIssuesSpentTime()
+                }
                 "work" -> {
                     if (ids.size == 0) ids = issue.getIssues(customFilter)
                     issue.getWorkItems(ids)
@@ -86,8 +91,8 @@ class ETL(
                 "timelineDetailedForPeriod" -> timeline.launchDetailedCalculationForPeriod(dateFrom, dateTo)
                 "deleted" -> issue.findDeletedIssues()
                 "projects" -> projects.saveProjects()
-                "pending" -> issue.checkPendingIssues()
-                "fields" ->customFieldsETL.getCustomFields()
+                "unresolved" -> issue.checkUnresolvedIssues()
+                "fields" -> customFieldsETL.getCustomFields()
             }
         }
         etlStateService.state = ETLState.IDLE

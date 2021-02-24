@@ -24,6 +24,8 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
 
     override fun getSigmaData(issueFilter: IssueFilter): SigmaResult {
         val referenceValues = pg.getSigmaReferenceValues(issueFilter)
+        println("referenceValues")
+        println(referenceValues)
         val referenceGrouped = referenceValues.groupBy { it }.map { item -> SigmaItem(item.key, item.value.size) }.sortedBy { it.day }.toList()
         val referenceAverage = referenceValues.asSequence().map { it / 32400 }.average()
         val power = referenceGrouped.map {
@@ -35,10 +37,14 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
             )
         }
         val p = power.asSequence().map { it.p * it.c }.sum().toDouble()
-        val c = power.asSequence().map { it.c }.sum() - 1
+        val c = power.asSequence().map { it.c }.sum()/* - 1*/
+        /*println(c)*/
+        println(power.asSequence().map { it.c })
         if (c == 0) return SigmaResult(0.0, listOf(SigmaItem(0, 0)))
         val sigma = sqrt(p / c)
         val actualValues = pg.getSigmaActualValues(issueFilter)
+        println("actualValues")
+        println(actualValues)
         val active = actualValues.groupBy { it }.map { item -> SigmaItem(item.key, item.value.size) }.sortedBy { it.day }.toList()
         return SigmaResult(sigma, active)
     }
