@@ -23,6 +23,8 @@ import fsight.youtrack.generated.jooq.tables.PartnerCustomers.PARTNER_CUSTOMERS
 import fsight.youtrack.generated.jooq.tables.ProductOwners.PRODUCT_OWNERS
 import fsight.youtrack.generated.jooq.tables.ProjectType.PROJECT_TYPE
 import fsight.youtrack.generated.jooq.tables.Projects.PROJECTS
+import fsight.youtrack.generated.jooq.tables.StabilizationIndicator_0.STABILIZATION_INDICATOR_0
+import fsight.youtrack.generated.jooq.tables.StabilizationIndicator_1.STABILIZATION_INDICATOR_1
 import fsight.youtrack.generated.jooq.tables.StateTransitions.STATE_TRANSITIONS
 import fsight.youtrack.generated.jooq.tables.Weeks.WEEKS
 import fsight.youtrack.generated.jooq.tables.WorkItems.WORK_ITEMS
@@ -31,6 +33,8 @@ import fsight.youtrack.generated.jooq.tables.records.CustomFieldValuesRecord
 import fsight.youtrack.generated.jooq.tables.records.ProductOwnersRecord
 import fsight.youtrack.models.*
 import fsight.youtrack.models.hooks.Hook
+import fsight.youtrack.models.sql.StabilizationIndicator0
+import fsight.youtrack.models.sql.StabilizationIndicator1
 import fsight.youtrack.models.web.SimpleAggregatedValue1
 import fsight.youtrack.models.web.SimpleAggregatedValue2
 import fsight.youtrack.splitToList
@@ -240,7 +244,7 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
             .and(issueFilter.toPrioritiesCondition())
             .and(issueFilter.toProjectsCondition())
             .and((projectTypesTable.IS_PUBLIC.eq(true)).or(projectTypesTable.IS_PUBLIC.isNull))
-            .and((((DSL.coalesce(issuesTable.TIME_AGENT, 0) + DSL.coalesce(issuesTable.TIME_DEVELOPER, 0)) / 32400) + 1).eq(days.toLong()))
+            .and((((DSL.coalesce(issuesTable.TIME_AGENT, 0) + DSL.coalesce(issuesTable.TIME_DEVELOPER, 0)) / 540) + 1).eq(days.toLong()))
             .orderBy(issuesTable.CREATED_DATE.asc())
             .fetchInto(String::class.java)
     }
@@ -513,7 +517,7 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
     override fun getAverageLifetime(issueFilter: IssueFilter): List<SimpleAggregatedValue1> {
         return dsl.select(
             coalesce(prioritiesTable.FIELD_VALUE, "Все задачи").`as`("key"),
-            (avg(((coalesce(issuesTable.TIME_AGENT, 0) + coalesce(issuesTable.TIME_DEVELOPER, 0)) / 32400) + 1)).`as`("value")
+            (avg(((coalesce(issuesTable.TIME_AGENT, 0) + coalesce(issuesTable.TIME_DEVELOPER, 0)) / 540) + 1)).`as`("value")
         ).from(issuesTable)
             .leftJoin(prioritiesTable).on(issuesTable.ID.eq(prioritiesTable.ISSUE_ID)).and(prioritiesTable.FIELD_NAME.eq("Priority"))
             .leftJoin(typesTable).on(issuesTable.ID.eq(typesTable.ISSUE_ID)).and(typesTable.FIELD_NAME.eq("Type"))
@@ -534,7 +538,7 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
     override fun getAverageLifetimeUnresolved(issueFilter: IssueFilter): List<SimpleAggregatedValue1> {
         return dsl.select(
             coalesce(prioritiesTable.FIELD_VALUE, "Все задачи").`as`("key"),
-            (avg(((coalesce(issuesTable.TIME_AGENT, 0) + coalesce(issuesTable.TIME_DEVELOPER, 0)) / 32400) + 1)).`as`("value")
+            (avg(((coalesce(issuesTable.TIME_AGENT, 0) + coalesce(issuesTable.TIME_DEVELOPER, 0)) / 540) + 1)).`as`("value")
         ).from(issuesTable)
             .leftJoin(prioritiesTable).on(issuesTable.ID.eq(prioritiesTable.ISSUE_ID)).and(prioritiesTable.FIELD_NAME.eq("Priority"))
             .leftJoin(typesTable).on(issuesTable.ID.eq(typesTable.ISSUE_ID)).and(typesTable.FIELD_NAME.eq("Type"))
@@ -552,7 +556,7 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
 
     override fun getSigmaReferenceValues(issueFilter: IssueFilter): List<Int> {
         val dt = issueFilter.dateTo?.toStartOfDate() ?: return listOf()
-        val q = dsl.select((coalesce(issuesTable.TIME_AGENT, 0) + coalesce(issuesTable.TIME_DEVELOPER, 0) + 32400) / 32400)
+        val q = dsl.select((coalesce(issuesTable.TIME_AGENT, 0) + coalesce(issuesTable.TIME_DEVELOPER, 0) + 540) / 540)
             .from(issuesTable)
             .leftJoin(typesTable).on(issuesTable.ID.eq(typesTable.ISSUE_ID)).and(typesTable.FIELD_NAME.eq("Type"))
             .leftJoin(prioritiesTable).on(issuesTable.ID.eq(prioritiesTable.ISSUE_ID)).and(prioritiesTable.FIELD_NAME.eq("Priority"))
@@ -566,13 +570,12 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
             .and(issueFilter.toPrioritiesCondition())
             .orderBy(issuesTable.CREATED_DATE.desc())
             .limit(100)
-        println(q.sql)
         return q.fetchInto(Int::class.java)
     }
 
     override fun getSigmaActualValues(issueFilter: IssueFilter): List<Int> {
         val df = issueFilter.dateFrom?.toStartOfDate() ?: return listOf()
-        val q = dsl.select((coalesce(issuesTable.TIME_AGENT, 0) + coalesce(issuesTable.TIME_DEVELOPER, 0) + 32400) / 32400)
+        val q = dsl.select((coalesce(issuesTable.TIME_AGENT, 0) + coalesce(issuesTable.TIME_DEVELOPER, 0) + 540) / 540)
             .from(issuesTable)
             .leftJoin(statesTable).on(issuesTable.ID.eq(statesTable.ISSUE_ID)).and(statesTable.FIELD_NAME.eq("State"))
             .leftJoin(typesTable).on(issuesTable.ID.eq(typesTable.ISSUE_ID)).and(typesTable.FIELD_NAME.eq("Type"))
@@ -587,7 +590,6 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
             .and(issueFilter.toStatesCondition())
             .and(issueFilter.toPrioritiesCondition())
             .orderBy(issuesTable.CREATED_DATE.desc())
-        println(q.sql)
         return q.fetchInto(Int::class.java)
     }
 
@@ -708,5 +710,13 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
         return dsl.select(DSL.cast(EXTRA_WORK_DAYS.WORK_DAY, String::class.java))
             .from(EXTRA_WORK_DAYS)
             .fetchInto(String::class.java)
+    }
+
+    override fun getStabilizationIndicator0(): List<StabilizationIndicator0> {
+        return dsl.select().from(STABILIZATION_INDICATOR_0).fetchInto(StabilizationIndicator0::class.java)
+    }
+
+    override fun getStabilizationIndicator1(): List<StabilizationIndicator1> {
+        return dsl.select().from(STABILIZATION_INDICATOR_1).fetchInto(StabilizationIndicator1::class.java)
     }
 }

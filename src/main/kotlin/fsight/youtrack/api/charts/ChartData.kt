@@ -4,8 +4,6 @@ import fsight.youtrack.api.issues.IssueFilter
 import fsight.youtrack.db.IPGProvider
 import fsight.youtrack.generated.jooq.tables.DynamicsProcessedByDay.DYNAMICS_PROCESSED_BY_DAY
 import fsight.youtrack.models.*
-import fsight.youtrack.models.web.ComplexAggregatedValue1
-import fsight.youtrack.models.web.ComplexAggregatedValue2
 import fsight.youtrack.models.web.SimpleAggregatedValue1
 import fsight.youtrack.models.web.SimpleAggregatedValue2
 import org.jooq.DSLContext
@@ -24,10 +22,8 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
 
     override fun getSigmaData(issueFilter: IssueFilter): SigmaResult {
         val referenceValues = pg.getSigmaReferenceValues(issueFilter)
-        println("referenceValues")
-        println(referenceValues)
         val referenceGrouped = referenceValues.groupBy { it }.map { item -> SigmaItem(item.key, item.value.size) }.sortedBy { it.day }.toList()
-        val referenceAverage = referenceValues.asSequence().map { it / 32400 }.average()
+        val referenceAverage = referenceValues.asSequence().map { it / 540 }.average()
         val power = referenceGrouped.map {
             SigmaIntermediatePower(
                 it.day,
@@ -38,13 +34,9 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
         }
         val p = power.asSequence().map { it.p * it.c }.sum().toDouble()
         val c = power.asSequence().map { it.c }.sum()/* - 1*/
-        /*println(c)*/
-        println(power.asSequence().map { it.c })
         if (c == 0) return SigmaResult(0.0, listOf(SigmaItem(0, 0)))
         val sigma = sqrt(p / c)
         val actualValues = pg.getSigmaActualValues(issueFilter)
-        println("actualValues")
-        println(actualValues)
         val active = actualValues.groupBy { it }.map { item -> SigmaItem(item.key, item.value.size) }.sortedBy { it.day }.toList()
         return SigmaResult(sigma, active)
     }
@@ -165,5 +157,31 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
                 accumulator
             }
         }.map { it.value }.takeLast(issueFilter.limit)
+    }
+
+    override fun getStabilizationIndicator0(issueFilter: IssueFilter): Any {
+        return pg.getStabilizationIndicator0()
+            .subList(0, 12)
+            .reversed()
+            .mapIndexed { index, item ->
+                SimpleAggregatedValue1(
+                    order = index,
+                    key = "${item.y}-${item.m}",
+                    value = item.c
+                )
+            }
+    }
+
+    override fun getStabilizationIndicator1(issueFilter: IssueFilter): Any {
+        return pg.getStabilizationIndicator1()
+            .subList(0, 12)
+            .reversed()
+            .mapIndexed { index, item ->
+                SimpleAggregatedValue1(
+                    order = index,
+                    key = "${item.y}-${item.m}",
+                    value = item.rCalc
+                )
+            }
     }
 }

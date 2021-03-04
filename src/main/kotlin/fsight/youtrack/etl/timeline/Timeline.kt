@@ -110,15 +110,15 @@ class Timeline : ITimeline {
             val dateFrom = item.dateFrom.toStartOfDate().toLocalDateTime().plusDays(1)
             val dateTo = item.dateTo.toEndOfDate().toLocalDateTime().minusDays(1)
             val j = Duration.between(dateFrom, dateTo).toDays()
-            for (n in 0 until j) {
+            for (n in 0..j) {
                 val df = dateFrom.plusDays(n).toLocalDate()
                 when {
                     df in holidays -> {
                     }
-                    df in extraWorkDays -> agg += (schedule.lastHour - schedule.firstHour + 1) * 3600
+                    df in extraWorkDays -> agg += (schedule.lastHour - schedule.firstHour + 1) * 60
                     df.dayOfWeek.value !in schedule.firstDay..schedule.lastDay -> {
                     }
-                    else -> agg += (schedule.lastHour - schedule.firstHour + 1) * 3600
+                    else -> agg += (schedule.lastHour - schedule.firstHour + 1) * 60
                 }
             }
         }

@@ -347,6 +347,7 @@ class Issue(
             val i = pg.getUnresolvedIssues()
             println("Found ${i.size} unresolved issues")
             i.forEach { getIssues(it) }
+            i.forEach { getSingleIssueHistory(it) }
         } catch (e: Exception) {
             etlStateService.state = ETLState.DONE
         }

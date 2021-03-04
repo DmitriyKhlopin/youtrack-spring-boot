@@ -241,8 +241,8 @@ class TFSHooks : ITFSHooks {
 
     override fun handleWiCommented(body: WiCommentedHook?): Any {
         return try {
-            val supportEmails = pg.getSupportEmployees().filter { e -> body?.getMentionedUsers()?.any { u -> e.email.contains(u) } ?: false }.map { it.email }
-            if (supportEmails.isEmpty()) return pg.saveHookToDatabase(body = body, errorMessage = "No no support employees", type = HookTypes.COMMENT)
+            /*val supportEmails = pg.getSupportEmployees().filter { e -> body?.getMentionedUsers()?.any { u -> e.email.contains(u) } ?: false }.map { it.email }
+            if (supportEmails.isEmpty()) return pg.saveHookToDatabase(body = body, errorMessage = "No support employees", type = HookTypes.COMMENT)*/
             val hookWIId = body?.getDevOpsId() ?: return pg.saveHookToDatabase(body = body, errorMessage = "Unable to parse WI ID", type = HookTypes.CHANGE)
             val issues = pg.getIssueIdsByWIId(hookWIId)
             if (issues.isEmpty()) return pg.saveHookToDatabase(body = body, errorMessage = "No issues are associated with WI", type = HookTypes.COMMENT)

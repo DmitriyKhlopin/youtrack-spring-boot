@@ -8,6 +8,8 @@ import fsight.youtrack.generated.jooq.tables.records.AreaTeamRecord
 import fsight.youtrack.generated.jooq.tables.records.ProductOwnersRecord
 import fsight.youtrack.models.*
 import fsight.youtrack.models.hooks.Hook
+import fsight.youtrack.models.sql.StabilizationIndicator0
+import fsight.youtrack.models.sql.StabilizationIndicator1
 import fsight.youtrack.models.web.SimpleAggregatedValue1
 import fsight.youtrack.models.web.SimpleAggregatedValue2
 import java.sql.Timestamp
@@ -64,4 +66,6 @@ interface IPGProvider {
     fun getHolidays(): List<String>
     fun getExtraWorkDays(): List<String>
     fun getUnresolvedIssues(): List<String>
+    fun getStabilizationIndicator0(): List<StabilizationIndicator0>
+    fun getStabilizationIndicator1(): List<StabilizationIndicator1>
 }

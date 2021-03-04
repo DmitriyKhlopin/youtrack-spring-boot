@@ -91,4 +91,14 @@ class ChartDataController(
     fun getVelocity(@RequestBody issueFilter: IssueFilter): Any {
         return service.getVelocity(issueFilter)
     }
+
+    @PostMapping("/api/chart/stabilization/indicator/0")
+    fun getStabilizationIndicator0(@RequestBody issueFilter: IssueFilter): Any {
+        return service.getStabilizationIndicator0(issueFilter)
+    }
+
+    @PostMapping("/api/chart/stabilization/indicator/1")
+    fun getStabilizationIndicator1(@RequestBody issueFilter: IssueFilter): Any {
+        return service.getStabilizationIndicator1(issueFilter)
+    }
 }

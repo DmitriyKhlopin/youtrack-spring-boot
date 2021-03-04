@@ -18,4 +18,6 @@ interface IChartData {
     fun getSLAStatsByPriority(issueFilter: IssueFilter): Any
     fun getCommercialSLAStatsByPriority(issueFilter: IssueFilter): List<SimpleAggregatedValue2>
     fun getVelocity(issueFilter: IssueFilter): Any
+    fun getStabilizationIndicator0(issueFilter: IssueFilter): Any
+    fun getStabilizationIndicator1(issueFilter: IssueFilter): Any
 }
