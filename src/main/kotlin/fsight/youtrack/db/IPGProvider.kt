@@ -68,4 +68,5 @@ interface IPGProvider {
     fun getUnresolvedIssues(): List<String>
     fun getStabilizationIndicator0(): List<StabilizationIndicator0>
     fun getStabilizationIndicator1(): List<StabilizationIndicator1>
+    fun getIssuesTimelineById(issueId: String): List<IssueTimelineItem>
 }

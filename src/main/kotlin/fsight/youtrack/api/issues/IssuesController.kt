@@ -39,8 +39,13 @@ class IssuesController(private val service: IIssues, private val service2: ILice
     }
 
     @GetMapping("/api/issues/detailed_state_transitions")
-    fun getDetailedStateTransitions(@RequestParam("issueId", required = true) issueId: String): Any {
-        return service.getDetailedStateTransitions(issueId)
+    fun getIssuesDetailedTimelineById(@RequestParam("issueId", required = true) issueId: String): Any {
+        return service.getIssuesDetailedTimelineById(issueId)
+    }
+
+    @GetMapping("/api/issues/state_transitions")
+    fun getIssuesTimelineById(@RequestParam("issueId", required = true) issueId: String): Any {
+        return service.getIssuesTimelineById(issueId)
     }
 
     @GetMapping("/api/issues/unresolved")

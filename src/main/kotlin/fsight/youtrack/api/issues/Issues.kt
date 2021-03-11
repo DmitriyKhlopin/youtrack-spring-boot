@@ -296,12 +296,17 @@ WHERE issue.System_Id IN ($issueIds)
         return pg.getIssuesBySigmaValue(days, issueFilter)
     }
 
-    override fun getDetailedStateTransitions(issueId: String): Any {
-        val i = pg.getIssuesDetailedTimelineById(issueId)
+    override fun getIssuesTimelineById(issueId: String): Any {
+        return pg.getIssuesTimelineById(issueId).sortedBy { it.order }
+    }
+
+    override fun getIssuesDetailedTimelineById(issueId: String): Any {
+        /*val i = pg.getIssuesDetailedTimelineById(issueId)
         i.forEach {
             it.timeSpent = timelineService.calculatePeriod(it)
         }
-        return i.sortedBy { it.order }
+        return i.sortedBy { it.order }*/
+        return pg.getIssuesDetailedTimelineById(issueId).sortedBy { it.order }
     }
 
     override fun getUnresolved(): List<String> = pg.getUnresolvedIssues()

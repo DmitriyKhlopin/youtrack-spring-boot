@@ -7,7 +7,6 @@ import fsight.youtrack.api.issues.IssueWiThDetails
 import fsight.youtrack.db.models.pg.ETSNameRecord
 import fsight.youtrack.generated.jooq.tables.AreaTeam.AREA_TEAM
 import fsight.youtrack.generated.jooq.tables.CustomFieldValues.CUSTOM_FIELD_VALUES
-import fsight.youtrack.generated.jooq.tables.DetailedStateTransitions.DETAILED_STATE_TRANSITIONS
 import fsight.youtrack.generated.jooq.tables.DictionaryProjectCustomerEts.DICTIONARY_PROJECT_CUSTOMER_ETS
 import fsight.youtrack.generated.jooq.tables.DynamicsWithTypes.DYNAMICS_WITH_TYPES
 import fsight.youtrack.generated.jooq.tables.EtsNames.ETS_NAMES
@@ -396,8 +395,37 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
             .fetchInto(IssueTimelineItem::class.java)
     }
 
+    override fun getIssuesTimelineById(issueId: String): List<IssueTimelineItem> {
+        return dsl.select(
+            ISSUE_TIMELINE.RN.`as`("order"),
+            ISSUE_TIMELINE.ISSUE_ID.`as`("id"),
+            ISSUE_TIMELINE.STATE_FROM.`as`("stateOld"),
+            ISSUE_TIMELINE.STATE_TO.`as`("stateNew"),
+            ISSUE_TIMELINE.DATE_FROM.`as`("dateFrom"),
+            ISSUE_TIMELINE.DATE_TO.`as`("dateTo"),
+            ISSUE_TIMELINE.TIME_SPENT_M.`as`("timeSpent"),
+            ISSUE_TIMELINE.TRANSITION_OWNER.`as`("stateOwner")
+        )
+            .from(ISSUE_TIMELINE)
+            .where(ISSUE_TIMELINE.ISSUE_ID.eq(issueId))
+            .fetchInto(IssueTimelineItem::class.java)
+    }
+
     override fun getIssuesDetailedTimelineById(issueId: String): List<IssueTimelineItem> {
         return dsl.select(
+            ISSUE_TIMELINE_DETAILED.RN.`as`("order"),
+            ISSUE_TIMELINE_DETAILED.ISSUE_ID.`as`("id"),
+            ISSUE_TIMELINE_DETAILED.STATE_FROM.`as`("stateOld"),
+            ISSUE_TIMELINE_DETAILED.STATE_TO.`as`("stateNew"),
+            ISSUE_TIMELINE_DETAILED.DATE_FROM.`as`("dateFrom"),
+            ISSUE_TIMELINE_DETAILED.DATE_TO.`as`("dateTo"),
+            ISSUE_TIMELINE_DETAILED.TIME_SPENT_M.`as`("timeSpent"),
+            ISSUE_TIMELINE_DETAILED.TRANSITION_OWNER.`as`("stateOwner")
+        )
+            .from(ISSUE_TIMELINE_DETAILED)
+            .where(ISSUE_TIMELINE_DETAILED.ISSUE_ID.eq(issueId))
+            .fetchInto(IssueTimelineItem::class.java)
+        /*return dsl.select(
             DETAILED_STATE_TRANSITIONS.RN.`as`("order"),
             DETAILED_STATE_TRANSITIONS.ISSUE_ID.`as`("id"),
             DETAILED_STATE_TRANSITIONS.OLD_DT.`as`("dateFrom"),
@@ -408,7 +436,7 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
         )
             .from(DETAILED_STATE_TRANSITIONS)
             .where(DETAILED_STATE_TRANSITIONS.ISSUE_ID.eq(issueId))
-            .fetchInto(IssueTimelineItem::class.java)
+            .fetchInto(IssueTimelineItem::class.java)*/
     }
 
     override fun saveIssueTimelineItems(items: List<IssueTimelineItem>): Int {
@@ -717,6 +745,13 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
     }
 
     override fun getStabilizationIndicator1(): List<StabilizationIndicator1> {
-        return dsl.select().from(STABILIZATION_INDICATOR_1).fetchInto(StabilizationIndicator1::class.java)
+        return dsl.select(
+            STABILIZATION_INDICATOR_1.Y,
+            STABILIZATION_INDICATOR_1.M,
+            STABILIZATION_INDICATOR_1.RESULT_DAYS_DIFF,
+            STABILIZATION_INDICATOR_1.RESULT_INTERVALS
+        )
+            .from(STABILIZATION_INDICATOR_1)
+            .fetchInto(StabilizationIndicator1::class.java)
     }
 }

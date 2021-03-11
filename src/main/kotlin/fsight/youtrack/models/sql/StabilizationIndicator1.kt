@@ -6,6 +6,6 @@ import com.google.gson.annotations.SerializedName
 data class StabilizationIndicator1(
     val y: Int,
     val m: Int,
-    val r: Int,
-    val rCalc: Int
+    val resultDaysDiff: Int,
+    val resultIntervals: Int
 )

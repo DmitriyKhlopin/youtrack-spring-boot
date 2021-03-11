@@ -41,9 +41,7 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
         return SigmaResult(sigma, active)
     }
 
-    override fun getCreatedCountOnWeek(
-        issueFilter: IssueFilter
-    ): List<SimpleAggregatedValue1> {
+    override fun getCreatedCountOnWeek(issueFilter: IssueFilter): List<SimpleAggregatedValue1> {
         val items = pg.getCreatedOnWeekByPartner(issueFilter)
         val l = items.sumBy { it.value }
         var s = 0
@@ -58,11 +56,7 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
         return arr
     }
 
-    override fun getProcessedDaily(
-        projects: String,
-        dateFrom: String,
-        dateTo: String
-    ): Any {
+    override fun getProcessedDaily(projects: String, dateFrom: String, dateTo: String): Any {
         return dslContext.select(
             DYNAMICS_PROCESSED_BY_DAY.D.`as`("kay"),
             DYNAMICS_PROCESSED_BY_DAY.COUNT.`as`("value")
@@ -74,10 +68,11 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
     override fun getPrioritiesStats(issueFilter: IssueFilter): Any {
         return pg.getPrioritiesStats(issueFilter).map {
             when (it.key) {
-                "Major" -> SimpleAggregatedValue1(1, "Высокий", it.value)
-                "Normal" -> SimpleAggregatedValue1(2, "Обычный", it.value)
-                "Minor" -> SimpleAggregatedValue1(3, "Низкий", it.value)
-                else -> SimpleAggregatedValue1(4, "Не отпределён", it.value)
+                "Критичный" -> SimpleAggregatedValue1(1, "Критичный", it.value)
+                "Major" -> SimpleAggregatedValue1(2, "Высокий", it.value)
+                "Normal" -> SimpleAggregatedValue1(3, "Обычный", it.value)
+                "Minor" -> SimpleAggregatedValue1(4, "Низкий", it.value)
+                else -> SimpleAggregatedValue1(5, "Не отпределён", it.value)
             }
         }.sortedBy { it.order }
     }
@@ -96,9 +91,10 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
     override fun getAverageLifetime(issueFilter: IssueFilter): Any {
         return pg.getAverageLifetime(issueFilter).map {
             when (it.key) {
-                "Major" -> SimpleAggregatedValue1(2, "Высокий", it.value)
-                "Normal" -> SimpleAggregatedValue1(3, "Обычный", it.value)
-                "Minor" -> SimpleAggregatedValue1(4, "Низкий", it.value)
+                "Критичный" -> SimpleAggregatedValue1(2, "Критичный", it.value)
+                "Major" -> SimpleAggregatedValue1(3, "Высокий", it.value)
+                "Normal" -> SimpleAggregatedValue1(4, "Обычный", it.value)
+                "Minor" -> SimpleAggregatedValue1(5, "Низкий", it.value)
                 else -> SimpleAggregatedValue1(1, "Все задачи", it.value)
             }
         }.sortedBy { it.order }
@@ -107,9 +103,10 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
     override fun getAverageLifetimeUnresolved(issueFilter: IssueFilter): Any {
         return pg.getAverageLifetimeUnresolved(issueFilter).map {
             when (it.key) {
-                "Major" -> SimpleAggregatedValue1(2, "Высокий", it.value)
-                "Normal" -> SimpleAggregatedValue1(3, "Обычный", it.value)
-                "Minor" -> SimpleAggregatedValue1(4, "Низкий", it.value)
+                "Критичный" -> SimpleAggregatedValue1(2, "Критичный", it.value)
+                "Major" -> SimpleAggregatedValue1(3, "Высокий", it.value)
+                "Normal" -> SimpleAggregatedValue1(4, "Обычный", it.value)
+                "Minor" -> SimpleAggregatedValue1(5, "Низкий", it.value)
                 else -> SimpleAggregatedValue1(1, "Все задачи", it.value)
             }
         }.sortedBy { it.order }
@@ -118,9 +115,10 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
     override fun getSLAStatsByPriority(issueFilter: IssueFilter): Any {
         return pg.getSLAStatsByPriority(issueFilter).map {
             when (it.key) {
-                "Major" -> SimpleAggregatedValue2(2, "Высокий", it.value1, it.value2)
-                "Normal" -> SimpleAggregatedValue2(3, "Обычный", it.value1, it.value2)
-                "Minor" -> SimpleAggregatedValue2(4, "Низкий", it.value1, it.value2)
+                "Критичный" -> SimpleAggregatedValue2(2, "Критичный", it.value1, it.value2)
+                "Major" -> SimpleAggregatedValue2(3, "Высокий", it.value1, it.value2)
+                "Normal" -> SimpleAggregatedValue2(4, "Обычный", it.value1, it.value2)
+                "Minor" -> SimpleAggregatedValue2(5, "Низкий", it.value1, it.value2)
                 else -> SimpleAggregatedValue2(1, "Все задачи", it.value1, it.value2)
             }
         }.sortedBy { it.order }
@@ -129,9 +127,10 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
     override fun getCommercialSLAStatsByPriority(issueFilter: IssueFilter): List<SimpleAggregatedValue2> {
         return pg.getCommercialSLAStatsByPriority(issueFilter).map {
             when (it.key) {
-                "Major" -> SimpleAggregatedValue2(2, "Высокий", it.value1, it.value2)
-                "Normal" -> SimpleAggregatedValue2(3, "Обычный", it.value1, it.value2)
-                "Minor" -> SimpleAggregatedValue2(4, "Низкий", it.value1, it.value2)
+                "Критичный" -> SimpleAggregatedValue2(2, "Критичный", it.value1, it.value2)
+                "Major" -> SimpleAggregatedValue2(3, "Высокий", it.value1, it.value2)
+                "Normal" -> SimpleAggregatedValue2(4, "Обычный", it.value1, it.value2)
+                "Minor" -> SimpleAggregatedValue2(5, "Низкий", it.value1, it.value2)
                 else -> SimpleAggregatedValue2(1, "Все задачи", it.value1, it.value2)
             }
         }.sortedBy { it.order }
@@ -177,10 +176,11 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
             .subList(0, 12)
             .reversed()
             .mapIndexed { index, item ->
-                SimpleAggregatedValue1(
+                SimpleAggregatedValue2(
                     order = index,
                     key = "${item.y}-${item.m}",
-                    value = item.rCalc
+                    value1 = item.resultDaysDiff,
+                    value2 = item.resultIntervals
                 )
             }
     }
