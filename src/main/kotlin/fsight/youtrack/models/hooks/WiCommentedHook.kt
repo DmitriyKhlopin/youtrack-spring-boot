@@ -11,10 +11,12 @@ data class WiCommentedHook(
     var resource: WiCommentedHookResource? = null,
     var message: HookMessage? = null,
     var detailedMessage: HookMessage? = null
-) :Hook()
+) : Hook()
 
 fun WiCommentedHook.getMentionedUsers(): List<String> =
-    this.detailedMessage?.text?.split("(")?.map { it.substringBefore(")") }?.filter { it.startsWith("mailto:FS\\") }?.map { it.substringAfter("mailto:FS\\") } ?: listOf()
+    this.detailedMessage?.text?.substring(this.message?.text?.length ?: 0)?.split("@")?.filter { it.contains("(#)") }?.map { it.substringBefore("(#)") } ?: listOf()
+
+/*.map { it.substringBefore(")") }?.filter { it.startsWith("mailto:FS\\") }?.map { it.substringAfter("mailto:FS\\") }*/
 fun WiCommentedHook.getYtId(): String = this.resource?.revision?.fields?.get("System.Title").toString().trimStart().substringBefore(delimiter = " ").substringBefore(delimiter = ".")
 fun WiCommentedHook.getDevOpsId(): Int? = this.resource?.id
 fun WiCommentedHook.getFieldValue(fieldName: String): Any? = this.resource?.revision?.fields?.get(fieldName)

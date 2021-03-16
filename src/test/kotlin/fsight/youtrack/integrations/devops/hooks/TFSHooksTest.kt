@@ -7,6 +7,9 @@ import fsight.youtrack.api.dictionaries.Dictionary
 import fsight.youtrack.common.IResolver
 import fsight.youtrack.common.Resolver
 import fsight.youtrack.db.IDevOpsProvider
+import fsight.youtrack.db.IPGProvider
+import fsight.youtrack.db.PGProvider
+import fsight.youtrack.db.models.pg.ETSNameRecord
 import fsight.youtrack.etl.ETLState
 import fsight.youtrack.etl.issues.Issue
 import fsight.youtrack.etl.logs.ImportLog
@@ -18,7 +21,6 @@ import org.jooq.impl.DSL
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.mockito.Mock
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.util.ResourceUtils
 import java.io.File
 
@@ -37,6 +39,9 @@ internal class TFSHooksTest {
 
     @Mock
     private lateinit var resolver: IResolver
+
+    @Mock
+    private lateinit var pg: IPGProvider
 
     @Test
     fun includedToSprint() {
@@ -235,5 +240,18 @@ internal class TFSHooksTest {
         assert(file.exists())
         val body: WiUpdatedHook = Gson().fromJson(String(file.readBytes()), object : TypeToken<WiUpdatedHook>() {}.type)
         assert(body.movedToSupportArea())
+    }
+
+    @Test
+    fun parseMentionedUsers() {
+        pg = PGProvider(db)
+        val file: File = ResourceUtils.getFile("classpath:test/hooks/issueCommented.json")
+        assert(file.exists())
+        val body: WiCommentedHook = Gson().fromJson(String(file.readBytes()), object : TypeToken<WiCommentedHook>() {}.type)
+        val users = body.getMentionedUsers()
+        assertEquals(3, users.size)
+        val etsUsers = arrayOf(ETSNameRecord("", "", "АААА", false), ETSNameRecord("", "", "Саппортов Саппорт", true), ETSNameRecord("", "", "Багов Баг", true))
+        val supportEmails = etsUsers.filter { e -> users.any { u -> e.fullName.contains(u) && e.isSupport } }
+        assertEquals(2, supportEmails.size)
     }
 }

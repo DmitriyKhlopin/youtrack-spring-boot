@@ -1,0 +1,18 @@
+{
+  "subscriptionId": "",
+  "notificationId": 9999,
+  "id": "",
+  "eventType": "workitem.commented",
+  "resource": {
+    "id": 1111,
+    "rev": 13,
+    "fields": {
+    }
+  },
+  "message": {
+    "text": "Bug #111 () commented on by Тестов Тест Тестович"
+  },
+  "detailedMessage": {
+    "text": "Bug #111 () commented on by Тестов Тест Тестович@АААА(#) @Саппортов Саппорт(#) @Багов Баг(#) закрываем?"
+  }
+}
