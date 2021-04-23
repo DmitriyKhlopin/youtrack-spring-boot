@@ -38,6 +38,18 @@ class IssuesController(private val service: IIssues, private val service2: ILice
         return ResponseEntity.ok(service.getIssuesBySigmaValue(days ?: 1, issueFilter))
     }
 
+    @GetMapping("/api/issues/stabilization/indicator/1")
+    fun getStabilizationIndicator1Issues(
+        @RequestParam("year", required = true) year: Int? = null,
+        @RequestParam("month", required = true) month: Int? = null,
+        @RequestParam("set", required = false) set: Int? = null
+    ): ResponseEntity<Any> {
+        println(year)
+        println(month)
+        println(set)
+        return ResponseEntity.ok("")
+    }
+
     @GetMapping("/api/issues/detailed_state_transitions")
     fun getIssuesDetailedTimelineById(@RequestParam("issueId", required = true) issueId: String): Any {
         return service.getIssuesDetailedTimelineById(issueId)

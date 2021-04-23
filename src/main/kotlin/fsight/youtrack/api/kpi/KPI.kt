@@ -28,6 +28,7 @@ class KPI(@Qualifier("pgDataSource") private val db: Database, private val dsl: 
 
     private final val prioritiesMap: HashMap<String, Float> by lazy {
         hashMapOf<String, Float>().also {
+            it["Критичный"] = 2.0f
             it["Major"] = 1.6f
             it["Normal"] = 1.3f
             it["Minor"] = 1.1f

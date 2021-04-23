@@ -59,7 +59,7 @@ class Timeline : ITimeline {
     }
 
     override fun calculateStateByIssueId(issueId: String) {
-        val i = pg.getIssueTimelineById(issueId)
+        val i = pg.getIssueStateTransitionsById(issueId)
         i.forEach {
             it.timeSpent = calculatePeriod(it)
         }

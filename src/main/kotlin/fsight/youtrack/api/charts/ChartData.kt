@@ -6,6 +6,7 @@ import fsight.youtrack.generated.jooq.tables.DynamicsProcessedByDay.DYNAMICS_PRO
 import fsight.youtrack.models.*
 import fsight.youtrack.models.web.SimpleAggregatedValue1
 import fsight.youtrack.models.web.SimpleAggregatedValue2
+import fsight.youtrack.models.web.SimpleAggregatedValue4
 import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -176,11 +177,13 @@ class ChartData(private val dslContext: DSLContext) : IChartData {
             .subList(0, 12)
             .reversed()
             .mapIndexed { index, item ->
-                SimpleAggregatedValue2(
+                SimpleAggregatedValue4(
                     order = index,
                     key = "${item.y}-${item.m}",
-                    value1 = item.resultDaysDiff,
-                    value2 = item.resultIntervals
+                    value1 = item.successfullyComplete,
+                    value2 = item.lowRisk,
+                    value3 = item.highRisk,
+                    value4 = item.failed
                 )
             }
     }

@@ -314,8 +314,9 @@ class Issue(
             result.forEachIndexed { index, issueId ->
                 val requestResult = jsonApi.getIssueProject(AUTH, issueId).execute()
                 val currentProject = requestResult.body()?.project?.shortName
+                val currentId = requestResult.body()?.idReadable
                 val prevProject = issueId.substringBefore("-")
-                if (currentProject != prevProject) {
+                if (currentProject != prevProject || currentId != issueId) {
                     count += 1
                     deletedItems.add(issueId)
                 }

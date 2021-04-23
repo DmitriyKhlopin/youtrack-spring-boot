@@ -48,7 +48,7 @@ class DevOpsRevisions(private val dsl: DSLContext) : IDevOpsRevisions {
             7 -> errors.toT4List()
             8 -> errors.toT4List().map { it.recipient }.distinct()
             9 -> {
-                errors.toT4List().forEach { mailSender.sendHtmlMessage(/*TEST_MAIL_RECEIVER*/arrayOf(it.recipient), null, "Автоматическая провека заявок (${it.errors.size})", it.body) }
+                errors.toT4List().forEach { mailSender.sendHtmlMessage(/*TEST_MAIL_RECEIVER*/arrayOf(it.recipient), null, "Автоматическая проверка заявок (${it.errors.size})", it.body) }
                 errors
             }
             else -> errors
@@ -142,11 +142,11 @@ class DevOpsRevisions(private val dsl: DSLContext) : IDevOpsRevisions {
     ) {
         //TODO добавить проверку area
         fun check(): T3 {
-            val ytPriority = when {
-                this.priority == "Major" && this.tag == "Критично" -> 1
-                this.priority == "Major" -> 2
-                this.priority == "Normal" -> 3
-                this.priority == "Minor" -> 4
+            val ytPriority = when (this.priority) {
+                "Критично" -> 1
+                "Major" -> 2
+                "Normal" -> 3
+                "Minor" -> 4
                 else -> -1
             }
             val devOpsPriority = wiDetails.map { it.priority?.toInt() ?: -1 }.maxBy { it }

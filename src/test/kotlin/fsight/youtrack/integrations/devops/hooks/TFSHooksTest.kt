@@ -214,16 +214,6 @@ internal class TFSHooksTest {
         println(body.oldFieldValue("System.State"))
         println(body.newFieldValue("System.State"))
         println(body.newFieldValue("System.IterationPath"))
-
-
-        /*val file2: File = ResourceUtils.getFile("classpath:test/hooks/t2.json")
-        assert(file2.exists())
-        val body2: Hook = Gson().fromJson(String(file2.readBytes()), object : TypeToken<Hook>() {}.type)
-        println(body2.isFieldChanged("System.State"))
-        println(body2.oldFieldValue("System.State"))
-        println(body2.newFieldValue("System.State"))*/
-        /*println(body2.getMentionedUsers())*/
-        /*assertTrue(body.wasIncludedToSprint(), "Bug was not included to sprint")*/
     }
 
     @Test

@@ -42,7 +42,8 @@ interface IPGProvider {
 
     /** Timeline */
     fun updateAllIssuesSpentTime()
-    fun getIssueTimelineById(issueId: String): List<IssueTimelineItem>
+    fun getIssueStateTransitionsById(issueId: String): List<IssueTimelineItem>
+    fun getIssuesTimelineById(issueId: String): List<IssueTimelineItem>
     fun getIssuesDetailedTimelineById(issueId: String): List<IssueTimelineItem>
     fun saveIssueTimelineItems(items: List<IssueTimelineItem>): Int
     fun saveIssueTimelineDetailedItems(items: List<IssueTimelineItem>): Int
@@ -68,5 +69,5 @@ interface IPGProvider {
     fun getUnresolvedIssues(): List<String>
     fun getStabilizationIndicator0(): List<StabilizationIndicator0>
     fun getStabilizationIndicator1(): List<StabilizationIndicator1>
-    fun getIssuesTimelineById(issueId: String): List<IssueTimelineItem>
+
 }

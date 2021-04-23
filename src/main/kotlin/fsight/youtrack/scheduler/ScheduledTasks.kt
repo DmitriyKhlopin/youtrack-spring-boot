@@ -60,7 +60,7 @@ class ScheduledTasks(private val service: IETL, private val state: IETLState) : 
     }
 
     /**
-     * ПН-ПТ в 10 утра
+     * ПН в 10 утра
      * */
     @Scheduled(cron = "0 0 10 * * MON")
     fun analyzeFeatures() {

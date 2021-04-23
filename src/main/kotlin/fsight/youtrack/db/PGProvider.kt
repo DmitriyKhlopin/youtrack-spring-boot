@@ -380,7 +380,7 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
             .fetchInto(String::class.java)
     }
 
-    override fun getIssueTimelineById(issueId: String): List<IssueTimelineItem> {
+    override fun getIssueStateTransitionsById(issueId: String): List<IssueTimelineItem> {
         return dsl.select(
             STATE_TRANSITIONS.RN.`as`("order"),
             STATE_TRANSITIONS.ISSUE_ID.`as`("id"),
@@ -425,18 +425,6 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
             .from(ISSUE_TIMELINE_DETAILED)
             .where(ISSUE_TIMELINE_DETAILED.ISSUE_ID.eq(issueId))
             .fetchInto(IssueTimelineItem::class.java)
-        /*return dsl.select(
-            DETAILED_STATE_TRANSITIONS.RN.`as`("order"),
-            DETAILED_STATE_TRANSITIONS.ISSUE_ID.`as`("id"),
-            DETAILED_STATE_TRANSITIONS.OLD_DT.`as`("dateFrom"),
-            DETAILED_STATE_TRANSITIONS.NEW_DT.`as`("dateTo"),
-            DETAILED_STATE_TRANSITIONS.O.`as`("stateOld"),
-            DETAILED_STATE_TRANSITIONS.N.`as`("stateNew"),
-            DETAILED_STATE_TRANSITIONS.OWNER.`as`("stateOwner")
-        )
-            .from(DETAILED_STATE_TRANSITIONS)
-            .where(DETAILED_STATE_TRANSITIONS.ISSUE_ID.eq(issueId))
-            .fetchInto(IssueTimelineItem::class.java)*/
     }
 
     override fun saveIssueTimelineItems(items: List<IssueTimelineItem>): Int {
@@ -481,14 +469,12 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
                 .from(issuesTable)
                 .leftJoin(prioritiesTable).on(issuesTable.ID.eq(prioritiesTable.ISSUE_ID)).and(prioritiesTable.FIELD_NAME.eq("Priority"))
                 .leftJoin(typesTable).on(issuesTable.ID.eq(typesTable.ISSUE_ID)).and(typesTable.FIELD_NAME.eq("Type"))
-                /*.leftJoin(statesTable).on(issuesTable.ID.eq(statesTable.ISSUE_ID)).and(statesTable.FIELD_NAME.eq("State"))*/
                 .leftJoin(projectTypesTable).on(issuesTable.PROJECT_SHORT_NAME.eq(projectTypesTable.PROJECT_SHORT_NAME))
                 .where()
                 .and((projectTypesTable.IS_PUBLIC.eq(true)).or(projectTypesTable.IS_PUBLIC.isNull))
                 .and(issueFilter.toProjectsCondition())
                 .and(issueFilter.toPrioritiesCondition())
                 .and(issueFilter.toTypesCondition())
-                /*.and(issueFilter.toStatesCondition())*/
                 .and(issuesTable.RESOLVED_WEEK.between(df, dt))
                 .groupBy(groupingSets(arrayOf(issuesTable.RESOLVED_WEEK, typesTable.FIELD_VALUE), arrayOf(issuesTable.RESOLVED_WEEK)))
                 .orderBy(issuesTable.RESOLVED_WEEK.asc())
@@ -635,7 +621,6 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
             .leftJoin(prioritiesTable).on(issuesTable.ID.eq(prioritiesTable.ISSUE_ID)).and(prioritiesTable.FIELD_NAME.eq("Priority"))
             .where()
             .and((projectTypesTable.IS_PUBLIC.eq(true)).or(projectTypesTable.IS_PUBLIC.isNull))
-            /*.and(issuesTable.CREATED_WEEK.eq(dt))*/
             .and(issueFilter.toTypesCondition())
             .and(issueFilter.toProjectsCondition())
             .and(issueFilter.toStatesCondition())
@@ -664,7 +649,6 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
             .and((projectTypesTable.IS_PUBLIC.eq(true)).or(projectTypesTable.IS_PUBLIC.isNull))
             .and(issueFilter.toProjectsCondition())
             .and(issueFilter.toTypesCondition())
-            /*.and(issueFilter.toStatesCondition())*/
             .and(issueFilter.toCreateDateCondition())
             .groupBy(groupingSets(arrayOf(prioritiesTable.FIELD_VALUE), arrayOf()))
             .fetchInto(SimpleAggregatedValue2::class.java)
@@ -691,7 +675,6 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
             .and((projectTypesTable.IS_PUBLIC.eq(true)).or(projectTypesTable.IS_PUBLIC.isNull))
             .and(issueFilter.toProjectsCondition())
             .and(issueFilter.toTypesCondition())
-            /*.and(issueFilter.toStatesCondition())*/
             .and(issueFilter.toCreateDateCondition())
             .groupBy(groupingSets(arrayOf(prioritiesTable.FIELD_VALUE), arrayOf()))
             .fetchInto(SimpleAggregatedValue2::class.java)
@@ -749,7 +732,11 @@ class PGProvider(private val dsl: DSLContext) : IPGProvider {
             STABILIZATION_INDICATOR_1.Y,
             STABILIZATION_INDICATOR_1.M,
             STABILIZATION_INDICATOR_1.RESULT_DAYS_DIFF,
-            STABILIZATION_INDICATOR_1.RESULT_INTERVALS
+            STABILIZATION_INDICATOR_1.RESULT_INTERVALS,
+            STABILIZATION_INDICATOR_1.SUCCESSFULLY_COMPLETE,
+            STABILIZATION_INDICATOR_1.FAILED,
+            STABILIZATION_INDICATOR_1.LOW_RISK,
+            STABILIZATION_INDICATOR_1.HIGH_RISK
         )
             .from(STABILIZATION_INDICATOR_1)
             .fetchInto(StabilizationIndicator1::class.java)
